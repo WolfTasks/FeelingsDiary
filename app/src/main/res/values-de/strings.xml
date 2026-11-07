@@ -47,4 +47,10 @@
     <string name="valence_neutral">neutral</string>
     <string name="valence_good">gut</string>
     <string name="new_feeling_valence_cd">Valenz %1$d</string>
+    <string name="home_add">+ Wie fühlst du dich?</string>
+    <string name="home_placeholder">Der Verlauf kommt in Phase 2</string>
+    <plurals name="home_people">
+        <item quantity="one">%d weitere Person</item>
+        <item quantity="other">%d weitere Personen</item>
+    </plurals>
 </resources>
