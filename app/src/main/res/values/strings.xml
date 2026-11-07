@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Feelings Diary</string>
+    <string name="feeling_happy">happy</string>
+    <string name="feeling_grateful">grateful</string>
+    <string name="feeling_in_love">in love</string>
+    <string name="feeling_relaxed">relaxed</string>
+    <string name="feeling_neutral">neutral</string>
+    <string name="feeling_tired">tired</string>
+    <string name="feeling_bored">bored</string>
+    <string name="feeling_stressed">stressed</string>
+    <string name="feeling_anxious">anxious</string>
+    <string name="feeling_lonely">lonely</string>
+    <string name="feeling_sad">sad</string>
+    <string name="feeling_angry">angry</string>
 </resources>

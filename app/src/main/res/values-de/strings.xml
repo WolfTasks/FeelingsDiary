@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Gefühls-Tagebuch</string>
+    <string name="feeling_happy">fröhlich</string>
+    <string name="feeling_grateful">dankbar</string>
+    <string name="feeling_in_love">verliebt</string>
+    <string name="feeling_relaxed">entspannt</string>
+    <string name="feeling_neutral">neutral</string>
+    <string name="feeling_tired">müde</string>
+    <string name="feeling_bored">gelangweilt</string>
+    <string name="feeling_stressed">gestresst</string>
+    <string name="feeling_anxious">ängstlich</string>
+    <string name="feeling_lonely">einsam</string>
+    <string name="feeling_sad">traurig</string>
+    <string name="feeling_angry">wütend</string>
 </resources>
