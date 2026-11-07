@@ -11,6 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FeelingsDiary">
 
+        <!-- adjustResize: on API 26-29 the keyboard inset (WindowInsets.ime) is only delivered in this mode. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

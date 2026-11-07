@@ -47,21 +47,23 @@ fun PeopleSelector(
                     stringResource(R.string.entry_people_count_cd, n)
                 }
             // "alone" takes the width its label needs (any language, large font); the numbers share the rest.
-            val size =
-                if (n == 0) {
-                    Modifier.widthIn(min = MIN_BUTTON_WIDTH)
-                } else {
-                    Modifier.weight(1f)
-                }
-            val labelPadding = if (n == 0) ALONE_LABEL_PADDING else 0.dp
-            PeopleButton(text, cd, people == n, size, labelPadding) { onPeople(n) }
+            if (n == 0) {
+                PeopleButton(
+                    text,
+                    cd,
+                    people == n,
+                    Modifier.widthIn(min = MIN_BUTTON_WIDTH),
+                    labelPadding = ALONE_LABEL_PADDING,
+                ) { onPeople(n) }
+            } else {
+                PeopleButton(text, cd, people == n, Modifier.weight(1f)) { onPeople(n) }
+            }
         }
         PeopleButton(
             stringResource(R.string.entry_people_more),
             stringResource(R.string.entry_people_more_hint),
             people != null && people > MAX_QUICK,
             Modifier.weight(1f),
-            0.dp,
         ) { showDialog = true }
     }
     if (showDialog) {
@@ -80,8 +82,8 @@ private fun PeopleButton(
     text: String,
     description: String,
     selected: Boolean,
-    size: Modifier,
-    labelPadding: Dp,
+    modifier: Modifier,
+    labelPadding: Dp = 0.dp,
     onClick: () -> Unit,
 ) {
     // Custom button: Material buttons enforce a minimum width that overflows six across on narrow screens.
@@ -91,7 +93,7 @@ private fun PeopleButton(
         contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
         modifier =
-            size
+            modifier
                 .heightIn(min = 48.dp)
                 .semantics(mergeDescendants = true) { contentDescription = description }
                 .clickable(role = Role.Button, onClick = onClick),

@@ -49,7 +49,11 @@ class InsetsTest {
     private fun insets(
         type: Int,
         bottomPx: Int,
-    ) = WindowInsetsCompat.Builder().setInsets(type, Insets.of(0, 0, 0, bottomPx)).build()
+    ) = WindowInsetsCompat
+        .Builder()
+        .setInsets(type, Insets.of(0, 0, 0, bottomPx))
+        .setVisible(type, true)
+        .build()
 
     private fun assertBottomAbove(
         text: String,
@@ -67,6 +71,20 @@ class InsetsTest {
     fun homeAddButtonClearsNavigationBar() {
         show(insets(WindowInsetsCompat.Type.navigationBars(), NAV_BAR_PX)) { HomeScreen(emptyList(), onAdd = {}) }
         assertBottomAbove("+ How are you feeling?", NAV_BAR_PX.dp)
+    }
+
+    @Test
+    fun homeContentStartsBelowStatusBar() {
+        val statusBar =
+            WindowInsetsCompat
+                .Builder()
+                .setInsets(
+                    WindowInsetsCompat.Type.statusBars(),
+                    Insets.of(0, STATUS_BAR_PX, 0, 0),
+                ).build()
+        show(statusBar) { HomeScreen(emptyList(), onAdd = {}) }
+        val top = rule.onNodeWithText("The history is coming in phase 2").getBoundsInRoot().top
+        assertTrue("placeholder top $top is under the status bar", top >= STATUS_BAR_PX.dp)
     }
 
     @Test
@@ -88,6 +106,7 @@ class InsetsTest {
     private companion object {
         // Robolectric's default screen is mdpi, so 1 px == 1 dp.
         const val NAV_BAR_PX = 48
+        const val STATUS_BAR_PX = 24
         const val KEYBOARD_PX = 200
     }
 }
