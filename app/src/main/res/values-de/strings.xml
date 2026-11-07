@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gefühls-Tagebuch</string>
+    <string name="feeling_happy">fröhlich</string>
+    <string name="feeling_grateful">dankbar</string>
+    <string name="feeling_in_love">verliebt</string>
+    <string name="feeling_relaxed">entspannt</string>
+    <string name="feeling_neutral">neutral</string>
+    <string name="feeling_tired">müde</string>
+    <string name="feeling_bored">gelangweilt</string>
+    <string name="feeling_stressed">gestresst</string>
+    <string name="feeling_anxious">ängstlich</string>
+    <string name="feeling_lonely">einsam</string>
+    <string name="feeling_sad">traurig</string>
+    <string name="feeling_angry">wütend</string>
+    <string name="entry_close">Schließen</string>
+    <string name="entry_title">Neuer Eintrag · %1$s</string>
+    <string name="entry_question">Wie fühlst du dich?</string>
+    <string name="entry_search_hint">Gefühle suchen</string>
+    <string name="entry_section_suggestions">Vorschläge</string>
+    <string name="entry_section_recent">Zuletzt genutzt</string>
+    <string name="entry_section_all">Alle</string>
+    <string name="entry_create_offer">+ „%1$s“ als neues Gefühl</string>
+    <string name="entry_people_question">Wie viele andere Personen sind um dich?</string>
+    <string name="entry_people_alone">allein</string>
+    <string name="entry_people_more">6+</string>
+    <string name="entry_people_more_hint">6+ öffnet ein Zahlenfeld</string>
+    <string name="entry_people_alone_cd">Allein, keine anderen Personen</string>
+    <string name="entry_people_count_cd">%1$d andere Personen</string>
+    <string name="entry_people_selected_cd">%1$s, ausgewählt</string>
+    <string name="entry_save">Speichern</string>
+    <string name="chip_cd_unselected">%1$s</string>
+    <string name="chip_cd_selected">%1$s, ausgewählt</string>
+    <string name="chip_cd_main">%1$s, ausgewählt, Hauptgefühl</string>
+    <string name="people_dialog_title">Anzahl anderer Personen</string>
+    <string name="people_dialog_label">Anzahl</string>
+    <string name="people_dialog_error">Gib eine Zahl von 6 bis 999 ein</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Abbrechen</string>
+    <string name="new_feeling_title">Neues Gefühl</string>
+    <string name="new_feeling_name">Name</string>
+    <string name="new_feeling_color">Farbe</string>
+    <string name="new_feeling_color_cd">Farbe %1$d</string>
+    <string name="new_feeling_color_selected_cd">Farbe %1$d, ausgewählt</string>
+    <string name="new_feeling_valence">Wie fühlt es sich an?</string>
+    <string name="valence_bad">schlecht</string>
+    <string name="valence_neutral">neutral</string>
+    <string name="valence_good">gut</string>
+    <string name="new_feeling_valence_cd">Valenz %1$d</string>
+    <string name="home_add">+ Wie fühlst du dich?</string>
+    <string name="home_placeholder">Der Verlauf kommt in Phase 2</string>
+    <plurals name="home_people">
+        <item quantity="one">%d weitere Person</item>
+        <item quantity="other">%d weitere Personen</item>
+    </plurals>
+</resources>

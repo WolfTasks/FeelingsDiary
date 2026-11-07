@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Feelings Diary</string>
+    <string name="feeling_happy">happy</string>
+    <string name="feeling_grateful">grateful</string>
+    <string name="feeling_in_love">in love</string>
+    <string name="feeling_relaxed">relaxed</string>
+    <string name="feeling_neutral">neutral</string>
+    <string name="feeling_tired">tired</string>
+    <string name="feeling_bored">bored</string>
+    <string name="feeling_stressed">stressed</string>
+    <string name="feeling_anxious">anxious</string>
+    <string name="feeling_lonely">lonely</string>
+    <string name="feeling_sad">sad</string>
+    <string name="feeling_angry">angry</string>
+    <string name="entry_close">Close</string>
+    <string name="entry_title">New entry · %1$s</string>
+    <string name="entry_question">How are you feeling?</string>
+    <string name="entry_search_hint">Search feelings</string>
+    <string name="entry_section_suggestions">Suggestions</string>
+    <string name="entry_section_recent">Recently used</string>
+    <string name="entry_section_all">All</string>
+    <string name="entry_create_offer">+ “%1$s” as new feeling</string>
+    <string name="entry_people_question">How many other people are around you?</string>
+    <string name="entry_people_alone">alone</string>
+    <string name="entry_people_more">6+</string>
+    <string name="entry_people_more_hint">6+ opens a number field</string>
+    <string name="entry_people_alone_cd">Alone, no other people</string>
+    <string name="entry_people_count_cd">%1$d other people</string>
+    <string name="entry_people_selected_cd">%1$s, selected</string>
+    <string name="entry_save">Save</string>
+    <string name="chip_cd_unselected">%1$s</string>
+    <string name="chip_cd_selected">%1$s, selected</string>
+    <string name="chip_cd_main">%1$s, selected, main feeling</string>
+    <string name="people_dialog_title">Number of other people</string>
+    <string name="people_dialog_label">Number</string>
+    <string name="people_dialog_error">Enter a number from 6 to 999</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="new_feeling_title">New feeling</string>
+    <string name="new_feeling_name">Name</string>
+    <string name="new_feeling_color">Color</string>
+    <string name="new_feeling_color_cd">Color %1$d</string>
+    <string name="new_feeling_color_selected_cd">Color %1$d, selected</string>
+    <string name="new_feeling_valence">How does it feel?</string>
+    <string name="valence_bad">bad</string>
+    <string name="valence_neutral">neutral</string>
+    <string name="valence_good">good</string>
+    <string name="new_feeling_valence_cd">Valence %1$d</string>
+    <string name="home_add">+ How are you feeling?</string>
+    <string name="home_placeholder">The history is coming in phase 2</string>
+    <plurals name="home_people">
+        <item quantity="one">%d other person</item>
+        <item quantity="other">%d other people</item>
+    </plurals>
+</resources>
