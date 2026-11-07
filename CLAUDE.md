@@ -19,6 +19,7 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 ```
 
 - `ktlintCheck` ist vor jedem Commit Pflicht (Pre-Commit-Hook: `scripts/install-hooks.sh`).
+- Hook (`scripts/pre-commit`) wählt via `scripts/select-jdk.sh` ein JDK mit `jlink` und führt `ktlintCheck testDebugUnitTest` aus; `install-hooks.sh` funktioniert auch im Worktree.
 - JAVA_HOME-Gotcha: ohne JDK 21 nimmt der Daemon die IntelliJ-JBR ohne jlink und der Build scheitert. `local.properties` (`sdk.dir`) fehlt im Worktree, ggf. aus dem Hauptcheckout kopieren.
 - Bei Pipes `set -o pipefail`.
 
