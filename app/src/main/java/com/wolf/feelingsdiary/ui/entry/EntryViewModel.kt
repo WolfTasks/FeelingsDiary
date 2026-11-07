@@ -22,7 +22,7 @@ class EntryViewModel
     @Inject
     constructor(
         private val repo: DiaryRepository,
-        private val labeler: FeelingLabeler,
+        val labeler: FeelingLabeler,
         private val savedState: SavedStateHandle,
     ) : ViewModel() {
         private val saved = MutableStateFlow(false)
