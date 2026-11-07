@@ -1,17 +1,22 @@
 package com.wolf.feelingsdiary.ui.entry
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,16 +34,18 @@ class PeopleSelectorTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private fun show() =
-        rule.setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, LARGE_FONT_SCALE)) {
-                FeelingsDiaryTheme {
-                    // Content width of a 320dp phone with the screen's 16dp side padding.
-                    Box(Modifier.width(288.dp)) { PeopleSelector(people = null, onPeople = {}) }
-                }
+    private fun show(
+        width: Dp = 288.dp,
+        fontScale: Float = LARGE_FONT_SCALE,
+    ) = rule.setContent {
+        val density = LocalDensity.current
+        CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+            FeelingsDiaryTheme {
+                // Default: content width of a 320dp phone with the screen's 16dp side padding.
+                Box(Modifier.requiredWidth(width)) { PeopleSelector(people = null, onPeople = {}) }
             }
         }
+    }
 
     private fun assertFitsOnOneLine(text: String) {
         val node = rule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
@@ -69,7 +76,27 @@ class PeopleSelectorTest {
         assertFitsOnOneLine("6+")
     }
 
+    private fun buttonBounds() = BUTTON_DESCRIPTIONS.map { rule.onNodeWithContentDescription(it).getBoundsInRoot() }
+
+    @Test
+    fun everyButtonIsAtLeast48dpWide() {
+        show()
+        BUTTON_DESCRIPTIONS.zip(buttonBounds()).forEach { (cd, b) ->
+            assertTrue("'$cd' is ${b.width} wide", b.width >= 48.dp)
+            assertTrue("'$cd' is ${b.height} high", b.height >= 48.dp)
+        }
+    }
+
+    @Test
+    fun numbersStayOnOneRowWhenTheyFit() {
+        show(width = 380.dp, fontScale = 1f)
+        assertEquals(1, buttonBounds().map { it.top }.distinct().size)
+    }
+
     private companion object {
+        val BUTTON_DESCRIPTIONS =
+            listOf("Alone, no other people") + (1..5).map { "$it other people" } + "6+ opens a number field"
+
         const val LARGE_FONT_SCALE = 1.3f
     }
 }
