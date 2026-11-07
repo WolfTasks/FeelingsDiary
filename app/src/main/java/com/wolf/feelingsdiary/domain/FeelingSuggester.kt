@@ -48,6 +48,15 @@ object FeelingSuggester {
         }
     }
 
+    /** Base feelings by ascending id, then custom feelings alphabetically by label. */
+    fun baseListOrder(
+        feelings: List<Feeling>,
+        label: (Feeling) -> String,
+    ): List<Feeling> {
+        val (base, custom) = feelings.partition { it.baseKey != null }
+        return base.sortedBy { it.id } + custom.sortedBy { normalize(label(it)) }
+    }
+
     fun normalize(text: String): String =
         Normalizer
             .normalize(text.lowercase(Locale.ROOT), Normalizer.Form.NFD)
@@ -61,13 +70,4 @@ object FeelingSuggester {
             Character.COMBINING_SPACING_MARK,
             Character.ENCLOSING_MARK,
         )
-}
-
-/** Base feelings by ascending id, then custom feelings alphabetically by label. */
-fun baseListOrder(
-    feelings: List<Feeling>,
-    label: (Feeling) -> String,
-): List<Feeling> {
-    val (base, custom) = feelings.partition { it.baseKey != null }
-    return base.sortedBy { it.id } + custom.sortedBy { FeelingSuggester.normalize(label(it)) }
 }

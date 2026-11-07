@@ -60,7 +60,7 @@ object GraphBuilder {
                 inPeriod
                     .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }
                     .map { (bucket, members) ->
-                        aggregate(bucket, members.map { it.first }, aggregation, period, firstDayOfWeek)
+                        aggregate(bucket, members.map { it.first }, aggregation, period)
                     }.sortedBy { it.x }
             }
         val maxPeople = inPeriod.maxOfOrNull { it.first.people } ?: 0
@@ -102,7 +102,6 @@ object GraphBuilder {
         members: List<Entry>,
         aggregation: Aggregation,
         period: GraphPeriod,
-        firstDayOfWeek: DayOfWeek,
     ): GraphPoint {
         // members are in chronological order, so lastIndexOf-style ties favour the later entry.
         val mainCounts = members.groupingBy { it.feelingIds.first() }.eachCount()
