@@ -28,6 +28,37 @@ interface EntryDao {
     @Query("SELECT * FROM entries ORDER BY epochMinute DESC, id DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<EntryWithFeelings>>
 
+    @Transaction
+    @Query("SELECT * FROM entries WHERE epochMinute BETWEEN :fromMinute AND :toMinute ORDER BY epochMinute, id")
+    fun observeBetween(
+        fromMinute: Int,
+        toMinute: Int,
+    ): Flow<List<EntryWithFeelings>>
+
+    @Transaction
+    @Query("SELECT * FROM entries WHERE id = :id")
+    suspend fun getById(id: Long): EntryWithFeelings?
+
+    @Query("UPDATE entries SET people = :people WHERE id = :id")
+    suspend fun updatePeople(
+        id: Long,
+        people: Int,
+    ): Int
+
+    @Query("DELETE FROM entry_feelings WHERE entryId = :id")
+    suspend fun deleteFeelingsOf(id: Long)
+
+    @Transaction
+    suspend fun replace(
+        id: Long,
+        people: Int,
+        feelings: List<EntryFeelingEntity>,
+    ) {
+        updatePeople(id, people)
+        deleteFeelingsOf(id)
+        insertEntryFeelings(feelings)
+    }
+
     @Query("DELETE FROM entries WHERE id = :id")
     suspend fun delete(id: Long)
 }

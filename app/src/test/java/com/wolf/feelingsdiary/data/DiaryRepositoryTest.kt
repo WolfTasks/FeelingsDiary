@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
@@ -15,6 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 @RunWith(RobolectricTestRunner::class)
@@ -97,5 +99,78 @@ class DiaryRepositoryTest {
             assertEquals("Wehmut", f.customName)
             assertEquals(null, f.baseKey)
             assertEquals(-1, f.valence)
+        }
+
+    private fun repoAt(
+        instant: String,
+        zone: String,
+    ) = DiaryRepository(db.feelingDao(), db.entryDao(), Clock.fixed(Instant.parse(instant), ZoneId.of(zone)))
+
+    @Test
+    fun rangeUsesEntryLocalDate() =
+        runBlocking {
+            val happy = idOf("happy")
+            val r = repoAt("2026-07-01T22:30:00Z", "Europe/Berlin")
+            r.addEntry(0, listOf(happy))
+            assertEquals(1, r.observeEntriesBetween(LocalDate.of(2026, 7, 2), LocalDate.of(2026, 7, 2)).first().size)
+            assertEquals(0, r.observeEntriesBetween(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)).first().size)
+        }
+
+    @Test
+    fun rangeKeepsExtremeOffsets() =
+        runBlocking {
+            val happy = idOf("happy")
+            // local 2026-07-02 23:50 at -12 (= 07-03 11:50Z) and 00:10 at +14 (= 07-01 10:10Z)
+            val late = repoAt("2026-07-03T11:50:00Z", "Etc/GMT+12")
+            val early = repoAt("2026-07-01T10:10:00Z", "Pacific/Kiritimati")
+            val lateId = late.addEntry(0, listOf(happy))
+            val earlyId = early.addEntry(0, listOf(happy))
+            val day = LocalDate.of(2026, 7, 2)
+            assertEquals(listOf(earlyId, lateId), repo.observeEntriesBetween(day, day).first().map { it.id })
+        }
+
+    @Test
+    fun updateKeepsTimeAndOldValences() =
+        runBlocking {
+            val stressed = idOf("stressed")
+            val tired = idOf("tired")
+            val happy = idOf("happy")
+            val id = repo.addEntry(1, listOf(stressed, tired))
+            val before = repo.getEntry(id)!!
+            db.openHelper.writableDatabase.execSQL("UPDATE feelings SET valence = 1 WHERE id = $tired")
+            val happyValence =
+                db
+                    .feelingDao()
+                    .getByIds(listOf(happy))
+                    .single()
+                    .valence
+            val tiredOld = before.valences[1]
+
+            repo.updateEntry(id, 4, listOf(tired, happy))
+
+            val after = repo.getEntry(id)!!
+            assertEquals(before.time, after.time)
+            assertEquals(4, after.people)
+            assertEquals(listOf(tired, happy), after.feelingIds)
+            assertEquals(listOf(tiredOld, happyValence), after.valences)
+        }
+
+    @Test
+    fun updateRejectsUnknownEntryAndInvalidInput() =
+        runBlocking {
+            val happy = idOf("happy")
+            val id = repo.addEntry(1, listOf(happy))
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateEntry(id + 99, 1, listOf(happy)) } }
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateEntry(id, 1, emptyList()) } }
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateEntry(id, 1000, listOf(happy)) } }
+            assertEquals(1, repo.getEntry(id)!!.people)
+        }
+
+    @Test
+    fun deleteEntryRemovesIt() =
+        runBlocking {
+            val id = repo.addEntry(0, listOf(idOf("happy")))
+            repo.deleteEntry(id)
+            assertNull(repo.getEntry(id))
         }
 }
