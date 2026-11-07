@@ -13,13 +13,15 @@ data class EntryTime(
     val utcOffsetMinutes: Int,
 ) {
     /** Local date-time using the stored offset, never the current zone. */
-    fun localDateTime(): LocalDateTime =
-        LocalDateTime.ofEpochSecond(epochMinute * 60L, 0, ZoneOffset.ofTotalSeconds(utcOffsetMinutes * 60))
+    fun localDateTime(): LocalDateTime = LocalDateTime.ofEpochSecond(epochMinute * 60L, 0, ZoneOffset.ofTotalSeconds(utcOffsetMinutes * 60))
 
     companion object {
         fun now(clock: Clock): EntryTime {
             val instant = clock.instant()
-            val offsetSeconds = clock.zone.rules.getOffset(instant).totalSeconds
+            val offsetSeconds =
+                clock.zone.rules
+                    .getOffset(instant)
+                    .totalSeconds
             return EntryTime(Math.floorDiv(instant.epochSecond, 60L).toInt(), offsetSeconds / 60)
         }
     }

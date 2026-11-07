@@ -49,7 +49,12 @@ class DiaryRepositoryTest {
         runBlocking {
             val stressed = idOf("stressed")
             val tired = idOf("tired")
-            val oldValence = db.feelingDao().getByIds(listOf(stressed)).single().valence
+            val oldValence =
+                db
+                    .feelingDao()
+                    .getByIds(listOf(stressed))
+                    .single()
+                    .valence
             val entryId = repo.addEntry(3, listOf(stressed, tired))
 
             // change valence afterwards: the entry must keep the old snapshot
@@ -63,7 +68,14 @@ class DiaryRepositoryTest {
             assertEquals(EntryTime.now(clock), entry.time)
             val feelings = db.feelingDao().getByIds(listOf(stressed, tired))
             assertEquals(listOf(clock.millis(), clock.millis()), feelings.map { it.lastUsedAt })
-            assertEquals(2, repo.observeFeelings().first().first { it.id == stressed }.valence)
+            assertEquals(
+                2,
+                repo
+                    .observeFeelings()
+                    .first()
+                    .first { it.id == stressed }
+                    .valence,
+            )
         }
 
     @Test
