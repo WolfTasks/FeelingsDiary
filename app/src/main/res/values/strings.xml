@@ -53,4 +53,9 @@
         <item quantity="one">%d other person</item>
         <item quantity="other">%d other people</item>
     </plurals>
+    <string name="history_people_axis">👥 People</string>
+    <plurals name="history_graph_cd">
+        <item quantity="one">Graph, %d entry</item>
+        <item quantity="other">Graph, %d entries</item>
+    </plurals>
 </resources>

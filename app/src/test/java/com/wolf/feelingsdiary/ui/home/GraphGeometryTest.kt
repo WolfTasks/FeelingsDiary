@@ -1,0 +1,49 @@
+package com.wolf.feelingsdiary.ui.home
+
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class GraphGeometryTest {
+    private val rect = Rect(0f, 0f, 100f, 200f)
+
+    @Test
+    fun valenceMapsTopMiddleBottom() {
+        assertEquals(0f, valenceToY(2f, rect), 0.001f)
+        assertEquals(100f, valenceToY(0f, rect), 0.001f)
+        assertEquals(200f, valenceToY(-2f, rect), 0.001f)
+    }
+
+    @Test
+    fun peopleMapsProportionally() {
+        assertEquals(100f, peopleToY(5f, 10, rect), 0.001f)
+    }
+
+    @Test
+    fun plotRectAppliesMargins() {
+        val r = plotRect(width = 480f, height = 400f, density = 2f)
+        assertEquals(96f, r.left, 0.001f)
+        assertEquals(480f - 56f, r.right, 0.001f)
+        assertEquals(16f, r.top, 0.001f)
+        assertEquals(400f - 40f, r.bottom, 0.001f)
+    }
+
+    @Test
+    fun hitTestPicksNearestWithinRadius() {
+        val offsets = listOf(Offset(10f, 10f), Offset(40f, 10f))
+        assertEquals(1, hitTest(offsets, Offset(35f, 10f), 24f))
+        assertEquals(0, hitTest(offsets, Offset(0f, 10f), 24f))
+    }
+
+    @Test
+    fun hitTestReturnsNullOutsideRadius() {
+        assertNull(hitTest(listOf(Offset(0f, 0f)), Offset(30f, 0f), 24f))
+    }
+
+    @Test
+    fun hitTestOnEmptyListReturnsNull() {
+        assertNull(hitTest(emptyList(), Offset(0f, 0f), 24f))
+    }
+}
