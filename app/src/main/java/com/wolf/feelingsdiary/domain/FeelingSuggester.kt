@@ -57,7 +57,7 @@ object FeelingSuggester {
         return base.sortedBy { it.id } + custom.sortedBy { normalize(label(it)) }
     }
 
-    private fun normalize(text: String): String =
+    fun normalize(text: String): String =
         Normalizer
             .normalize(text.lowercase(Locale.ROOT), Normalizer.Form.NFD)
             .filterNot { it.isCombiningMark() }
