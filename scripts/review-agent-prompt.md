@@ -48,7 +48,7 @@ Report WARNUNG if:
 
 Example output:
 ```
-FEHLER: LibraryScreen.kt directly calls SongRepository.getAllSongs() — must go through LibraryViewModel
+FEHLER: HistoryScreen.kt directly calls EntryRepository.getAll() — must go through HistoryViewModel
 WARNUNG: EntryRepository.save() added without new test in EntryRepositoryTest
 EXIT:1
 ```
