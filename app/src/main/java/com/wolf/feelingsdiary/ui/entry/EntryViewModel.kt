@@ -26,6 +26,7 @@ class EntryViewModel
         private val savedState: SavedStateHandle,
     ) : ViewModel() {
         private val saved = MutableStateFlow(false)
+        private var saving = false
         private val selection = savedState.getStateFlow(KEY_SELECTED, LongArray(0))
         private val peopleFlow = savedState.getStateFlow<Int?>(KEY_PEOPLE, null)
         private val queryFlow = savedState.getStateFlow(KEY_QUERY, "")
@@ -83,12 +84,19 @@ class EntryViewModel
         }
 
         fun save() {
-            val s = state.value
-            val people = s.people
-            if (!s.canSave || people == null) return
+            if (saving || saved.value) return
+            // Read the source flows directly: `state` is WhileSubscribed and stale without a collector.
+            val ids = selection.value.toList()
+            val people = peopleFlow.value
+            if (ids.isEmpty() || people == null) return
+            saving = true
             viewModelScope.launch {
-                repo.addEntry(people, s.selectedIds)
-                saved.value = true
+                try {
+                    repo.addEntry(people, ids)
+                    saved.value = true
+                } finally {
+                    if (!saved.value) saving = false
+                }
             }
         }
 

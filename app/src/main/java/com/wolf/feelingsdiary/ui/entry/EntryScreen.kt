@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,7 +72,7 @@ fun EntryScreen(
 ) {
     var showCreate by rememberSaveable { mutableStateOf(false) }
     // Guards against a double tap on Save; the screen is left once saving completes.
-    var saveTapped by rememberSaveable { mutableStateOf(false) }
+    var saveTapped by remember { mutableStateOf(false) }
 
     @Composable
     fun Chips(feelings: List<Feeling>) {

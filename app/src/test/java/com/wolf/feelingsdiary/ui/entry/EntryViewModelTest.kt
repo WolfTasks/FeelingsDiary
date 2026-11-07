@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -133,5 +134,33 @@ class EntryViewModelTest {
             vm.setPeople(-1)
             runCurrent()
             assertEquals(2, vm.state.value.people)
+        }
+
+    @Test
+    fun saveTwiceWhileInFlightAddsOnlyOneEntry() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            coEvery { repo.addEntry(any(), any()) } coAnswers {
+                gate.await()
+                1L
+            }
+            val vm = vm(SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)))
+            vm.save()
+            vm.save()
+            runCurrent()
+            gate.complete(Unit)
+            runCurrent()
+            vm.save()
+            runCurrent()
+            coVerify(exactly = 1) { repo.addEntry(0, listOf(1L)) }
+        }
+
+    @Test
+    fun saveWorksWithoutStateCollector() =
+        runTest {
+            val vm = EntryViewModel(repo, labeler, SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)))
+            vm.save()
+            runCurrent()
+            coVerify(exactly = 1) { repo.addEntry(0, listOf(1L)) }
         }
 }
