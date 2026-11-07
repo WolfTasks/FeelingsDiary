@@ -5,9 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.wolf.feelingsdiary.R
 
@@ -35,7 +37,7 @@ fun PeopleSelector(
     onPeople: (Int) -> Unit,
 ) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BUTTON_GAP)) {
         for (n in 0..MAX_QUICK) {
             val text = if (n == 0) stringResource(R.string.entry_people_alone) else n.toString()
             val cd =
@@ -44,12 +46,22 @@ fun PeopleSelector(
                 } else {
                     stringResource(R.string.entry_people_count_cd, n)
                 }
-            PeopleButton(text, cd, people == n) { onPeople(n) }
+            // "alone" takes the width its label needs (any language, large font); the numbers share the rest.
+            val size =
+                if (n == 0) {
+                    Modifier.widthIn(min = MIN_BUTTON_WIDTH)
+                } else {
+                    Modifier.weight(1f)
+                }
+            val labelPadding = if (n == 0) ALONE_LABEL_PADDING else 0.dp
+            PeopleButton(text, cd, people == n, size, labelPadding) { onPeople(n) }
         }
         PeopleButton(
             stringResource(R.string.entry_people_more),
             stringResource(R.string.entry_people_more_hint),
             people != null && people > MAX_QUICK,
+            Modifier.weight(1f),
+            0.dp,
         ) { showDialog = true }
     }
     if (showDialog) {
@@ -64,10 +76,12 @@ fun PeopleSelector(
 }
 
 @Composable
-private fun RowScope.PeopleButton(
+private fun PeopleButton(
     text: String,
     description: String,
     selected: Boolean,
+    size: Modifier,
+    labelPadding: Dp,
     onClick: () -> Unit,
 ) {
     // Custom button: Material buttons enforce a minimum width that overflows six across on narrow screens.
@@ -77,16 +91,18 @@ private fun RowScope.PeopleButton(
         contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceVariant),
         modifier =
-            Modifier
-                .weight(1f)
+            size
                 .heightIn(min = 48.dp)
                 .semantics(mergeDescendants = true) { contentDescription = description }
                 .clickable(role = Role.Button, onClick = onClick),
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text, style = MaterialTheme.typography.labelLarge)
+        Box(Modifier.padding(horizontal = labelPadding), contentAlignment = Alignment.Center) {
+            Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false)
         }
     }
 }
 
 private val BUTTON_RADIUS = 12.dp
+private val MIN_BUTTON_WIDTH = 48.dp
+private val ALONE_LABEL_PADDING = 12.dp
+private val BUTTON_GAP = 4.dp
