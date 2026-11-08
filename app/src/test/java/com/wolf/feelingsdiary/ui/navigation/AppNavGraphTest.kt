@@ -26,7 +26,7 @@ class AppNavGraphTest {
             nav = rememberNavController()
             AppNavGraph(
                 nav = nav,
-                home = { onAdd ->
+                home = { onAdd, onEdit ->
                     Text(
                         "add",
                         Modifier.clickable {
@@ -34,6 +34,7 @@ class AppNavGraphTest {
                             onAdd()
                         },
                     )
+                    Text("edit", Modifier.clickable { onEdit(5) })
                 },
                 entry = { onDone ->
                     Text(
@@ -48,6 +49,8 @@ class AppNavGraphTest {
         }
     }
 
+    private val ENTRY_PATTERN = "entry?entryId={entryId}"
+
     private fun routes() = nav.currentBackStack.value.mapNotNull { it.destination.route }
 
     @Test
@@ -55,7 +58,16 @@ class AppNavGraphTest {
         setGraph()
         rule.onNodeWithText("add").performClick()
         rule.waitForIdle()
-        assertEquals(listOf(ROUTE_HOME, ROUTE_ENTRY), routes())
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
+    }
+
+    @Test
+    fun editNavigatesWithId() {
+        setGraph()
+        rule.onNodeWithText("edit").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
+        assertEquals(5L, nav.currentBackStackEntry?.arguments?.getLong("entryId"))
     }
 
     @Test

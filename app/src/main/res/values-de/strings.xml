@@ -15,6 +15,7 @@
     <string name="feeling_angry">wütend</string>
     <string name="entry_close">Schließen</string>
     <string name="entry_title">Neuer Eintrag · %1$s</string>
+    <string name="entry_title_edit">Eintrag bearbeiten · %1$s</string>
     <string name="entry_question">Wie fühlst du dich?</string>
     <string name="entry_search_hint">Gefühle suchen</string>
     <string name="entry_section_suggestions">Vorschläge</string>

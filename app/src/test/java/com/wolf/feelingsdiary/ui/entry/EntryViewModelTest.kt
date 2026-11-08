@@ -2,6 +2,8 @@ package com.wolf.feelingsdiary.ui.entry
 
 import androidx.lifecycle.SavedStateHandle
 import com.wolf.feelingsdiary.data.DiaryRepository
+import com.wolf.feelingsdiary.domain.Entry
+import com.wolf.feelingsdiary.domain.EntryTime
 import com.wolf.feelingsdiary.domain.Feeling
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import io.mockk.coEvery
@@ -22,6 +24,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -162,5 +165,51 @@ class EntryViewModelTest {
             vm.save()
             runCurrent()
             coVerify(exactly = 1) { repo.addEntry(0, listOf(1L)) }
+        }
+
+    private val stored = Entry(5, EntryTime(29_000_000, 60), 2, listOf(2L, 1L), listOf(-1, 2))
+
+    @Test
+    fun editLoadsEntryInOrder() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            assertEquals(listOf(2L, 1L), vm.state.value.selectedIds)
+            assertEquals(2, vm.state.value.people)
+            assertNotNull(vm.state.value.editingTime)
+        }
+
+    @Test
+    fun editSaveUpdatesInsteadOfAdding() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored
+            coEvery { repo.updateEntry(any(), any(), any()) } returns Unit
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            vm.save()
+            runCurrent()
+            coVerify { repo.updateEntry(5, 2, listOf(2L, 1L)) }
+            coVerify(exactly = 0) { repo.addEntry(any(), any()) }
+            assertTrue(vm.state.value.saved)
+        }
+
+    @Test
+    fun editDoesNotOverwriteRestoredSelection() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L, "selected" to longArrayOf(3), "people" to 7)))
+            runCurrent()
+            coVerify(exactly = 0) { repo.getEntry(any()) }
+            assertEquals(listOf(3L), vm.state.value.selectedIds)
+        }
+
+    @Test
+    fun editOfMissingEntryCloses() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns null
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            assertTrue(vm.state.value.saved)
         }
 }

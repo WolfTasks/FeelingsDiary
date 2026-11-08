@@ -1,6 +1,7 @@
 package com.wolf.feelingsdiary.ui.entry
 
 import com.wolf.feelingsdiary.domain.Suggestions
+import java.time.LocalDateTime
 
 data class EntryUiState(
     val query: String,
@@ -11,4 +12,6 @@ data class EntryUiState(
     val people: Int?,
     val canSave: Boolean,
     val saved: Boolean,
+    /** Local time of the entry being edited; null for a new entry. */
+    val editingTime: LocalDateTime? = null,
 )

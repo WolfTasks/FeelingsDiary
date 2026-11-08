@@ -15,6 +15,7 @@
     <string name="feeling_angry">angry</string>
     <string name="entry_close">Close</string>
     <string name="entry_title">New entry · %1$s</string>
+    <string name="entry_title_edit">Edit entry · %1$s</string>
     <string name="entry_question">How are you feeling?</string>
     <string name="entry_search_hint">Search feelings</string>
     <string name="entry_section_suggestions">Suggestions</string>

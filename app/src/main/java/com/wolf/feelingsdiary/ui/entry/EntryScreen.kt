@@ -34,12 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.Feeling
+import com.wolf.feelingsdiary.ui.home.formatEntryTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -96,7 +98,14 @@ fun EntryScreen(
                 IconButton(onClick = onClose) {
                     Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.entry_close))
                 }
-                Text(stringResource(R.string.entry_title, time), style = MaterialTheme.typography.titleMedium)
+                val editing = state.editingTime
+                val title =
+                    if (editing != null) {
+                        stringResource(R.string.entry_title_edit, formatEntryTime(editing, LocalConfiguration.current.locales[0]))
+                    } else {
+                        stringResource(R.string.entry_title, time)
+                    }
+                Text(title, style = MaterialTheme.typography.titleMedium)
             }
             Column(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()),

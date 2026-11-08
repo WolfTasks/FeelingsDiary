@@ -18,6 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class EntryScreenTest {
@@ -45,7 +46,8 @@ class EntryScreenTest {
         canCreate: Boolean = false,
         others: List<Feeling> = listOf(tired),
         recent: List<Feeling> = listOf(stressed),
-    ) = EntryUiState(query, Suggestions(recent, others, canCreate), selected, people, canSave, false)
+        editingTime: LocalDateTime? = null,
+    ) = EntryUiState(query, Suggestions(recent, others, canCreate), selected, people, canSave, false, editingTime)
 
     private fun show(state: EntryUiState) =
         rule.setContent {
@@ -61,6 +63,12 @@ class EntryScreenTest {
         rule.onNodeWithText("tired").performClick()
         rule.onNodeWithText("3").performScrollTo().performClick()
         assertEquals(listOf("toggle:1", "toggle:2", "people:3"), calls)
+    }
+
+    @Test
+    fun editTitleShown() {
+        show(state(editingTime = LocalDateTime.of(2026, 11, 7, 19, 22)))
+        rule.onNode(hasText("Edit entry · ", substring = true)).assertExists()
     }
 
     @Test
