@@ -3,8 +3,10 @@ package com.wolf.feelingsdiary.ui.home
 import android.content.res.Configuration
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasText
@@ -12,12 +14,14 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
 import com.wolf.feelingsdiary.domain.Aggregation
 import com.wolf.feelingsdiary.domain.GraphData
 import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -149,5 +153,26 @@ class HomeScreenTest {
         locale.value = Locale.GERMANY
         rule.waitForIdle()
         rule.onNodeWithText("07.11.26, 19:22", substring = true).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h1400dp-night")
+    fun textFollowsDarkThemeInsteadOfBlack() {
+        show(state(emptyList()))
+        listOf("My history", "happy", "No entries in this period").forEach { text ->
+            val results = mutableListOf<TextLayoutResult>()
+            rule
+                .onNodeWithText(text)
+                .fetchSemanticsNode()
+                .config[SemanticsActions.GetTextLayoutResult]
+                .action
+                ?.invoke(results)
+            val color =
+                results
+                    .single()
+                    .layoutInput.style.color
+            assertNotEquals("$text must not render black", Color.Black, color)
+            assertNotEquals("$text has no resolved color", Color.Unspecified, color)
+        }
     }
 }

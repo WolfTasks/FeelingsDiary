@@ -2,13 +2,19 @@ package com.wolf.feelingsdiary.ui.home
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,34 +61,36 @@ fun PeriodBar(
     val rangeCd = stringResource(R.string.period_range_cd)
     val prevCd = stringResource(R.string.period_prev_cd)
     val nextCd = stringResource(R.string.period_next_cd)
-    Row(
-        modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CHIP_KINDS.forEach { (kind, label) ->
-            FilterChip(
-                selected = period.kind == kind,
-                onClick = { onKind(kind) },
-                label = { Text(stringResource(label)) },
+    Column(modifier) {
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CHIP_KINDS.forEach { (kind, label) ->
+                FilterChip(
+                    selected = period.kind == kind,
+                    onClick = { onKind(kind) },
+                    label = { Text(stringResource(label)) },
+                )
+            }
+            IconButton(onClick = { pickRange = true }, modifier = Modifier.semantics { contentDescription = rangeCd }) {
+                Icon(Icons.Filled.DateRange, contentDescription = null)
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { onShift(-1) }, modifier = Modifier.semantics { contentDescription = prevCd }) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+            }
+            Text(
+                formatPeriod(period, locale),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f),
             )
-        }
-        IconButton(onClick = { pickRange = true }, modifier = Modifier.semantics { contentDescription = rangeCd }) {
-            Text("📅")
-        }
-    }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { onShift(-1) }, modifier = Modifier.semantics { contentDescription = prevCd }) {
-            Text("‹", style = MaterialTheme.typography.titleLarge)
-        }
-        Text(
-            formatPeriod(period, locale),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(onClick = { onShift(1) }, modifier = Modifier.semantics { contentDescription = nextCd }) {
-            Text("›", style = MaterialTheme.typography.titleLarge)
+            IconButton(onClick = { onShift(1) }, modifier = Modifier.semantics { contentDescription = nextCd }) {
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+            }
         }
     }
     if (pickRange) {

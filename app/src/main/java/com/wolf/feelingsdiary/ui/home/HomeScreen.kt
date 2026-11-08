@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -93,54 +94,56 @@ fun HomeScreen(
     }
 
     val colorOf = { id: Long -> state.colors[id]?.let { Color(it) } ?: Color.Unspecified }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            // Edge-to-edge: keep content clear of status bar, navigation bar and display cutouts.
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 16.dp),
-    ) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+    // Surface provides the content color; bare Text would fall back to black in dark theme.
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                // Edge-to-edge: keep content clear of status bar, navigation bar and display cutouts.
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(horizontal = 16.dp),
         ) {
-            item {
-                Text(
-                    stringResource(R.string.history_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            }
-            item { PeriodBar(state.period, locale, actions.onKind, actions.onRange, actions.onShift) }
-            item {
-                HistoryGraph(
-                    data = state.graph,
-                    colorOf = colorOf,
-                    xLabels = xAxisLabels(state.period, locale),
-                    onPointTap = { point -> point.entryId?.let(::open) ?: actions.onPoint(point) },
-                )
-            }
-            item { GraphLegend(state.legend.map { (label, argb) -> label to Color(argb) }) }
-            if (state.rows.isEmpty()) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 item {
                     Text(
-                        stringResource(R.string.history_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        stringResource(R.string.history_title),
+                        style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(vertical = 16.dp),
                     )
                 }
-            } else {
-                items(state.rows, key = { it.id }) { EntryRowCard(it, locale) { open(it.id) } }
+                item { PeriodBar(state.period, locale, actions.onKind, actions.onRange, actions.onShift) }
+                item {
+                    HistoryGraph(
+                        data = state.graph,
+                        colorOf = colorOf,
+                        xLabels = xAxisLabels(state.period, locale),
+                        onPointTap = { point -> point.entryId?.let(::open) ?: actions.onPoint(point) },
+                    )
+                }
+                item { GraphLegend(state.legend.map { (label, argb) -> label to Color(argb) }) }
+                if (state.rows.isEmpty()) {
+                    item {
+                        Text(
+                            stringResource(R.string.history_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 16.dp),
+                        )
+                    }
+                } else {
+                    items(state.rows, key = { it.id }) { EntryRowCard(it, locale) { open(it.id) } }
+                }
             }
-        }
-        Button(
-            onClick = actions.onAdd,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-        ) {
-            Text(stringResource(R.string.home_add))
+            Button(
+                onClick = actions.onAdd,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            ) {
+                Text(stringResource(R.string.home_add))
+            }
         }
     }
     if (openRow != null) {
