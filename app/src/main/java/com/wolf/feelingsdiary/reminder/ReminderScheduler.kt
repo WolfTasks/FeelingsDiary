@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Clock
+import java.time.LocalTime
 import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,10 +48,17 @@ class ReminderScheduler
                 }
             }
 
-        /** The alarm fired: remind now, then plan the next one. */
+        /**
+         * The alarm fired: remind now, then plan the next one. The inexact alarm may arrive late, inside the
+         * quiet hours, or after reminders were turned off; then it only plans. The chain never breaks.
+         */
         suspend fun onAlarm() {
-            notifier.show()
-            reschedule()
+            try {
+                val reminders = settings.settings.first().reminders
+                if (reminders.enabled && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)) notifier.show()
+            } finally {
+                reschedule()
+            }
         }
 
         private fun alarmIntent(): PendingIntent =

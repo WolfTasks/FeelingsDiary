@@ -11,6 +11,9 @@ import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.di.SystemZoneClock
 import com.wolf.feelingsdiary.domain.ReminderPlanner
 import com.wolf.feelingsdiary.domain.ReminderSettings
+import io.mockk.every
+import io.mockk.spyk
+import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -43,7 +46,9 @@ class ReminderSchedulerTest {
 
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private val zone = ZoneId.of("Europe/Berlin")
-    private val now = ZonedDateTime.of(2026, 11, 8, 7, 0, 0, 0, zone)
+
+    // Outside the default quiet hours (22–08), so an alarm now reminds.
+    private val now = ZonedDateTime.of(2026, 11, 8, 8, 30, 0, 0, zone)
     private val clock = Clock.fixed(now.toInstant(), zone)
     private val alarms get() = shadowOf(app.getSystemService(AlarmManager::class.java)).scheduledAlarms
     private val notifications get() = shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications
@@ -57,9 +62,12 @@ class ReminderSchedulerTest {
     @After
     fun restoreZone() = TimeZone.setDefault(originalZone)
 
-    private fun TestScope.setUp(clock: Clock = this@ReminderSchedulerTest.clock) {
+    private fun TestScope.setUp(
+        clock: Clock = this@ReminderSchedulerTest.clock,
+        notifier: ReminderNotifier = ReminderNotifier(app),
+    ) {
         repo = SettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope) { File(tmp.root, "s.preferences_pb") })
-        notifier = ReminderNotifier(app)
+        this@ReminderSchedulerTest.notifier = notifier
         scheduler = ReminderScheduler(app, repo, clock, notifier)
     }
 
@@ -130,6 +138,42 @@ class ReminderSchedulerTest {
             assertEquals(MainActivity.ACTION_NEW_ENTRY, shadowOf(notification.contentIntent).savedIntent.action)
             assertTrue(notification.flags and android.app.Notification.FLAG_AUTO_CANCEL != 0)
             assertTrue(alarms.single().triggerAtMs > now.toInstant().toEpochMilli())
+        }
+
+    /** An inexact alarm may arrive late, inside the quiet hours (22–08): no notification then, but the chain goes on. */
+    @Test
+    fun lateAlarmInQuietHoursOnlyReschedules() =
+        runTest {
+            val late = ZonedDateTime.of(2026, 11, 8, 22, 30, 0, 0, zone)
+            setUp(Clock.fixed(late.toInstant(), zone))
+            grantNotifications()
+            scheduler.onAlarm()
+            assertTrue(notifications.isEmpty())
+            val expected = ReminderPlanner.next(ReminderSettings(), late, repo.reminderSalt())!!
+            assertEquals(expected.toInstant().toEpochMilli(), alarms.single().triggerAtMs)
+        }
+
+    /** Not even briefly: a reminder that was turned off is never posted. */
+    @Test
+    fun alarmWhileDisabledShowsNothing() =
+        runTest {
+            setUp(notifier = spyk(ReminderNotifier(app)))
+            grantNotifications()
+            repo.update { it.copy(reminders = it.reminders.copy(enabled = false)) }
+            scheduler.onAlarm()
+            verify(exactly = 0) { notifier.show() }
+            assertTrue(alarms.isEmpty())
+        }
+
+    /** A failing notification must not break the alarm chain. */
+    @Test
+    fun failingNotificationStillReschedules() =
+        runTest {
+            val failing = spyk(ReminderNotifier(app)) { every { show() } throws IllegalStateException("boom") }
+            setUp(notifier = failing)
+            val error = runCatching { scheduler.onAlarm() }.exceptionOrNull()
+            assertEquals("boom", error?.message)
+            assertEquals(1, alarms.size)
         }
 
     /** Robolectric runs API 36 here, so POST_NOTIFICATIONS (API 33+) is a runtime permission. */
