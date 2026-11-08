@@ -3,6 +3,7 @@ package com.wolf.feelingsdiary.ui.settings
 import android.content.Context
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -10,9 +11,12 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.domain.ReminderMode
+import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,11 +32,15 @@ class SettingsScreenTest {
     private val themes = mutableListOf<ThemeMode>()
     private val languages = mutableListOf<String?>()
     private var backs = 0
+    private val reminderChanges = mutableListOf<(ReminderSettings) -> ReminderSettings>()
     private val actions =
         SettingsActions(
             onBack = { backs++ },
             onTheme = { themes += it },
             onLanguage = { languages += it },
+            onReminders = { reminderChanges += it },
+            onRequestNotifications = {},
+            onOpenNotificationSettings = {},
         )
 
     private fun show(
@@ -73,5 +81,16 @@ class SettingsScreenTest {
         rule.onNodeWithText(ctx.getString(R.string.language_en)).performScrollTo().performClick()
         rule.onNodeWithText(ctx.getString(R.string.language_system)).performScrollTo().performClick()
         assertEquals(listOf("en", null), languages)
+    }
+
+    @Test
+    fun reminderSectionComesFirstAndForwardsChanges() {
+        show()
+        // The section title and the switch share the text; the title comes first.
+        val reminders = rule.onAllNodesWithText(ctx.getString(R.string.settings_section_reminders))[0].fetchSemanticsNode()
+        val appearance = rule.onNodeWithText(ctx.getString(R.string.settings_section_appearance)).fetchSemanticsNode()
+        assertTrue(reminders.positionInRoot.y < appearance.positionInRoot.y)
+        rule.onNodeWithText(ctx.getString(R.string.reminder_mode_fixed)).performScrollTo().performClick()
+        assertEquals(ReminderMode.FIXED, reminderChanges.single()(ReminderSettings()).mode)
     }
 }

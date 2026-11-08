@@ -3,6 +3,7 @@ package com.wolf.feelingsdiary.ui.settings
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.InputMode
+import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ThemeMode
 import io.mockk.coEvery
 import io.mockk.every
@@ -19,6 +20,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -61,5 +63,15 @@ class SettingsViewModelTest {
                 ),
                 stored.value,
             )
+        }
+
+    @Test
+    fun successiveReminderUpdatesBothPersist() =
+        runTest {
+            val vm = SettingsViewModel(repo)
+            vm.updateReminders { it.copy(mode = ReminderMode.FIXED) }
+            vm.updateReminders { it.copy(quietStart = LocalTime.of(23, 0)) }
+            assertEquals(ReminderMode.FIXED, stored.value.reminders.mode)
+            assertEquals(LocalTime.of(23, 0), stored.value.reminders.quietStart)
         }
 }

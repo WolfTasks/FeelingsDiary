@@ -1,5 +1,14 @@
 package com.wolf.feelingsdiary.ui.settings
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,16 +47,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.reminder.canPostNotifications
 
-/** Later sections (reminders, input, feelings, privacy) add their callbacks here. */
+/** Later sections (input, feelings, privacy) add their callbacks here. */
 data class SettingsActions(
     val onBack: () -> Unit,
     val onTheme: (ThemeMode) -> Unit,
     val onLanguage: (String?) -> Unit,
+    val onReminders: ((ReminderSettings) -> ReminderSettings) -> Unit,
+    val onRequestNotifications: () -> Unit,
+    val onOpenNotificationSettings: () -> Unit,
 )
 
 private val THEMES =
@@ -69,6 +84,16 @@ fun SettingsRoute(
     val context = LocalContext.current
     // Not part of AppSettings: the system stores the per-app language. A change recreates the activity.
     var language by remember { mutableStateOf(appLanguage(context)) }
+    // Re-read on every resume: the user may have changed it in the system settings meanwhile.
+    var notificationsAllowed by remember { mutableStateOf(canPostNotifications(context)) }
+    LifecycleResumeEffect(Unit) {
+        notificationsAllowed = canPostNotifications(context)
+        onPauseOrDispose {}
+    }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            notificationsAllowed = canPostNotifications(context)
+        }
     val actions =
         SettingsActions(
             onBack = onBack,
@@ -77,19 +102,27 @@ fun SettingsRoute(
                 language = tag
                 setAppLanguage(context, tag)
             },
+            onReminders = vm::updateReminders,
+            onRequestNotifications = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onOpenNotificationSettings = { openNotificationSettings(context) },
         )
-    SettingsScreen(state, actions, language)
+    SettingsScreen(state, actions, language, notificationsAllowed)
 }
 
 /**
  * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy.
- * Reminders, Input, Manage feelings and Privacy follow in later steps and slot in at their place below.
+ * Input, Manage feelings and Privacy follow in later steps and slot in at their place below.
  */
 @Composable
 fun SettingsScreen(
     state: AppSettings,
     actions: SettingsActions,
     language: String?,
+    notificationsAllowed: Boolean = true,
     showLanguage: Boolean = supportsAppLanguage,
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -104,7 +137,15 @@ fun SettingsScreen(
                 Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Reminders, Input and Manage feelings go here.
+                SectionTitle(R.string.settings_section_reminders)
+                ReminderSection(
+                    state.reminders,
+                    notificationsAllowed,
+                    actions.onReminders,
+                    actions.onRequestNotifications,
+                    actions.onOpenNotificationSettings,
+                )
+                // Input and Manage feelings go here.
                 Section(R.string.settings_section_appearance) {
                     THEMES.forEach { (mode, label) -> ChoiceRow(stringResource(label), state.theme == mode) { actions.onTheme(mode) } }
                 }
@@ -125,31 +166,56 @@ private fun Section(
     @StringRes title: Int,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    SectionTitle(title)
+    Column(Modifier.selectableGroup(), content = content)
+}
+
+@Composable
+private fun SectionTitle(
+    @StringRes title: Int,
+) {
     Text(
         stringResource(title),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
     )
-    Column(Modifier.selectableGroup(), content = content)
 }
 
 @Composable
-private fun ChoiceRow(
+internal fun ChoiceRow(
     label: String,
     selected: Boolean,
+    enabled: Boolean = true,
     onSelect: () -> Unit,
 ) {
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton),
+            .selectable(selected = selected, enabled = enabled, onClick = onSelect, role = Role.RadioButton),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // The row handles the tap; the button only shows the state.
-        RadioButton(selected = selected, onClick = null)
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
         Spacer(Modifier.size(12.dp))
-        Text(label, color = MaterialTheme.colorScheme.onSurface)
+        val color = MaterialTheme.colorScheme.onSurface
+        Text(label, color = if (enabled) color else color.copy(alpha = DISABLED_TEXT_ALPHA))
+    }
+}
+
+internal const val DISABLED_TEXT_ALPHA = 0.38f
+
+private fun openNotificationSettings(context: Context) {
+    val intent =
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // Some devices lack this screen; fall back to the app's details page.
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+        )
     }
 }

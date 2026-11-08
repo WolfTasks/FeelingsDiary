@@ -26,7 +26,7 @@ class ReminderNotifier
         private val manager get() = ctx.getSystemService(NotificationManager::class.java)
 
         fun show() {
-            if (!canPost()) return
+            if (!canPostNotifications(ctx)) return
             // Idempotent: re-creating an existing channel only updates its name.
             manager.createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, ctx.getString(R.string.reminder_channel_name), NotificationManager.IMPORTANCE_DEFAULT),
@@ -49,10 +49,6 @@ class ReminderNotifier
 
         fun cancel() = manager.cancel(NOTIFICATION_ID)
 
-        private fun canPost(): Boolean =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-
         companion object {
             const val CHANNEL_ID = "reminders"
             const val NOTIFICATION_ID = 1
@@ -60,3 +56,8 @@ class ReminderNotifier
             private const val PENDING_FLAGS = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         }
     }
+
+/** Below Android 13 notifications need no runtime permission; from 13 on, POST_NOTIFICATIONS must be granted. */
+fun canPostNotifications(ctx: Context): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED

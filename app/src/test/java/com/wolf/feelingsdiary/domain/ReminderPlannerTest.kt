@@ -1,6 +1,7 @@
 package com.wolf.feelingsdiary.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -159,5 +160,29 @@ class ReminderPlannerTest {
     fun allWindowsInQuietGivesNull() {
         val s = ReminderSettings(quietStart = t(0, 1), quietEnd = t(0, 0))
         assertNull(ReminderPlanner.next(s, ZonedDateTime.of(day, t(8), berlin), 1L))
+    }
+
+    @Test
+    fun isQuietHandlesWrapAndNoQuietHours() {
+        val night = ReminderSettings(quietStart = t(22), quietEnd = t(8))
+        assertTrue(ReminderPlanner.isQuiet(t(23, 30), night))
+        assertTrue(ReminderPlanner.isQuiet(t(7, 59), night))
+        assertFalse(ReminderPlanner.isQuiet(t(8), night))
+        assertFalse(ReminderPlanner.isQuiet(t(21, 59), night))
+        val noon = ReminderSettings(quietStart = t(12), quietEnd = t(14))
+        assertTrue(ReminderPlanner.isQuiet(t(13), noon))
+        assertFalse(ReminderPlanner.isQuiet(t(14), noon))
+        assertFalse(ReminderPlanner.isQuiet(t(3), ReminderSettings(quietStart = t(3), quietEnd = t(3))))
+    }
+
+    @Test
+    fun isFullyQuietOnlyWhenEveryMinuteIsQuiet() {
+        val night = ReminderSettings(quietStart = t(22), quietEnd = t(8))
+        assertTrue(ReminderPlanner.isFullyQuiet(w(t(22, 30), t(23)), night))
+        // The window end is exclusive, like the planner's random minutes.
+        assertTrue(ReminderPlanner.isFullyQuiet(w(t(7), t(8)), night))
+        assertFalse(ReminderPlanner.isFullyQuiet(w(t(7), t(8, 1)), night))
+        assertFalse(ReminderPlanner.isFullyQuiet(w(t(21), t(23)), night))
+        assertFalse(ReminderPlanner.isFullyQuiet(w(t(1), t(2)), ReminderSettings(quietStart = t(5), quietEnd = t(5))))
     }
 }

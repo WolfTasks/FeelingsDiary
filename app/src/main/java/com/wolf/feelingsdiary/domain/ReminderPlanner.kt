@@ -26,14 +26,12 @@ object ReminderPlanner {
                 when (s.mode) {
                     ReminderMode.FIXED -> {
                         val time = s.fixedTimes[index].withSecond(0).withNano(0)
-                        time.takeUnless { isQuiet(it.toSecondOfDay() / 60, s) }
+                        time.takeUnless { isQuiet(it, s) }
                     }
 
                     ReminderMode.RANDOM -> {
                         val window = s.windows[index]
-                        val allowed =
-                            (window.start.toSecondOfDay() / 60 until window.end.toSecondOfDay() / 60)
-                                .filterNot { isQuiet(it, s) }
+                        val allowed = windowMinutes(window).filterNot { isQuiet(it, s) }
                         if (allowed.isEmpty()) {
                             null
                         } else {
@@ -62,6 +60,20 @@ object ReminderPlanner {
         }
         return null
     }
+
+    /** Whether [time] (to the minute) lies in the quiet hours; quiet start == end means no quiet hours. */
+    fun isQuiet(
+        time: LocalTime,
+        s: ReminderSettings,
+    ): Boolean = isQuiet(time.toSecondOfDay() / 60, s)
+
+    /** Whether every minute of [window] (end exclusive) is quiet, so the planner never picks a time in it. */
+    fun isFullyQuiet(
+        window: TimeWindow,
+        s: ReminderSettings,
+    ): Boolean = windowMinutes(window).all { isQuiet(it, s) }
+
+    private fun windowMinutes(window: TimeWindow) = window.start.toSecondOfDay() / 60 until window.end.toSecondOfDay() / 60
 
     private fun isQuiet(
         minuteOfDay: Int,
