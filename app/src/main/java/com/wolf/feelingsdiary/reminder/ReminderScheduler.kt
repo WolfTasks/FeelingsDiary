@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -46,7 +47,12 @@ class ReminderScheduler
                 if (!active) notifier.cancel()
                 val now = ZonedDateTime.now(clock)
                 val lastShown = settings.lastReminderShown()?.let(Instant::ofEpochMilli)
-                val after = lastShown?.takeIf { it.isAfter(now.toInstant()) }?.atZone(now.zone) ?: now
+                // Only a slot just ahead counts (early alarm); one far ahead means the clock was set back.
+                val nowInstant = now.toInstant()
+                val after =
+                    lastShown
+                        ?.takeIf { it.isAfter(nowInstant) && it <= nowInstant.plus(LAST_SHOWN_TOLERANCE) }
+                        ?.atZone(now.zone) ?: now
                 val next = if (active) ReminderPlanner.next(reminders, after, settings.reminderSalt()) else null
                 if (next == null) {
                     alarms.cancel(alarmIntent(target = null))
@@ -79,8 +85,12 @@ class ReminderScheduler
             } finally {
                 // Never the same slot twice, should the reminder have come within the tolerance before it:
                 // remembered, so that any other caller of reschedule() skips the slot too.
-                if (target != null) settings.setLastReminderShown(target.toEpochMilli())
-                reschedule()
+                // A failing write must not break the chain: reschedule() runs in any case.
+                try {
+                    if (target != null) settings.setLastReminderShown(target.toEpochMilli())
+                } finally {
+                    reschedule()
+                }
             }
         }
 
@@ -98,5 +108,6 @@ class ReminderScheduler
         companion object {
             const val EXTRA_TARGET_EPOCH_MILLIS = "target_epoch_millis"
             private const val REQUEST_ALARM = 1
+            private val LAST_SHOWN_TOLERANCE = Duration.ofMinutes(2)
         }
     }

@@ -12,6 +12,7 @@ import com.wolf.feelingsdiary.di.SystemZoneClock
 import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ReminderPlanner
 import com.wolf.feelingsdiary.domain.ReminderSettings
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.spyk
 import io.mockk.verify
@@ -316,6 +317,29 @@ class ReminderSchedulerTest {
             scheduler.reschedule()
             assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
             assertEquals(1, notifications.size)
+        }
+
+    /** A clock set back leaves lastShown far ahead; it must not suppress the coming slots. */
+    @Test
+    fun lastShownFarInTheFutureIsIgnored() =
+        runTest {
+            setUp()
+            fixedSlots()
+            repo.setLastReminderShown(now.plusDays(1).toInstant().toEpochMilli())
+            scheduler.reschedule()
+            assertEquals(at(10).toInstant().toEpochMilli(), alarmTarget())
+        }
+
+    @Test
+    fun failingWriteOfLastShownStillReschedules() =
+        runTest {
+            setUp(Clock.fixed(at(9, 59, 30).toInstant(), zone))
+            fixedSlots()
+            val failing = spyk(repo) { coEvery { setLastReminderShown(any()) } throws IllegalStateException("disk") }
+            scheduler = ReminderScheduler(app, failing, Clock.fixed(at(9, 59, 30).toInstant(), zone), notifier)
+            val error = runCatching { scheduler.onAlarm(at(10).toInstant().toEpochMilli()) }.exceptionOrNull()
+            assertEquals("disk", error?.message)
+            assertEquals(1, alarms.size)
         }
 
     @Test
