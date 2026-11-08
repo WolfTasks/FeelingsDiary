@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -100,6 +101,16 @@ class SettingsRepositoryTest {
                 it[intPreferencesKey("backup_enabled")] = 1
             }
             assertEquals(AppSettings(), SettingsRepository(store).settings.first())
+        }
+
+    @Test
+    fun lastKnownFollowsEmittedSettings() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repo = SettingsRepository(store())
+            assertNull(repo.lastKnown)
+            repo.update { it.copy(theme = ThemeMode.LIGHT) }
+            val emitted = repo.settings.first()
+            assertEquals(emitted, repo.lastKnown)
         }
 
     @Test

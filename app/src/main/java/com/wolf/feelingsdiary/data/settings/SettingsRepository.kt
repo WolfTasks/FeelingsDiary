@@ -18,11 +18,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import java.io.IOException
 import java.time.LocalTime
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.random.Random
 
+@Singleton
 class SettingsRepository
     @Inject
     constructor(
@@ -32,7 +35,15 @@ class SettingsRepository
         private val prefs: Flow<Preferences> =
             store.data.catch { if (it is IOException) emit(emptyPreferences()) else throw it }
 
-        val settings: Flow<AppSettings> = prefs.map { it.toSettings() }
+        /**
+         * The settings last read by any collector, null before the first read. Lets a recreated screen start
+         * with them instead of defaults (no dark flash for light-theme users); process-wide via @Singleton.
+         */
+        @Volatile
+        var lastKnown: AppSettings? = null
+            private set
+
+        val settings: Flow<AppSettings> = prefs.map { it.toSettings() }.onEach { lastKnown = it }
 
         suspend fun update(transform: (AppSettings) -> AppSettings) {
             store.edit { prefs -> prefs.write(transform(prefs.toSettings())) }

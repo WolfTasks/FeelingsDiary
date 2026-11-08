@@ -36,11 +36,23 @@ class SettingsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         every { repo.settings } returns stored
+        every { repo.lastKnown } returns null
         coEvery { repo.update(any()) } answers { stored.value = firstArg<(AppSettings) -> AppSettings>()(stored.value) }
     }
 
     @After
     fun tearDown() = Dispatchers.resetMain()
+
+    /** A recreated screen shows the last known settings at once, not the defaults first. */
+    @Test
+    fun stateStartsFromLastKnownSettings() {
+        val known = AppSettings(theme = ThemeMode.LIGHT, input = InputMode.QUICK_SHEET)
+        every { repo.lastKnown } returns known
+        assertEquals(known, SettingsViewModel(repo, backup).state.value)
+    }
+
+    @Test
+    fun stateStartsFromDefaultsWithoutKnownSettings() = assertEquals(AppSettings(), SettingsViewModel(repo, backup).state.value)
 
     @Test
     fun setThemePersists() =

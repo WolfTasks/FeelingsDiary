@@ -1,5 +1,6 @@
 package com.wolf.feelingsdiary.ui.theme
 
+import android.content.res.Configuration
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -12,6 +13,14 @@ fun ThemeMode.isDark(): Boolean =
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+/** [isDark] outside composition, e.g. before the first frame; SYSTEM follows [configuration]'s night mode. */
+fun ThemeMode.isDark(configuration: Configuration): Boolean =
+    when (this) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     }
 
 @Composable

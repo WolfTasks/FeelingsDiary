@@ -22,8 +22,9 @@ class SettingsViewModel
         private val repo: SettingsRepository,
         private val backup: BackupNotifier,
     ) : ViewModel() {
+        // Starts from the last known settings, so a recreated screen does not show the defaults first.
         val state: StateFlow<AppSettings> =
-            repo.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), AppSettings())
+            repo.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), repo.lastKnown ?: AppSettings())
 
         fun setTheme(theme: ThemeMode) = update { it.copy(theme = theme) }
 

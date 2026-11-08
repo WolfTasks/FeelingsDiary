@@ -36,9 +36,12 @@ class MainActivity : ComponentActivity() {
     lateinit var localeSource: LocaleSource
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Same edge-to-edge layout on every API level. Dark until the settings are loaded, so dark users never see a light flash.
-        applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
+        // Until the settings are loaded: the last known theme (activity recreation), or dark on a cold start,
+        // so neither dark nor light users see a flash of the other theme.
+        val initialTheme = settingsRepository.lastKnown?.theme ?: ThemeMode.DARK
+        // Same edge-to-edge layout on every API level.
+        applySystemBars(initialTheme.isDark(resources.configuration))
         // A language change recreates the activity: the new locale relabels feelings in the surviving ViewModels.
         localeSource.update(resources.configuration.locales[0])
         // On recreation (rotation, process death) the launch intent was already handled.
@@ -46,7 +49,7 @@ class MainActivity : ComponentActivity() {
         val requests = newEntryRequests.receiveAsFlow()
         val themes = settingsRepository.settings.map { it.theme }.distinctUntilChanged()
         setContent {
-            val theme by themes.collectAsStateWithLifecycle(ThemeMode.DARK)
+            val theme by themes.collectAsStateWithLifecycle(initialTheme)
             val dark = theme.isDark()
             LaunchedEffect(dark) { applySystemBars(dark) }
             FeelingsDiaryTheme(theme) {
