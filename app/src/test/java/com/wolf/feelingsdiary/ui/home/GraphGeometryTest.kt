@@ -63,4 +63,22 @@ class GraphGeometryTest {
         assertEquals(emptyList<Int>(), visibleLabelIndices(emptyList(), emptyList(), 8f))
         assertEquals(listOf(0), visibleLabelIndices(listOf(0f, 1f), listOf(50f, 50f), 8f))
     }
+
+    @Test
+    fun plotRectHonoursCustomHorizontalMargins() {
+        val r = plotRect(width = 480f, height = 400f, density = 2f, leftPx = 150f, rightPx = 90f)
+        assertEquals(150f, r.left, 0.001f)
+        assertEquals(390f, r.right, 0.001f)
+        assertEquals(16f, r.top, 0.001f)
+    }
+
+    @Test
+    fun marginsWidenForWideLabelsAndKeepMinimums() {
+        val wide = graphMargins(listOf(60, 140, 90), listOf(10, 70), gapPx = 8f, density = 2f)
+        assertEquals(148f, wide.leftPx, 0.001f)
+        assertEquals(78f, wide.rightPx, 0.001f)
+        val narrow = graphMargins(listOf(20), listOf(5), gapPx = 8f, density = 2f)
+        assertEquals(96f, narrow.leftPx, 0.001f)
+        assertEquals(56f, narrow.rightPx, 0.001f)
+    }
 }

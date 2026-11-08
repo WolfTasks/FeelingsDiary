@@ -2,6 +2,7 @@ package com.wolf.feelingsdiary.ui.home
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -10,12 +11,14 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.wolf.feelingsdiary.domain.Aggregation
 import com.wolf.feelingsdiary.domain.GraphData
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,5 +83,33 @@ class HistoryGraphTest {
     fun hasGraphDescription() {
         show(data(point(0.25f, 1), point(0.75f, 2)))
         rule.onNodeWithContentDescription("Graph, 2 entries").assertExists()
+    }
+
+    @Test
+    fun tapOnPointStillWorksWithLargeFontAndWidenedMargins() {
+        val points = listOf(point(0.25f, 1), point(0.75f, 2))
+        var margins: GraphMargins? = null
+        rule.setContent {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale = 2f)) {
+                FeelingsDiaryTheme {
+                    margins = rememberGraphMargins(data(*points.toTypedArray()).peopleScaleMax)
+                    HistoryGraph(
+                        data = data(*points.toTypedArray()),
+                        colorOf = { Color.Red },
+                        xLabels = emptyList(),
+                        onPointTap = { tapped = it },
+                        modifier = Modifier.size(width, height),
+                    )
+                }
+            }
+        }
+        val m = checkNotNull(margins)
+        val d = rule.density.density
+        assertTrue(m.leftPx >= 48f * d)
+        val plot = plotRect(width.value * d, height.value * d, d, m.leftPx, m.rightPx)
+        val target = pointOffsets(points, plot)[0]
+        rule.onNodeWithContentDescription("Graph, 2 entries").performTouchInput { click(Offset(target.x, target.y)) }
+        assertEquals(points[0], tapped)
     }
 }

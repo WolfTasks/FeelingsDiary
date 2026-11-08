@@ -4,8 +4,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import com.wolf.feelingsdiary.domain.GraphPoint
 
-private const val MARGIN_LEFT_DP = 48f
-private const val MARGIN_RIGHT_DP = 28f
+const val MARGIN_LEFT_DP = 48f
+const val MARGIN_RIGHT_DP = 28f
 private const val MARGIN_TOP_DP = 8f
 private const val MARGIN_BOTTOM_DP = 20f
 private const val MAX_VALENCE = 2f
@@ -14,11 +14,13 @@ fun plotRect(
     width: Float,
     height: Float,
     density: Float,
+    leftPx: Float = MARGIN_LEFT_DP * density,
+    rightPx: Float = MARGIN_RIGHT_DP * density,
 ): Rect =
     Rect(
-        left = MARGIN_LEFT_DP * density,
+        left = leftPx,
         top = MARGIN_TOP_DP * density,
-        right = width - MARGIN_RIGHT_DP * density,
+        right = width - rightPx,
         bottom = height - MARGIN_BOTTOM_DP * density,
     )
 
@@ -69,3 +71,20 @@ fun visibleLabelIndices(
     }
     return result
 }
+
+/** Horizontal plot margins in px, widened so the axis labels fit at any font scale. */
+data class GraphMargins(
+    val leftPx: Float,
+    val rightPx: Float,
+)
+
+fun graphMargins(
+    leftLabelWidths: List<Int>,
+    rightLabelWidths: List<Int>,
+    gapPx: Float,
+    density: Float,
+): GraphMargins =
+    GraphMargins(
+        leftPx = maxOf(MARGIN_LEFT_DP * density, (leftLabelWidths.maxOrNull() ?: 0) + gapPx),
+        rightPx = maxOf(MARGIN_RIGHT_DP * density, (rightLabelWidths.maxOrNull() ?: 0) + gapPx),
+    )

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -60,16 +62,13 @@ fun HistoryGraph(
     val measurer = rememberTextMeasurer()
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val primary = MaterialTheme.colorScheme.primary
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = onSurfaceVariant, fontSize = 10.sp)
-    val valenceTexts =
-        listOf(
-            stringResource(R.string.valence_good),
-            stringResource(R.string.valence_neutral),
-            stringResource(R.string.valence_bad),
-        )
+    val labelStyle = graphLabelStyle()
+    val valenceTexts = valenceTexts()
+    val margins = rememberGraphMargins(data.peopleScaleMax)
     val description = pluralStringResource(R.plurals.history_graph_cd, data.points.size, data.points.size)
     val currentData by rememberUpdatedState(data)
     val currentTap by rememberUpdatedState(onPointTap)
+    val currentMargins by rememberUpdatedState(margins)
 
     Canvas(
         modifier =
@@ -79,13 +78,14 @@ fun HistoryGraph(
                 .semantics { contentDescription = description }
                 .pointerInput(Unit) {
                     detectTapGestures { tap ->
-                        val plot = plotRect(size.width.toFloat(), size.height.toFloat(), density)
+                        val plot =
+                            plotRect(size.width.toFloat(), size.height.toFloat(), density, currentMargins.leftPx, currentMargins.rightPx)
                         val points = currentData.points
                         hitTest(pointOffsets(points, plot), tap, TAP_RADIUS.toPx())?.let { currentTap(points[it]) }
                     }
                 },
     ) {
-        val plot = plotRect(size.width, size.height, density)
+        val plot = plotRect(size.width, size.height, density, margins.leftPx, margins.rightPx)
         val offsets = pointOffsets(data.points, plot)
 
         // Unknown feelings arrive as Color.Unspecified and fall back to onSurfaceVariant.
@@ -162,7 +162,7 @@ private fun DrawScope.drawAxisLabels(
 
     listOf(2f, 0f, -2f).zip(valenceTexts).forEach { (v, s) ->
         val t = measurer.measure(s, style, maxLines = 1)
-        drawText(t, topLeft = Offset(plot.left - gap - t.size.width, valenceToY(v, plot) - t.size.height / 2f))
+        drawText(t, topLeft = Offset((plot.left - gap - t.size.width).coerceAtLeast(0f), valenceToY(v, plot) - t.size.height / 2f))
     }
     listOf(0 to plot.bottom, peopleMax to plot.top).forEach { (n, y) ->
         val t = measurer.measure(n.toString(), style, maxLines = 1)
@@ -175,5 +175,31 @@ private fun DrawScope.drawAxisLabels(
         }
     visibleLabelIndices(lefts, measured.map { it.size.width.toFloat() }, gap).forEach { i ->
         drawText(measured[i], topLeft = Offset(lefts[i], plot.bottom + gap))
+    }
+}
+
+@Composable
+private fun valenceTexts() =
+    listOf(
+        stringResource(R.string.valence_good),
+        stringResource(R.string.valence_neutral),
+        stringResource(R.string.valence_bad),
+    )
+
+@Composable
+private fun graphLabelStyle(): TextStyle =
+    MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+
+@Composable
+internal fun rememberGraphMargins(peopleScaleMax: Int): GraphMargins {
+    val measurer = rememberTextMeasurer()
+    val style = graphLabelStyle()
+    val texts = valenceTexts()
+    val density = LocalDensity.current
+    return remember(texts, style, peopleScaleMax, density) {
+        val gap = LABEL_GAP.value * density.density
+
+        fun width(s: String) = measurer.measure(s, style, maxLines = 1).size.width
+        graphMargins(texts.map(::width), listOf(width("0"), width(peopleScaleMax.toString())), gap, density.density)
     }
 }
