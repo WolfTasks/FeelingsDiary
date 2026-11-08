@@ -167,9 +167,12 @@ private fun DrawScope.drawAxisLabels(
         val t = measurer.measure(n.toString(), style, maxLines = 1)
         drawText(t, topLeft = Offset(plot.right + gap, y - t.size.height / 2f))
     }
-    xLabels.forEach { l ->
-        val t = measurer.measure(l.text, style, maxLines = 1)
-        val x = (plot.left + l.x * plot.width - t.size.width / 2f).coerceIn(0f, size.width - t.size.width)
-        drawText(t, topLeft = Offset(x, plot.bottom + gap))
+    val measured = xLabels.map { measurer.measure(it.text, style, maxLines = 1) }
+    val lefts =
+        xLabels.mapIndexed { i, l ->
+            (plot.left + l.x * plot.width - measured[i].size.width / 2f).coerceIn(0f, size.width - measured[i].size.width)
+        }
+    visibleLabelIndices(lefts, measured.map { it.size.width.toFloat() }, gap).forEach { i ->
+        drawText(measured[i], topLeft = Offset(lefts[i], plot.bottom + gap))
     }
 }

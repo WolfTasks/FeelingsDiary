@@ -52,3 +52,20 @@ fun hitTest(
         .filter { it.second <= maxDistancePx }
         .minByOrNull { it.second }
         ?.first
+
+/** Indices of labels to draw: the first, then each label starting at least [minGapPx] after the last drawn one ends. */
+fun visibleLabelIndices(
+    lefts: List<Float>,
+    widths: List<Float>,
+    minGapPx: Float,
+): List<Int> {
+    val result = mutableListOf<Int>()
+    var lastRight = Float.NEGATIVE_INFINITY
+    lefts.indices.forEach { i ->
+        if (result.isEmpty() || lefts[i] - lastRight >= minGapPx) {
+            result += i
+            lastRight = lefts[i] + widths[i]
+        }
+    }
+    return result
+}

@@ -46,4 +46,21 @@ class GraphGeometryTest {
     fun hitTestOnEmptyListReturnsNull() {
         assertNull(hitTest(emptyList(), Offset(0f, 0f), 24f))
     }
+
+    @Test
+    fun visibleLabelsSkipOverlappingOnes() {
+        // label 1 starts 5 px after label 0 ends (< 8 px gap) and is skipped; label 2 is far enough from 0.
+        assertEquals(listOf(0, 2), visibleLabelIndices(listOf(0f, 25f, 60f), listOf(20f, 20f, 20f), 8f))
+    }
+
+    @Test
+    fun visibleLabelsKeepAllWhenSpaced() {
+        assertEquals(listOf(0, 1, 2), visibleLabelIndices(listOf(0f, 30f, 60f), listOf(20f, 20f, 20f), 8f))
+    }
+
+    @Test
+    fun visibleLabelsEmptyAndFirstAlwaysKept() {
+        assertEquals(emptyList<Int>(), visibleLabelIndices(emptyList(), emptyList(), 8f))
+        assertEquals(listOf(0), visibleLabelIndices(listOf(0f, 1f), listOf(50f, 50f), 8f))
+    }
 }
