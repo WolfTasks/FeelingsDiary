@@ -78,6 +78,15 @@ class ReminderSectionTest {
     }
 
     @Test
+    fun countThreeShowsMorningMiddayAndEvening() {
+        show(ReminderSettings(count = 3))
+        rule.onNodeWithText(str(R.string.reminder_window_morning)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_window_midday)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_window_evening)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_window_afternoon)).assertDoesNotExist()
+    }
+
+    @Test
     fun countButtonChangesCount() {
         show(ReminderSettings(count = 2))
         rule.onNodeWithText("4").performClick()

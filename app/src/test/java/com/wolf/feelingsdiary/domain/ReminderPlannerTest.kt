@@ -32,7 +32,7 @@ class ReminderPlannerTest {
     fun activeIndicesFollowTable() {
         assertEquals(listOf(2), ReminderPlanner.activeIndices(1))
         assertEquals(listOf(0, 3), ReminderPlanner.activeIndices(2))
-        assertEquals(listOf(0, 2, 3), ReminderPlanner.activeIndices(3))
+        assertEquals(listOf(0, 1, 3), ReminderPlanner.activeIndices(3))
         assertEquals(listOf(0, 1, 2, 3), ReminderPlanner.activeIndices(4))
     }
 
@@ -114,7 +114,7 @@ class ReminderPlannerTest {
                 mode = ReminderMode.FIXED,
                 fixedTimes = listOf(t(9), t(12), t(16), t(23)),
             )
-        assertEquals(listOf(t(9), t(16)), ReminderPlanner.slotsFor(day, s, 1L))
+        assertEquals(listOf(t(9), t(12)), ReminderPlanner.slotsFor(day, s, 1L))
     }
 
     @Test

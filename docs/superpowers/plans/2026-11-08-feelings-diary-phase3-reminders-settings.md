@@ -33,6 +33,7 @@ Legende: ✅ erledigt + reviewt · 🔄 in Arbeit · ⏳ offen. Bei ✅-Tasks si
 | 10c | Verspätung begrenzen (Etappen-Planung, einstellbar) | ✅ | `b3ab809` |
 | 10d | Hinweis „Akku nicht einschränken“ (Samsung Freecess) | ✅ | `f69b976` |
 | 10e | Nacharbeit 10c: ehrliche Beschriftung, keine Doppel-Erinnerung | ✅ | `5942312`..`9b0fcbf` |
+| 10f | Bei 3 Erinnerungen Vormittag/Mittag/Abend | ✅ | `TBD` |
 | Gesamt-Review + Fix-Runde | Abschluss-Review über Tasks 1–10, 9 Korrekturen | ✅ | `40cee5b`..`cee1b4d` |
 | 11 | Gerätetest, Doku, PR | 🔄 | Doku `b529f1d`, `237126f`; Gerätetest ✅ (Samsung-Freecess → 10d); PR offen |
 
@@ -56,7 +57,7 @@ Legende: ✅ erledigt + reviewt · 🔄 in Arbeit · ⏳ offen. Bei ✅-Tasks si
 | # | Frage | Entscheidung im Plan |
 |---|---|---|
 | E1 | Alarm-Technik | `AlarmManager.setAndAllowWhileIdle(RTC_WAKEUP, …)` für **genau die nächste** Erinnerung; nach dem Auslösen wird die übernächste geplant. Kein WorkManager (unter Doze stundenlang verzögerbar). |
-| E2 | Welche Fenster bei < 4 Erinnerungen | Feste Tabelle über Fenster-Index (0 = Vormittag … 3 = Abend): 4 → 0,1,2,3 · 3 → 0,2,3 · 2 → 0,3 · 1 → 2. Gilt gleich für feste Uhrzeiten. Alle 4 Fenster/Zeiten bleiben gespeichert; die Einstellungen zeigen nur die aktiven. |
+| E2 | Welche Fenster bei < 4 Erinnerungen | Feste Tabelle über Fenster-Index (0 = Vormittag … 3 = Abend): 4 → 0,1,2,3 · 3 → 0,1,3 · 2 → 0,3 · 1 → 2. Gilt gleich für feste Uhrzeiten. Alle 4 Fenster/Zeiten bleiben gespeichert; die Einstellungen zeigen nur die aktiven. (geändert 2026-11-08 auf Wunsch von Wolfgang: bei 3 Vormittag, Mittag, Abend) |
 | E3 | Zufall | Je Tag und Fenster eine Minute, deterministisch aus `Random(salt xor epochDay * 31 + index)`; `salt` wird einmalig zufällig erzeugt und gespeichert. Neu-Planen (Boot, Einstellungsänderung) ergibt dieselbe Zeit, ein Fenster feuert nie zweimal am Tag. |
 | E4 | Nachtruhe vs. Fenster | Erlaubt sind nur Minuten außerhalb der Nachtruhe (die über Mitternacht laufen kann). Fenster wird darauf beschnitten; liegt es ganz in der Nachtruhe, entfällt es. Feste Zeit in der Nachtruhe entfällt. Einstellungen zeigen dann einen Hinweis. |
 | E5 | Verpasste Erinnerung | Benachrichtigung bleibt stehen, bis die nächste sie ersetzt (gleiche ID). Speichern eines Eintrags entfernt sie. Eintrag bekommt den Zeitpunkt der Eingabe (Spec 7). |

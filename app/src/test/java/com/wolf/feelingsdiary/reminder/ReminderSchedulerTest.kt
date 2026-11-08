@@ -88,7 +88,7 @@ class ReminderSchedulerTest {
         maxDelay: Int = 15,
     ) = ReminderPlanner.nextWake(target.toInstant(), at.toInstant(), maxDelay).toEpochMilli()
 
-    // Fixed slots 10, 13, 16, 20 h: salt-free, so a test can deliver an alarm exactly at its slot.
+    // Fixed slots 10, 13, 16, 20 h (default count 3 uses 10, 13, 20): salt-free, so a test can deliver an alarm exactly at its slot.
     private suspend fun fixedSlots(maxDelay: Int = 15) =
         repo.update { it.copy(reminders = it.reminders.copy(mode = ReminderMode.FIXED, maxDelayMinutes = maxDelay)) }
 
@@ -288,8 +288,8 @@ class ReminderSchedulerTest {
             time = target.plusMinutes(4).toInstant()
             scheduler.onAlarm(target.toInstant().toEpochMilli())
             assertEquals(1, notifications.size)
-            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
-            assertEquals(wakeMs(at(16), target.plusMinutes(4)), alarms.single().triggerAtMs)
+            assertEquals(at(13).toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(wakeMs(at(13), target.plusMinutes(4)), alarms.single().triggerAtMs)
         }
 
     /** Within the stage tolerance the alarm counts as the reminder; the same slot must not be planned again. */
@@ -302,7 +302,7 @@ class ReminderSchedulerTest {
             fixedSlots()
             scheduler.onAlarm(at(10).toInstant().toEpochMilli())
             assertEquals(1, notifications.size)
-            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(at(13).toInstant().toEpochMilli(), alarmTarget())
         }
 
     /** Another caller (cold start, boot, settings change) must not plan the slot again that was just reminded. */
@@ -315,7 +315,7 @@ class ReminderSchedulerTest {
             scheduler.onAlarm(at(10).toInstant().toEpochMilli())
             assertEquals(1, notifications.size)
             scheduler.reschedule()
-            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(at(13).toInstant().toEpochMilli(), alarmTarget())
             assertEquals(1, notifications.size)
         }
 

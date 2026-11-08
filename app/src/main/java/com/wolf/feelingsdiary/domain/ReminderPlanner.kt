@@ -14,7 +14,7 @@ object ReminderPlanner {
         when (count) {
             1 -> listOf(2)
             2 -> listOf(0, 3)
-            3 -> listOf(0, 2, 3)
+            3 -> listOf(0, 1, 3)
             else -> listOf(0, 1, 2, 3)
         }
 

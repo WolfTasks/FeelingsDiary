@@ -39,7 +39,7 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 
 ### 5.1 Erinnerungen
 - Anzahl pro Tag: 1–4 (Einstellung, Standard 3).
-- **Standard: zufälliger Zeitpunkt innerhalb von Zeitfenstern.** Vorschlag Standardfenster (Claude-Vorschlag, einstellbar): Vormittag 09–11, Mittag 12–14, Nachmittag 15–17, Abend 19–21. Bei weniger als 4 Erinnerungen werden entsprechend weniger Fenster genutzt; Fenster sind editierbar.
+- **Standard: zufälliger Zeitpunkt innerhalb von Zeitfenstern.** Vorschlag Standardfenster (Claude-Vorschlag, einstellbar): Vormittag 09–11, Mittag 12–14, Nachmittag 15–17, Abend 19–21. Bei weniger als 4 Erinnerungen werden entsprechend weniger Fenster genutzt (3 → Vormittag, Mittag, Abend; 2 → Vormittag, Abend; 1 → Nachmittag); Fenster sind editierbar.
 - **Optional (Einstellung): feste Uhrzeiten** statt Zufall.
 - Nachtruhe-Bereich, in dem nie erinnert wird (Claude-Vorschlag, Standard 22–08).
 - Tipp auf die Benachrichtigung öffnet direkt die Eingabe.
