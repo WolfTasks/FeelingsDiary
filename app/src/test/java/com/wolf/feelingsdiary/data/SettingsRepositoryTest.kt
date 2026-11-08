@@ -1,6 +1,7 @@
 package com.wolf.feelingsdiary.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -83,6 +84,22 @@ class SettingsRepositoryTest {
             assertEquals(ReminderSettings.DEFAULT_WINDOWS, s.reminders.windows)
             assertEquals(ThemeMode.DARK, s.theme)
             assertEquals(InputMode.QUICK_SHEET, s.input)
+        }
+
+    @Test
+    fun wrongStoredTypeFallsBackPerField() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit {
+                it[stringPreferencesKey("reminder_enabled")] = "yes"
+                it[stringPreferencesKey("reminder_count")] = "two"
+                it[intPreferencesKey("theme")] = 1
+                it[stringPreferencesKey("quiet_start")] = "x"
+                it[stringPreferencesKey("onboarding_done")] = "x"
+                it[booleanPreferencesKey("input_mode")] = true
+                it[intPreferencesKey("backup_enabled")] = 1
+            }
+            assertEquals(AppSettings(), SettingsRepository(store).settings.first())
         }
 
     @Test

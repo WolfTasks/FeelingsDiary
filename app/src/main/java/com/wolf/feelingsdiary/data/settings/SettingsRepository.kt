@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -14,8 +15,10 @@ import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
 import com.wolf.feelingsdiary.domain.TimeWindow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.random.Random
@@ -25,17 +28,21 @@ class SettingsRepository
     constructor(
         private val store: DataStore<Preferences>,
     ) {
-        val settings: Flow<AppSettings> = store.data.map { it.toSettings() }
+        // A failed read (I/O error, corrupt file) yields the defaults rather than breaking every screen.
+        private val prefs: Flow<Preferences> =
+            store.data.catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+
+        val settings: Flow<AppSettings> = prefs.map { it.toSettings() }
 
         suspend fun update(transform: (AppSettings) -> AppSettings) {
             store.edit { prefs -> prefs.write(transform(prefs.toSettings())) }
         }
 
         suspend fun reminderSalt(): Long {
-            store.data.first()[SALT]?.let { return it }
+            prefs.first().typed(SALT)?.let { return it }
             var result = 0L
             store.edit { prefs ->
-                result = prefs[SALT] ?: Random.nextLong().also { prefs[SALT] = it }
+                result = prefs.typed(SALT) ?: Random.nextLong().also { prefs[SALT] = it }
             }
             return result
         }
@@ -57,7 +64,10 @@ class SettingsRepository
             private const val MINUTES_PER_DAY = 24 * 60
 
             /** The backup flag alone, for callers outside Hilt (the backup agent); default off. */
-            fun backupEnabled(prefs: Preferences): Boolean = prefs[BACKUP] ?: false
+            fun backupEnabled(prefs: Preferences): Boolean = prefs.typed(BACKUP) ?: false
+
+            /** The value of [key], or null when absent or stored with another type (then the field default applies). */
+            private inline fun <reified T : Any> Preferences.typed(key: Preferences.Key<T>): T? = asMap()[key] as? T
         }
 
         private fun minutes(t: LocalTime) = t.hour * 60 + t.minute
@@ -90,18 +100,18 @@ class SettingsRepository
             return AppSettings(
                 reminders =
                     ReminderSettings(
-                        enabled = this[ENABLED] ?: d.enabled,
-                        count = this[COUNT]?.takeIf { it in 1..4 } ?: d.count,
-                        mode = enumOr(this[MODE], d.mode),
-                        windows = parseWindows(this[WINDOWS]) ?: d.windows,
-                        fixedTimes = parseTimes(this[FIXED]) ?: d.fixedTimes,
-                        quietStart = this[QUIET_START]?.let(::time) ?: d.quietStart,
-                        quietEnd = this[QUIET_END]?.let(::time) ?: d.quietEnd,
+                        enabled = typed(ENABLED) ?: d.enabled,
+                        count = typed(COUNT)?.takeIf { it in 1..4 } ?: d.count,
+                        mode = enumOr(typed(MODE), d.mode),
+                        windows = parseWindows(typed(WINDOWS)) ?: d.windows,
+                        fixedTimes = parseTimes(typed(FIXED)) ?: d.fixedTimes,
+                        quietStart = typed(QUIET_START)?.let(::time) ?: d.quietStart,
+                        quietEnd = typed(QUIET_END)?.let(::time) ?: d.quietEnd,
                     ),
-                theme = enumOr(this[THEME], ThemeMode.DARK),
-                input = enumOr(this[INPUT], InputMode.SCREEN),
+                theme = enumOr(typed(THEME), ThemeMode.DARK),
+                input = enumOr(typed(INPUT), InputMode.SCREEN),
                 backupEnabled = backupEnabled(this),
-                onboardingDone = this[ONBOARDING] ?: false,
+                onboardingDone = typed(ONBOARDING) ?: false,
             )
         }
 
