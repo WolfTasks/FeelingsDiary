@@ -15,6 +15,6 @@ data class EntryUiState(
     val saved: Boolean,
     /** Local time of the entry being edited; null for a new entry. */
     val editingTime: LocalDateTime? = null,
-    /** Chips of the quick sheet: recently used feelings, then selected ones not among them. */
+    /** Chips of the quick sheet: recently used feelings, filled up from the base list, then selected ones not among them. */
     val quick: List<Feeling> = emptyList(),
 )
