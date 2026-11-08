@@ -29,6 +29,19 @@ class TimeFormatTest {
         assertEquals("UTC+14", formatUtcOffset(840))
     }
 
+    /** The offset is a technical label: ASCII digits even when the default locale uses other ones. */
+    @Test
+    fun utcOffsetIgnoresDefaultLocaleDigits() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG-u-nu-arab"))
+            assertEquals("UTC+5:30", formatUtcOffset(330))
+            assertEquals("UTC-9:45", formatUtcOffset(-585))
+        } finally {
+            Locale.setDefault(original)
+        }
+    }
+
     @Test
     fun entryTimeFollowsLocale() {
         assertEquals("07.11.26, 19:22", formatEntryTime(time, Locale.GERMANY))
