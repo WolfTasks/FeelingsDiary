@@ -1,6 +1,6 @@
 # Gefühls-Tagebuch (Arbeitstitel) – Design
 
-Stand: 2026-11-07 · Autor: Wolfgang Kozian (mit Claude) · Status: Entwurf zur Freigabe (nach Builder-Check überarbeitet)
+Stand: 2026-11-08 (Phase 3 in Umsetzung, siehe Abschnitt 10) · Autor: Wolfgang Kozian (mit Claude) · Status: Entwurf zur Freigabe (nach Builder-Check überarbeitet)
 
 ## 1. Absicht und Warum
 
@@ -44,6 +44,7 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 - Nachtruhe-Bereich, in dem nie erinnert wird (Claude-Vorschlag, Standard 22–08).
 - Tipp auf die Benachrichtigung öffnet direkt die Eingabe.
 - Einträge sind jederzeit auch ohne Erinnerung möglich (Knopf „+ Wie fühlst du dich?“ im Verlauf).
+- (Phase 3, 2026-11-08: Die Erinnerung ist ein Popup (Heads-up) mit dem Standard-Benachrichtigungston; ein Alarmton ist optional einstellbar. Die Genauigkeit ist einstellbar: höchstens 5/15/60 Min. später als geplant, Standard 15. Auf manchen Geräten (z. B. Samsung) kommen Erinnerungen nur pünktlich, wenn der Akku für die App auf „Nicht eingeschränkt“ steht; die App weist darauf hin. Erinnerungen werden erst nach dem Onboarding geplant.)
 
 - Feste Uhrzeiten dürfen ein paar Minuten ungenau sein: **keine** Sonderberechtigung für exakte Alarme (`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`), damit die App Play-Store-tauglich bleibt.
 
@@ -63,6 +64,7 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 - Filter-Chips **Jahr / Monat / Woche / Tag** plus Blättern ‹ › zum vorigen/nächsten Zeitraum. Der Wunsch „Tage“ wird als **frei wählbarer Tagesbereich** umgesetzt (Datumsbereich-Auswahl, zusätzlich zu „Woche“).
 - Tipp auf einen Punkt zeigt den Eintrag (Zeit, alle Gefühle, Personen) mit Bearbeiten/Löschen.
 - Legende der Gefühlsfarben unter dem Graphen.
+- (Phase 3, 2026-11-08: Die Reihenfolge der Punkte folgt der echten Zeit, auch über Zeitumstellung und Zeitzonenwechsel. Die Eintrag-Details zeigen hinter der Uhrzeit „(UTC+1)“, wenn sich der Offset gegenüber dem chronologisch vorigen Eintrag geändert hat.)
 
 ### 5.4 Gefühle
 - **Feste Grundliste**, auf Deutsch und Englisch übersetzt; jedes Gefühl hat eine **Farbe** und eine **Valenz** (Wert von −2 = schlecht bis +2 = gut).
@@ -80,7 +82,7 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 
 ### 5.7 Daten und Datenschutz
 - Daten liegen **nur auf dem Handy**. Keine INTERNET-Berechtigung.
-- **Android-Sicherung in den Einstellungen steuerbar** (Standard: **aus**, Claude-Vorschlag). Hinweis: Android legt Auto-Backup im Manifest fest, ein reiner Laufzeit-Schalter genügt nicht. Umsetzung z. B. über einen eigenen `BackupAgent`, der nur bei eingeschalteter Einstellung Daten liefert, oder einen gleichwertigen Mechanismus. Gerätewechsel (D2D) und Cloud-Backup verhalten sich gleich.
+- **Android-Sicherung in den Einstellungen steuerbar** (Standard: **aus**, Claude-Vorschlag). Hinweis: Android legt Auto-Backup im Manifest fest, ein reiner Laufzeit-Schalter genügt nicht. Umsetzung z. B. über einen eigenen `BackupAgent`, der nur bei eingeschalteter Einstellung Daten liefert, oder einen gleichwertigen Mechanismus. (Phase 3, 2026-11-08: Die Sicherung ist standardmäßig aus. Cloud-Sicherung nur Ende-zu-Ende verschlüsselt (Bildschirmsperre nötig); der Gerätewechsel (D2D) bleibt erlaubt, damit die Daten beim Handy-Umzug mitkommen. Unter Android 9 gibt es keine Sicherung, der Schalter ist ausgeblendet. Bei „aus“ übermittelt Android nur seine eigenen Metadaten (Paket, Version), keine Einträge und keine Einstellungen.)
 - **Platzsparende Speicherung** (Room/SQLite):
   - Eintrag: Zeitstempel (Sekunden seit Epoch bzw. Minuten-Auflösung, Integer), Personenzahl (kleine Ganzzahl), Zeitzonen-Offset (für korrekte Anzeige nach Reisen; Claude-Vorschlag).
   - Gefühle je Eintrag als Verweise auf die Gefühlstabelle inkl. Auswahlreihenfolge (Hauptgefühl = Position 0) und der Valenz zum Eingabezeitpunkt.
@@ -129,3 +131,10 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 - CSV-Re-Import für Gerätewechsel ohne Android-Sicherung.
 - Widget für Schnelleingabe.
 - Einfache Auswertungen (z. B. Durchschnitt nach Personenzahl).
+
+## 10. Umsetzungsstand
+
+- Phase 1 (Grundlage, Datenschicht, Eingabe): ✅ (PR #1)
+- Phase 2 (Verlauf, Graph, Details, Bearbeiten/Löschen): ✅ (PR #5)
+- Phase 3 (Erinnerungen, Einstellungen, Onboarding): 🔄 Branch `feat/phase3-reminders-settings`, siehe Statustabelle im Plan `docs/superpowers/plans/2026-11-08-feelings-diary-phase3-reminders-settings.md`
+- Phase 4 (Export): ⏳

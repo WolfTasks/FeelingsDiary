@@ -10,6 +10,34 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-07-feelings-diary-design.md` (v. a. 5.1, 5.2, 5.4–5.7, 6, 7). Vorgänger: `docs/superpowers/plans/2026-11-07-feelings-diary-phase2-history-graph.md`.
 
+## Bearbeitungsstand (Stand: 2026-11-08)
+
+Legende: ✅ erledigt + reviewt · 🔄 in Arbeit · ⏳ offen. Bei ✅-Tasks sind unten alle Schritte abgehakt; die Zusatz-Tasks (9b–9d, 10b–10e) stehen direkt hinter ihrem Haupt-Task.
+
+| Task | Inhalt (kurz) | Status | Commits |
+|---|---|---|---|
+| 1 | Phase-2-Deferrals: Ladezustand, Monatsmittel ab 7 Jahren | ✅ | `aa3750b` |
+| 2 | Einstellungs-Modell + DataStore | ✅ | `4cd147e` |
+| 3 | Erinnerungs-Planung (reine Logik) | ✅ | `6f95dd0` |
+| 4 | Erinnerungen zur Laufzeit (Alarm, Benachrichtigung, Boot) | ✅ | `ed2d8b7`..`92de6f6` |
+| 5 | Einstellungs-Bildschirm, Theme, Sprache | ✅ | `fd0a53b` |
+| 6 | Abschnitt Erinnerungen | ✅ | `06f073f`..`d8c2a79` |
+| 7 | Gefühle verwalten | ✅ | `cab8a25`..`ee8c2a0` |
+| 8 | Schnell-Blatt (Eingabe A) + Einstellung | ✅ | `ae0a6d3`..`31b0d81` |
+| 9 | Steuerbare Android-Sicherung | ✅ | `cc055ea`..`4b78f6a` |
+| 9b | Graph: echte Reihenfolge über Zeitumstellung/Zeitzonen | ✅ | `9bcf4ac` |
+| 9c | „(UTC+1)“-Hinweis in den Eintrag-Details | ✅ | `13a29db` |
+| 9d | Cloud-Sicherung nur Ende-zu-Ende, D2D erlaubt | ✅ | `4afa6b8` |
+| 10 | Onboarding | ✅ | `35941c4`..`551e7f0` |
+| 10b | Heads-up-Popup mit Standardton, Alarmton optional | ✅ | `d89a8eb` |
+| 10c | Verspätung begrenzen (Etappen-Planung, einstellbar) | ✅ | `b3ab809` |
+| 10d | Hinweis „Akku nicht einschränken“ (Samsung Freecess) | ✅ | `f69b976` |
+| 10e | Nacharbeit 10c: ehrliche Beschriftung, keine Doppel-Erinnerung | 🔄 | in Arbeit |
+| Gesamt-Review + Fix-Runde | Abschluss-Review über Tasks 1–10, 9 Korrekturen | ✅ | `40cee5b`..`cee1b4d` |
+| 11 | Gerätetest, Doku, PR | 🔄 | Doku `b529f1d` |
+
+**Task 11 im Detail:** Doku ✅ (`b529f1d`). Gerätetest teilweise: Onboarding, Berechtigung, Popup und Datenrücksicherung ok; Samsung-Freecess-Befund führte zu Task 10d (siehe „Gerätetest-Befunde“). Schlusstest nach 10e und PR offen.
+
 ## Global Constraints
 
 - Alle Regeln aus `CLAUDE.md` gelten weiter (kein `INTERNET`, keine exakten Alarme `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`, jeder UI-Text in `values/strings.xml` **und** `values-de/strings.xml`, Personen 0–999, Valenz −2…+2 als Momentaufnahme, Hauptgefühl = Position 0).
@@ -58,11 +86,11 @@
 **Interfaces:**
 - Produces: `HomeUiState.loading: Boolean` (true bis die erste Abfrage geliefert hat); `Aggregation.MONTHLY`.
 
-- [ ] **Step 1: Failing Tests** – `HomeScreenTest.loadingStateShowsNoEmptyHint`: `HomeScreen(state.copy(loading = true, rows = emptyList()))` → Text `history_empty` existiert nicht. `HomeViewModelTest.initialStateIsLoading`: erster Wert von `state` hat `loading == true`, nach Emission des Repos `false`. `GraphBuilderTest.rangeOverSevenYearsUsesMonthlyMeans`: Bereich 01.01.2020–31.12.2027 (2922 Tage) → `Aggregation.MONTHLY`, Punkte ≤ 96, ein Punkt je Monat mit Einträgen, Wert = Mittel der Eintragshöhen. `rangeOfExactlySevenYearsStaysWeekly`: 2557 Tage → `WEEKLY`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Grenze: `period.days > 2557` → `MONTHLY` (Bucket = Monatserster, Mitte im sichtbaren Teil wie bei WEEKLY). Tipp auf Monats-Punkt öffnet die Monats-Ansicht dieses Monats. Leerer Hinweis nur bei `!loading && rows.isEmpty()`.
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `fix(home): no empty hint while loading, monthly means for ranges over seven years`.
+- [x] **Step 1: Failing Tests** – `HomeScreenTest.loadingStateShowsNoEmptyHint`: `HomeScreen(state.copy(loading = true, rows = emptyList()))` → Text `history_empty` existiert nicht. `HomeViewModelTest.initialStateIsLoading`: erster Wert von `state` hat `loading == true`, nach Emission des Repos `false`. `GraphBuilderTest.rangeOverSevenYearsUsesMonthlyMeans`: Bereich 01.01.2020–31.12.2027 (2922 Tage) → `Aggregation.MONTHLY`, Punkte ≤ 96, ein Punkt je Monat mit Einträgen, Wert = Mittel der Eintragshöhen. `rangeOfExactlySevenYearsStaysWeekly`: 2557 Tage → `WEEKLY`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Grenze: `period.days > 2557` → `MONTHLY` (Bucket = Monatserster, Mitte im sichtbaren Teil wie bei WEEKLY). Tipp auf Monats-Punkt öffnet die Monats-Ansicht dieses Monats. Leerer Hinweis nur bei `!loading && rows.isEmpty()`.
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `fix(home): no empty hint while loading, monthly means for ranges over seven years`.
 
 ---
 
@@ -81,11 +109,11 @@
   - `data class AppSettings(val reminders: ReminderSettings = ReminderSettings(), val theme: ThemeMode = ThemeMode.DARK, val input: InputMode = InputMode.SCREEN, val backupEnabled: Boolean = false, val onboardingDone: Boolean = false)`
 - Produces (data): `val Context.settingsDataStore: DataStore<Preferences>` (top-level `preferencesDataStore(name = "settings")`, Datei `datastore/settings.preferences_pb`); `class SettingsRepository @Inject constructor(store: DataStore<Preferences>)` mit `val settings: Flow<AppSettings>`, `suspend fun update(transform: (AppSettings) -> AppSettings)`, `suspend fun reminderSalt(): Long` (erzeugt beim ersten Aufruf `Random.nextLong()` und speichert ihn). Hilt: `SettingsModule` liefert `@Singleton DataStore<Preferences>` = `context.applicationContext.settingsDataStore`.
 
-- [ ] **Step 1: Failing Tests** (DataStore per `PreferenceDataStoreFactory.create(scope = testScope.backgroundScope) { tmpFolder.newFile("t.preferences_pb") }`): `emptyStoreYieldsDefaults` (== `AppSettings()`); `updateRoundTrips` (alle Felder geändert, inkl. Fenster 07:30–09:15 und feste Zeit 06:05 → identisch zurückgelesen); `corruptValuesFallBackPerField` (rohe Prefs `count=9`, `windows="abc"`, `theme="PURPLE"` → `count=3`, Standard-Fenster, `DARK`; übrige gültige Felder bleiben); `saltIsStable` (zweimal `reminderSalt()` → gleicher Wert).
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Speicherformat: Zeiten als Minuten seit Mitternacht, Fenster als `"540-660,720-840,900-1020,1140-1260"`, feste Zeiten `"600,780,960,1200"`, Enums als `name`. Jedes Feld wird einzeln geparst; was nicht passt, fällt auf seinen Standard zurück.
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(settings): settings model persisted in preferences datastore`.
+- [x] **Step 1: Failing Tests** (DataStore per `PreferenceDataStoreFactory.create(scope = testScope.backgroundScope) { tmpFolder.newFile("t.preferences_pb") }`): `emptyStoreYieldsDefaults` (== `AppSettings()`); `updateRoundTrips` (alle Felder geändert, inkl. Fenster 07:30–09:15 und feste Zeit 06:05 → identisch zurückgelesen); `corruptValuesFallBackPerField` (rohe Prefs `count=9`, `windows="abc"`, `theme="PURPLE"` → `count=3`, Standard-Fenster, `DARK`; übrige gültige Felder bleiben); `saltIsStable` (zweimal `reminderSalt()` → gleicher Wert).
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Speicherformat: Zeiten als Minuten seit Mitternacht, Fenster als `"540-660,720-840,900-1020,1140-1260"`, feste Zeiten `"600,780,960,1200"`, Enums als `name`. Jedes Feld wird einzeln geparst; was nicht passt, fällt auf seinen Standard zurück.
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(settings): settings model persisted in preferences datastore`.
 
 ---
 
@@ -102,11 +130,11 @@
   - `fun slotsFor(date: LocalDate, s: ReminderSettings, salt: Long): List<LocalTime>` (aufsteigend, Minuten-Auflösung),
   - `fun next(s: ReminderSettings, after: ZonedDateTime, salt: Long): ZonedDateTime?` – erste Erinnerung **strikt nach** `after`, in der Zone von `after`; `null` wenn `!s.enabled` oder kein Fenster außerhalb der Nachtruhe liegt (sucht höchstens heute + 2 Tage).
 
-- [ ] **Step 1: Failing Tests** – `activeIndicesFollowTable` (1→[2], 2→[0,3], 3→[0,2,3], 4→[0,1,2,3]); `randomSlotLiesInsideItsWindow` (1000 Tage, alle Slots im jeweiligen Fenster, `end` exklusiv); `sameDayAndSaltGiveSameSlots`, `differentDaysDiffer` (über 30 Tage mindestens 2 verschiedene Zeiten je Fenster); `quietHoursClipWindow` (Fenster[0] = 07:00–09:00, Nachtruhe 22–08 → alle Slots in 08:00–08:59); `quietHoursInsideWindow` (Fenster 12:00–15:00, Nachtruhe 13:00–14:00 → nie 13:xx); `windowFullyInQuietIsSkipped`; `fixedModeUsesActiveTimesAndSkipsQuiet` (feste Zeit 23:00 bei Nachtruhe 22–08 entfällt); `nextIsStrictlyAfter` (after = Slot-Zeit genau → nächster Slot); `nextRollsOverToTomorrow`; `disabledGivesNull`; `dstDaysKeepWallClock` (Europe/Berlin, 29.03.2026 und 25.10.2026: `next(...).toLocalTime()` == Slot aus `slotsFor`, Ergebnis > after); `allWindowsInQuietGivesNull`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Zufalls-Slot: erlaubte Minuten = Minuten in `[start, end)` außerhalb der Nachtruhe (Nachtruhe `[quietStart, quietEnd)`, über Mitternacht wenn `quietStart > quietEnd`; `quietStart == quietEnd` = keine Nachtruhe); Slot = `allowed[Random(salt xor (epochDay * 31 + index)).nextInt(allowed.size)]`. `next` baut Kandidaten mit `ZonedDateTime.of(date, slot, zone)` (Lücke bei Umstellung → Java verschiebt vorwärts).
-- [ ] **Step 4: Laufen lassen** → PASS.
-- [ ] **Step 5: Commit** – `feat(reminders): pure reminder planner with random windows, fixed times and quiet hours`.
+- [x] **Step 1: Failing Tests** – `activeIndicesFollowTable` (1→[2], 2→[0,3], 3→[0,2,3], 4→[0,1,2,3]); `randomSlotLiesInsideItsWindow` (1000 Tage, alle Slots im jeweiligen Fenster, `end` exklusiv); `sameDayAndSaltGiveSameSlots`, `differentDaysDiffer` (über 30 Tage mindestens 2 verschiedene Zeiten je Fenster); `quietHoursClipWindow` (Fenster[0] = 07:00–09:00, Nachtruhe 22–08 → alle Slots in 08:00–08:59); `quietHoursInsideWindow` (Fenster 12:00–15:00, Nachtruhe 13:00–14:00 → nie 13:xx); `windowFullyInQuietIsSkipped`; `fixedModeUsesActiveTimesAndSkipsQuiet` (feste Zeit 23:00 bei Nachtruhe 22–08 entfällt); `nextIsStrictlyAfter` (after = Slot-Zeit genau → nächster Slot); `nextRollsOverToTomorrow`; `disabledGivesNull`; `dstDaysKeepWallClock` (Europe/Berlin, 29.03.2026 und 25.10.2026: `next(...).toLocalTime()` == Slot aus `slotsFor`, Ergebnis > after); `allWindowsInQuietGivesNull`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Zufalls-Slot: erlaubte Minuten = Minuten in `[start, end)` außerhalb der Nachtruhe (Nachtruhe `[quietStart, quietEnd)`, über Mitternacht wenn `quietStart > quietEnd`; `quietStart == quietEnd` = keine Nachtruhe); Slot = `allowed[Random(salt xor (epochDay * 31 + index)).nextInt(allowed.size)]`. `next` baut Kandidaten mit `ZonedDateTime.of(date, slot, zone)` (Lücke bei Umstellung → Java verschiebt vorwärts).
+- [x] **Step 4: Laufen lassen** → PASS.
+- [x] **Step 5: Commit** – `feat(reminders): pure reminder planner with random windows, fixed times and quiet hours`.
 
 ---
 
@@ -128,11 +156,11 @@
   - `AppNavHost(newEntryRequests: Flow<Unit>)`: jede Emission öffnet die Eingabe (Task 8 ergänzt das Schnell-Blatt). `MainActivity` emittiert bei `ACTION_NEW_ENTRY` in `onCreate` (nur wenn `savedInstanceState == null`) und `onNewIntent`.
 - Strings: Kanalname „Erinnerungen“/„Reminders“; Titel „Wie fühlst du dich?“/„How are you feeling?“ (vorhandenes `entry_question`), Text „Tippen, um es festzuhalten“/„Tap to note it down“.
 
-- [ ] **Step 1: Failing Tests** – Robolectric mit `ShadowAlarmManager`, fester `Clock`, Fake-DataStore: `schedulesNextSlotInexact` (ein Alarm, Zeit == `ReminderPlanner.next`, Typ `RTC_WAKEUP`, kein Exact-Alarm); `rescheduleReplacesPreviousAlarm` (zweimal aufrufen → genau ein Alarm); `disabledCancelsAlarmAndNotification`; `receiverShowsNotificationAndSchedulesNext` (`ShadowNotificationManager`: 1 Notification ID 1 im Kanal `reminders`; Content-Intent hat Action `ACTION_NEW_ENTRY`; neuer Alarm > jetzt); `bootReceiverReschedules`; `noNotificationWithoutPermission` (API 33, Berechtigung nicht erteilt); `EntryViewModelTest.saveCancelsReminderNotification` (MockK: `notifier.cancel()` nach erfolgreichem Speichern); `ManifestPolicyTest.permissionsAreExactlyTheAllowedSet` (eigene Einträge in `src/main/AndroidManifest.xml` == {POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED}; gemergtes Manifest weiterhin ohne INTERNET/EXACT_ALARM); `AppNavGraphTest.newEntryRequestOpensEntry` und `rotationDoesNotReopenEntry`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – PendingIntents mit `FLAG_IMMUTABLE | FLAG_UPDATE_CURRENT`, feste Request-Codes. Kanal wird in `ReminderNotifier.show()` angelegt (idempotent). Receiver `exported="false"` außer `BootReceiver` (`exported="true"` nur mit den System-Actions).
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(reminders): inexact alarm scheduling, notification and boot rescheduling`.
+- [x] **Step 1: Failing Tests** – Robolectric mit `ShadowAlarmManager`, fester `Clock`, Fake-DataStore: `schedulesNextSlotInexact` (ein Alarm, Zeit == `ReminderPlanner.next`, Typ `RTC_WAKEUP`, kein Exact-Alarm); `rescheduleReplacesPreviousAlarm` (zweimal aufrufen → genau ein Alarm); `disabledCancelsAlarmAndNotification`; `receiverShowsNotificationAndSchedulesNext` (`ShadowNotificationManager`: 1 Notification ID 1 im Kanal `reminders`; Content-Intent hat Action `ACTION_NEW_ENTRY`; neuer Alarm > jetzt); `bootReceiverReschedules`; `noNotificationWithoutPermission` (API 33, Berechtigung nicht erteilt); `EntryViewModelTest.saveCancelsReminderNotification` (MockK: `notifier.cancel()` nach erfolgreichem Speichern); `ManifestPolicyTest.permissionsAreExactlyTheAllowedSet` (eigene Einträge in `src/main/AndroidManifest.xml` == {POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED}; gemergtes Manifest weiterhin ohne INTERNET/EXACT_ALARM); `AppNavGraphTest.newEntryRequestOpensEntry` und `rotationDoesNotReopenEntry`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – PendingIntents mit `FLAG_IMMUTABLE | FLAG_UPDATE_CURRENT`, feste Request-Codes. Kanal wird in `ReminderNotifier.show()` angelegt (idempotent). Receiver `exported="false"` außer `BootReceiver` (`exported="true"` nur mit den System-Actions).
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(reminders): inexact alarm scheduling, notification and boot rescheduling`.
 
 ---
 
@@ -154,11 +182,11 @@
   - `@Singleton class LocaleSource { val locale: StateFlow<Locale>; fun update(Locale) }`; `MainActivity.onCreate` ruft `update(resources.configuration.locales[0])`. `FeelingLabeler` benutzt einen `createConfigurationContext` mit dieser Locale; `HomeViewModel`/`EntryViewModel` kombinieren `LocaleSource.locale`, damit Labels sofort neu berechnet werden.
 - Strings (EN/DE): `settings_title` „Settings“/„Einstellungen“, Abschnittstitel, `theme_dark` „Dark“/„Dunkel“, `theme_light` „Light“/„Hell“, `theme_system` „Follow system“/„System folgen“, `language_system` „System language“/„Systemsprache“, „Deutsch“, „English“ (Sprachnamen in beiden Dateien gleich), `settings_open_cd` „Settings“/„Einstellungen“.
 
-- [ ] **Step 1: Failing Tests** – `SettingsScreenTest.themeChoiceCallsAction` (Tipp „Light“ → `setTheme(LIGHT)`); `languageRowHiddenBelowApi33` (`@Config(sdk = [32])`); `languageRowShownOnApi33`; `SettingsViewModelTest.setThemePersists`; `HomeViewModelTest.labelsFollowLocaleChange` (Fake-Labeler abhängig von Locale; `localeSource.update(Locale.GERMAN)` → Zeilen enthalten das deutsche Label, ohne neue Repo-Emission); dasselbe für `EntryViewModelTest`; `AppNavGraphTest.gearOpensSettingsAndBackReturns`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Theme-Auswahl als drei `RadioButton`-Zeilen (oder `SegmentedButton`), Sprache ebenso. Bis die Einstellungen geladen sind, zeigt `MainActivity` den bisherigen dunklen Stand (kein Hell-Aufblitzen bei Dunkel-Nutzern).
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(settings): settings screen with theme and per-app language; labels follow locale`.
+- [x] **Step 1: Failing Tests** – `SettingsScreenTest.themeChoiceCallsAction` (Tipp „Light“ → `setTheme(LIGHT)`); `languageRowHiddenBelowApi33` (`@Config(sdk = [32])`); `languageRowShownOnApi33`; `SettingsViewModelTest.setThemePersists`; `HomeViewModelTest.labelsFollowLocaleChange` (Fake-Labeler abhängig von Locale; `localeSource.update(Locale.GERMAN)` → Zeilen enthalten das deutsche Label, ohne neue Repo-Emission); dasselbe für `EntryViewModelTest`; `AppNavGraphTest.gearOpensSettingsAndBackReturns`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Theme-Auswahl als drei `RadioButton`-Zeilen (oder `SegmentedButton`), Sprache ebenso. Bis die Einstellungen geladen sind, zeigt `MainActivity` den bisherigen dunklen Stand (kein Hell-Aufblitzen bei Dunkel-Nutzern).
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(settings): settings screen with theme and per-app language; labels follow locale`.
 
 ---
 
@@ -175,11 +203,11 @@
 
 Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufällig im Zeitfenster“ / „Feste Uhrzeiten“; je aktivem Index eine Zeile (Fenstername + „09:00–11:00“ bzw. „10:00“), Tipp öffnet Material-3-`TimePicker` (Fenster: erst Start, dann Ende); Nachtruhe-Zeile „22:00–08:00“. Hinweis „Liegt ganz in der Nachtruhe – wird übersprungen“ an betroffenen Zeilen. Ist die Benachrichtigungs-Erlaubnis nicht erteilt (API ≥ 33): Warnzeile „Benachrichtigungen sind aus“ mit Knopf „Erlauben“ (erste Anfrage per `rememberLauncherForActivityResult(RequestPermission)`, danach `Settings.ACTION_APP_NOTIFICATION_SETTINGS`). Uhrzeiten im Locale-Format (`DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)`).
 
-- [ ] **Step 1: Failing Tests** – `countTwoShowsMorningAndEvening` (zeigt genau die Fenster 0 und 3); `fixedModeShowsTimes`; `endBeforeStartIsRejected` (Ende 08:00 bei Start 09:00 → Fehlertext „Ende muss nach dem Start liegen“, `onChange` nicht aufgerufen); `windowInQuietShowsHint`; `permissionWarningOnlyWhenDenied`; `switchOffDisablesRows` (Zeilen `assertIsNotEnabled`).
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Fenster-/Zeitnamen als Strings `reminder_window_morning/midday/afternoon/evening` („Morning“/„Vormittag“, „Midday“/„Mittag“, „Afternoon“/„Nachmittag“, „Evening“/„Abend“).
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(settings): reminder count, windows, fixed times and quiet hours`.
+- [x] **Step 1: Failing Tests** – `countTwoShowsMorningAndEvening` (zeigt genau die Fenster 0 und 3); `fixedModeShowsTimes`; `endBeforeStartIsRejected` (Ende 08:00 bei Start 09:00 → Fehlertext „Ende muss nach dem Start liegen“, `onChange` nicht aufgerufen); `windowInQuietShowsHint`; `permissionWarningOnlyWhenDenied`; `switchOffDisablesRows` (Zeilen `assertIsNotEnabled`).
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Fenster-/Zeitnamen als Strings `reminder_window_morning/midday/afternoon/evening` („Morning“/„Vormittag“, „Midday“/„Mittag“, „Afternoon“/„Nachmittag“, „Evening“/„Abend“).
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(settings): reminder count, windows, fixed times and quiet hours`.
 
 ---
 
@@ -198,11 +226,11 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
   - `FeelingsViewModel`: `state` = Liste in Grundliste-Reihenfolge (`FeelingSuggester.baseListOrder`) inkl. ausgeblendeter, `fun save(id, name, color, valence): Boolean` (false bei Duplikat), `fun toggleHidden(id)` (verweigert für das letzte sichtbare Gefühl), `fun add(name, color, valence)`.
 - `FeelingsScreen`: je Zeile Farbpunkt, Name, Valenz-Text (`valence_good`…), Augen-Symbol ein/aus (Content-Description „Ausblenden“/„Einblenden“), Tipp öffnet Dialog; FAB/Knopf „Gefühl hinzufügen“.
 
-- [ ] **Step 1: Failing Tests** – Repo: `updateFeelingKeepsStoredEntryValences` (Valenz ändern → alter Eintrag behält Valenz, Farbe neu); `baseFeelingNameCannotChange`. VM: `renameToExistingNameIsRejected` („HAPPY“ und „fröhlich“ bei DE-Labeler → false, nichts gespeichert); `renameToOwnNameDifferentCaseIsAllowed`; `lastVisibleFeelingCannotBeHidden`; `hiddenFeelingsStayListed`. Entry: `editingEntryWithHiddenFeelingKeepsItSelectedAndVisible` (das ausgeblendete, gewählte Gefühl erscheint als Chip). Screen: `eyeIconTogglesHidden`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Gewählte, aber ausgeblendete Gefühle im Eingabe-Bildschirm: oben bei „Zuletzt genutzt“ einreihen (Suggester bekommt `alwaysInclude: Set<Long>`).
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(feelings): manage feelings – edit colour and valence, rename custom, hide`.
+- [x] **Step 1: Failing Tests** – Repo: `updateFeelingKeepsStoredEntryValences` (Valenz ändern → alter Eintrag behält Valenz, Farbe neu); `baseFeelingNameCannotChange`. VM: `renameToExistingNameIsRejected` („HAPPY“ und „fröhlich“ bei DE-Labeler → false, nichts gespeichert); `renameToOwnNameDifferentCaseIsAllowed`; `lastVisibleFeelingCannotBeHidden`; `hiddenFeelingsStayListed`. Entry: `editingEntryWithHiddenFeelingKeepsItSelectedAndVisible` (das ausgeblendete, gewählte Gefühl erscheint als Chip). Screen: `eyeIconTogglesHidden`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Gewählte, aber ausgeblendete Gefühle im Eingabe-Bildschirm: oben bei „Zuletzt genutzt“ einreihen (Suggester bekommt `alwaysInclude: Set<Long>`).
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(feelings): manage feelings – edit colour and valence, rename custom, hide`.
 
 ---
 
@@ -218,11 +246,11 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - Produces: `QuickEntrySheet(state: EntryUiState, actions: EntryActions, onDismiss: () -> Unit)`; `EntryViewModel.prefillPeopleFromLastEntry()` (setzt nur, wenn `people == null`); `HomeUiState.inputMode: InputMode`. `+`-Knopf und `newEntryRequests` öffnen im Modus `QUICK_SHEET` das Blatt (Home), sonst die Route `entry`.
 - Inhalt Blatt: Titel „Wie fühlst du dich?“, Chips (E8), 🔍-Symbol klappt das Suchfeld mit Vorschlägen und „+ als neues Gefühl“ auf, Zeile „👥 Andere Personen“ mit −/Wert/+ (Wert 0 zeigt „allein“), Knopf „Speichern“ (aktiv ab einem Gefühl). Nach dem Speichern schließt das Blatt; ein frisches `EntryViewModel` je Öffnen (eigener `ViewModelStoreOwner`-Schlüssel), damit keine alte Auswahl stehen bleibt.
 
-- [ ] **Step 1: Failing Tests** – `minusAtZeroStaysZero`, `plusAt999StaysAt999`; `saveDisabledWithoutFeeling`; `searchToggleShowsField`; `prefillUsesLastEntryPeople` / `prefillDefaultsToZero`; `HomeScreenTest.addOpensSheetInQuickMode` / `addNavigatesInScreenMode`; `AppNavGraphTest.notificationOpensSheetInQuickMode`; `reopeningSheetStartsEmpty`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** – Abschnitt „Eingabe“ in den Einstellungen: „Eigener Bildschirm (Standard)“ / „Schnell-Blatt von unten“.
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(entry): quick bottom sheet input mode`.
+- [x] **Step 1: Failing Tests** – `minusAtZeroStaysZero`, `plusAt999StaysAt999`; `saveDisabledWithoutFeeling`; `searchToggleShowsField`; `prefillUsesLastEntryPeople` / `prefillDefaultsToZero`; `HomeScreenTest.addOpensSheetInQuickMode` / `addNavigatesInScreenMode`; `AppNavGraphTest.notificationOpensSheetInQuickMode`; `reopeningSheetStartsEmpty`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** – Abschnitt „Eingabe“ in den Einstellungen: „Eigener Bildschirm (Standard)“ / „Schnell-Blatt von unten“.
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(entry): quick bottom sheet input mode`.
 
 ---
 
@@ -238,11 +266,80 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - Regeln (cloud-backup **und** device-transfer gleich, sowie `backup_rules.xml`): `<include domain="database" path="." />` und `<include domain="file" path="datastore/settings.preferences_pb" />`; alles andere bleibt ausgeschlossen.
 - Text (EN/DE): Schalter „Android-Sicherung“ / „Android backup“; Erklärung „Aus: Deine Einträge verlassen nie das Gerät. An: Android darf sie mit deiner Google-Sicherung und beim Gerätewechsel übertragen.“ / „Off: your entries never leave this device. On: Android may include them in your Google backup and when you move to a new phone.“
 
-- [ ] **Step 1: Failing Tests** – `DiaryBackupAgentTest.offDoesNotDelegate` / `onDelegates` (Robolectric `Robolectric.buildBackupAgent`, Spy auf `delegateFullBackup`); `defaultIsOff`; `ManifestPolicyTest`: `backupAgentDeclared` (`android:backupAgent=".backup.DiaryBackupAgent"`, `fullBackupOnly="true"`), `rulesIncludeOnlyDatabaseAndSettings` (beide Abschnitte + `backup_rules.xml`), alter Test `backupDisabled` entfällt; `SettingsScreenTest.backupSwitchCallsAction`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren**.
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün. Zusätzlich nach Installation auf dem Gerät: `adb shell bmgr backupnow com.wolf.feelingsdiary` bei „aus“ → Log zeigt 0 Bytes / keine Daten.
-- [ ] **Step 5: Commit** – `feat(backup): user-controlled android backup via gated backup agent`.
+- [x] **Step 1: Failing Tests** – `DiaryBackupAgentTest.offDoesNotDelegate` / `onDelegates` (Robolectric `Robolectric.buildBackupAgent`, Spy auf `delegateFullBackup`); `defaultIsOff`; `ManifestPolicyTest`: `backupAgentDeclared` (`android:backupAgent=".backup.DiaryBackupAgent"`, `fullBackupOnly="true"`), `rulesIncludeOnlyDatabaseAndSettings` (beide Abschnitte + `backup_rules.xml`), alter Test `backupDisabled` entfällt; `SettingsScreenTest.backupSwitchCallsAction`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren**.
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün. Zusätzlich nach Installation auf dem Gerät: `adb shell bmgr backupnow com.wolf.feelingsdiary` bei „aus“ → Log zeigt 0 Bytes / keine Daten.
+- [x] **Step 5: Commit** – `feat(backup): user-controlled android backup via gated backup agent`.
+
+---
+
+### Task 9b: Graph – Einträge über Zeitumstellung/Zeitzonenwechsel in echter Reihenfolge
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gemeldet: bei der Umstellung auf Winterzeit rutschen neuere Einträge im Graphen vor ältere.)
+
+**Problem:** `GraphBuilder` setzt bei `Aggregation.NONE` die x-Position nach lokaler Wandzeit und sortiert danach. Eintrag A 25.10.2026 02:50 MESZ (+02) und 20 Minuten später Eintrag B 02:10 MEZ (+01): B bekommt kleineres x als A, die Linie läuft rückwärts. Gleiches bei Reisen nach Westen.
+
+**Files:**
+- Modify: `app/src/main/java/com/wolf/feelingsdiary/domain/GraphBuilder.kt`
+- Test: `app/src/test/java/com/wolf/feelingsdiary/domain/GraphBuilderTest.kt`
+
+**Interfaces / Regeln:** Bei `Aggregation.NONE` gilt x nach **echter Zeit**:
+- `startEpoch` = Mitternacht von `period.start` im Offset des frühesten Eintrags des Zeitraums, `endEpoch` = Mitternacht von `period.endInclusive + 1 Tag` im Offset des spätesten Eintrags; `x = (epochMinute - startEpoch) / (endEpoch - startEpoch)`, auf 0..1 begrenzt; Reihenfolge der Punkte = (epochMinute, id).
+- Gleicher Offset für alle Einträge ergibt exakt die bisherigen Positionen.
+- Fallback bei `endEpoch - startEpoch < period.days * 1440 / 2`: bisherige Wandzeit-Position, aber monoton gemacht.
+- Aggregierte Ansichten (DAILY/WEEKLY/MONTHLY) bleiben unverändert.
+
+- [x] **Step 1: Failing Tests** – `fallBackKeepsRealOrder` (25.10.2026, 02:50 @ +120 vor 02:10 @ +60, x-Abstand ≈ 20/1500), `springForwardKeepsRealOrder`, `westwardTravelKeepsRealOrder`, `sameOffsetPositionsUnchanged`, `allXWithinZeroToOne`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** (nur `GraphBuilder`).
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `fix(graph): order entries by real time across DST and time zone changes`.
+
+---
+
+### Task 9c: Zeitzonen-Hinweis „UTC+1“ in den Eintrag-Details
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gewünscht, zusammen mit Task 9b.)
+
+**Ziel:** Nach Zeitumstellung oder Reise steht in der Liste z. B. 02:50 über 02:10. Damit das verständlich ist, zeigen die Eintrag-Details hinter der Uhrzeit den UTC-Offset, **wenn sich der Offset gegenüber dem chronologisch vorigen Eintrag geändert hat** (vorige = nächstkleinere (epochMinute, id) in der ganzen Datenbank). Ohne vorigen Eintrag kein Hinweis.
+
+**Files:**
+- Modify: `data/db/EntryDao.kt`, `data/DiaryRepository.kt`, `ui/home/HomeViewModel.kt` (Zeilen-Modell), `ui/home/EntryDetailSheet.kt`, `ui/home/TimeFormat.kt`, `values/strings.xml`, `values-de/strings.xml`
+- Test: `DiaryRepositoryTest`, `TimeFormatTest`, `HomeViewModelTest`, `HomeScreenTest`
+
+**Interfaces / Regeln:**
+- `DiaryRepository.previousOffsetMinutes(epochMinute: Int, id: Long): Int?` – Offset des Eintrags mit größtem (epochMinute, id) davor; null wenn keiner.
+- Zeilen-Modell bekommt `offsetLabel: String?`; innerhalb der geladenen Zeilen aus dem Vorgänger ableiten, nur für den frühesten Eintrag des Zeitraums die Repo-Abfrage (eine Abfrage pro Zeitraum-Emission).
+- `fun formatUtcOffset(minutes: Int): String`: `UTC+1`, `UTC+0`, `UTC-3`, `UTC+5:30`, `UTC-9:30`, `UTC+14`. Klammer-Komposition aus String-Ressource `detail_time_with_offset` = `%1$s (%2$s)` (EN und DE).
+- Anzeige nur im Detail-Sheet, z. B. „Sonntag, 25. Okt. · 02:10 (UTC+1)“; die Liste bleibt unverändert.
+
+- [x] **Step 1: Failing Tests** – `formatUtcOffset`-Tabelle; `previousOffsetFindsChronologicalPredecessor`; `offsetLabelOnlyWhenOffsetChanged`; `firstRowOfPeriodComparesWithEntryBeforePeriod`; Detail-Sheet zeigt „(UTC+1)“ nur bei gesetztem `offsetLabel`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(home): show utc offset in entry details after an offset change`.
+
+---
+
+### Task 9d: Cloud-Sicherung nur Ende-zu-Ende verschlüsselt, Gerätewechsel weiter erlaubt
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gewünscht: Cloud-Backup nur E2E-verschlüsselt; beim Handy-Umzug (D2D) sollen die Daten weiter mitgenommen werden.)
+
+**Files:**
+- Modify: `backup/DiaryBackupAgent.kt`, `res/xml/data_extraction_rules.xml`, Datenschutz-Erklärtext in `values/strings.xml` + `values-de/strings.xml`, `CLAUDE.md` (Regel Sicherung um „Cloud nur E2E“)
+- Test: `backup/DiaryBackupAgentTest.kt`, `ManifestPolicyTest.kt`
+
+**Interfaces / Regeln:**
+- Der Agent gibt zusätzlich zur Einstellung nur weiter, wenn (API ≥ 28, `transportFlags`) `FLAG_CLIENT_SIDE_ENCRYPTION_ENABLED` **oder** `FLAG_DEVICE_TO_DEVICE_TRANSFER` gesetzt ist; unter API 28 sicher geschlossen. Reine Funktion `internal fun mayLeaveDevice(enabled: Boolean, sdkInt: Int, transportFlags: Int): Boolean`.
+- `data_extraction_rules.xml`: `<cloud-backup disableIfNoEncryptionCapabilities="true">` (API 31+), device-transfer unverändert; `backup_rules.xml` bleibt unverändert.
+- Erklärtext (EN/DE) nennt Umzug, Ende-zu-Ende-Verschlüsselung und die nötige Bildschirmsperre.
+
+- [x] **Step 1: Failing Tests** – `mayLeaveDevice`-Tabelle; `onWithoutEncryptionDoesNotDelegate` / `onWithEncryptionDelegates`; `ManifestPolicyTest.cloudBackupRequiresEncryption`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(backup): cloud backup only when end-to-end encrypted, device transfer allowed`.
 
 ---
 
@@ -258,11 +355,100 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - Produces: `OnboardingViewModel.finish(enabled: Boolean, count: Int)` setzt `reminders.enabled/count` und `onboardingDone = true`. Navigation: bis die Einstellungen geladen sind, leere Hintergrundfläche; dann Start `onboarding` oder `home`; nach „Los geht's“ `popUpTo(onboarding) { inclusive = true }`.
 - Texte (EN/DE): Titel „Willkommen“/„Welcome“; „Halte ein paar Mal am Tag fest, wie du dich fühlst und wie viele Menschen um dich sind. Deine Daten bleiben auf diesem Handy.“ / „A few times a day, note how you feel and how many people are around you. Your data stays on this phone.“; „Erinnerungen erlauben“/„Allow reminders“; „Los geht's“/„Let's start“; „Zeitfenster und Nachtruhe kannst du in den Einstellungen anpassen.“ / „You can adjust time windows and quiet hours in settings.“
 
-- [ ] **Step 1: Failing Tests** – `firstStartShowsOnboarding`, `doneStartsAtHome`; `finishStoresChoicesAndNavigatesHome` (Zurück danach verlässt die App, kein Onboarding im Back-Stack); `allowButtonOnlyOnApi33` (`@Config(sdk=[32])` → kein Knopf); `newEntryRequestDuringOnboardingIsIgnored`.
+- [x] **Step 1: Failing Tests** – `firstStartShowsOnboarding`, `doneStartsAtHome`; `finishStoresChoicesAndNavigatesHome` (Zurück danach verlässt die App, kein Onboarding im Back-Stack); `allowButtonOnlyOnApi33` (`@Config(sdk=[32])` → kein Knopf); `newEntryRequestDuringOnboardingIsIgnored`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren**.
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(onboarding): first-start welcome with reminder setup and permission`.
+
+---
+
+### Task 10b: Erinnerung als Popup mit Standardton, Alarmton optional
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gewünscht: „Die Erinnerungen sollen nur optional ein Alarm sein, ein Popup mit dem Default-Pling des Handys reicht.“)
+
+**Files:**
+- Modify: `domain/Settings.kt` (`ReminderSettings.alarmSound: Boolean = false`), `data/settings/SettingsRepository.kt` (Key `reminder_alarm_sound`, Fallback false), `reminder/ReminderNotifier.kt`, `ui/settings/ReminderSection.kt`, Strings EN/DE
+- Test: `SettingsRepositoryTest`, `ReminderNotifierTest`, `ReminderSectionTest`
+
+**Interfaces / Regeln:**
+- Standard-Kanal `reminders`: `IMPORTANCE_HIGH` (Heads-up-Popup), Standard-Benachrichtigungston; Notification `CATEGORY_REMINDER`, `PRIORITY_HIGH`.
+- Alarm-Kanal `reminders_alarm`: `IMPORTANCE_HIGH`, Ton = Standard-Alarmton mit `AudioAttributes` `USAGE_ALARM`. Kein Full-Screen-Intent, keine neue Berechtigung, kein Umgehen von „Nicht stören“.
+- `show()` wählt den Kanal nach `alarmSound`.
+- Schalter „Mit Alarmton“ / „Alarm sound“ in der Erinnerungs-Sektion (direkt nach dem Ein/Aus-Schalter); deaktiviert, wenn Erinnerungen aus sind.
+
+- [x] **Step 1: Failing Tests** – Repo: `alarmSoundDefaultsOffAndRoundTrips`, korrupter Wert → false; Notifier: Standardkanal HIGH mit Standardton, Alarmkanal mit Alarm-URI/`USAGE_ALARM`, Kategorie REMINDER; Section: Schalter ruft Änderung, deaktiviert bei „aus“.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(reminders): heads-up reminder with default sound, optional alarm tone`.
+
+---
+
+### Task 10c: Erinnerungs-Verspätung begrenzen, einstellbar
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gewünscht: „ggf. sollte man das Fenster verkleinern, für den Test auf ein Minimum, ggf. in den Optionen einstellbar“.)
+
+**Problem:** `setAndAllowWhileIdle` liefert den Alarm in einem Fenster von ≈ 0,75 × Abstand zwischen Planen und Termin aus, höchstens 1 h (auf dem A54 gemessen). Da die nächste Erinnerung direkt nach der vorigen geplant wird, kommen Erinnerungen bis zu 1 h zu spät.
+
+**Files:**
+- Modify: `domain/Settings.kt` (`ReminderSettings.maxDelayMinutes: Int = 15`, erlaubt {5, 15, 60}), `data/settings/SettingsRepository.kt` (Key `reminder_max_delay`, ungültig → 15), `domain/ReminderPlanner.kt` (`nextWake`), `reminder/ReminderScheduler.kt`, `ui/settings/ReminderSection.kt`, Strings EN/DE
+- Test: `ReminderPlannerTest`, `ReminderSchedulerTest`, `SettingsRepositoryTest`, `ReminderSectionTest`
+
+**Interfaces / Regeln (Etappen-Planung, keine neue Berechtigung, weiterhin nur `setAndAllowWhileIdle`):**
+- `fun nextWake(target: Instant, now: Instant, maxDelayMinutes: Int): Instant` – liefert den Zeitpunkt, für den der Alarm jetzt gestellt wird: das Ziel selbst, wenn es nah genug ist, sonst ein Zwischen-Alarm (Etappe), sodass der finale Alarm mit Abstand ≤ 4/3 · maxDelay gestellt wird und nie nach dem Ziel liegt.
+- `reschedule()` stellt den Alarm auf `nextWake(...)`; das Intent trägt das Ziel (`EXTRA_TARGET_EPOCH_MILLIS`). `onAlarm`: liegt jetzt mehr als 1 min vor dem Ziel → nur neu planen, keine Benachrichtigung; sonst bisheriges Verhalten.
+- Einstellung „Genauigkeit“ mit drei Optionen (5/15/60 Min.), Untertitel „Höchstens so viel später als geplant“; deaktiviert, wenn Erinnerungen aus sind.
+
+- [x] **Step 1: Failing Tests** – `nextWake` (nahes Ziel, fernes Ziel, Simulation: letzter Alarm ≤ Ziel + maxDelay, ≤ 6 Etappen für 24 h); Scheduler: Etappe zeigt nichts und plant neu, finaler Alarm zeigt; Repo-Roundtrip + Fallback; Section-UI.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(reminders): staged scheduling bounds reminder delay, configurable accuracy`.
+
+---
+
+### Task 10d: Hinweis „Akku nicht einschränken“, damit Erinnerungen pünktlich kommen
+
+(Zusatz-Task, von Wolfgang am 2026-11-08 gewünscht nach Gerätetest.)
+
+**Befund (Galaxy A54, One UI):** Samsung „Freecess“ friert die App 1–2 min nach dem Wechsel in den Hintergrund ein; Alarme eingefrorener Apps werden zurückgehalten (`AlarmManager: Deferring alarm … due to freecess`). Abhilfe: App in den Akku-Einstellungen auf „Nicht eingeschränkt“.
+
+**Files:**
+- Create: `reminder/BatteryOptimization.kt` (+ Hilt-Bindung)
+- Modify: `ui/settings/ReminderSection.kt`, `ui/settings/SettingsScreen.kt`, `ui/onboarding/OnboardingScreen.kt`, Strings EN/DE
+- Test: `BatteryOptimizationTest`, `ReminderSectionTest`, `OnboardingScreenTest`
+
+**Interfaces / Regeln:**
+- Keine neue Berechtigung (kein `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, Play-Policy-Risiko); die App **erkennt** den Zustand und **führt** zur Einstellung.
+- Injizierbare Naht `BatteryOptimization` (`isUnrestricted()` über `PowerManager.isIgnoringBatteryOptimizations`, `settingsIntent()` auf `ACTION_APPLICATION_DETAILS_SETTINGS`, Fallback `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`).
+- Hinweiszeile („Erinnerungen können sich verspäten“ mit Knopf „Akku-Einstellungen öffnen“) nur, wenn Erinnerungen an **und** nicht ausgenommen; Zustand bei ON_RESUME neu prüfen. In der Erinnerungs-Sektion und im Onboarding unter „Erinnerungen erlauben“. Kein Banner im Verlauf.
+
+- [x] **Step 1: Failing Tests** – `BatteryOptimizationTest` (beide Zustände, Intent), Hinweis sichtbar/unsichtbar, Knopf ruft Aktion, Onboarding-Zeile.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `feat(reminders): guide users to unrestricted battery so reminders arrive on time`.
+
+---
+
+### Task 10e: Nacharbeit 10c – ehrliche Beschriftung, keine doppelte Erinnerung
+
+(Zusatz-Task aus dem Review von Task 10c; Beschriftung von Wolfgang bestätigt.)
+
+**Files:**
+- Modify: `data/settings/SettingsRepository.kt` (Key `reminder_last_shown`, Long, tolerant parsen), `reminder/ReminderScheduler.kt`, Strings EN/DE
+- Test: `SettingsRepositoryTest`, `ReminderSchedulerTest`, `ReminderSectionTest`
+
+**Interfaces / Regeln:**
+- Beschriftung Genauigkeit: „Bis 5 Min. später“, „Bis 15 Min. später“, „Bis 60 Min. später (spart Akku)“ / „Up to 5 min late“, „Up to 15 min late“, „Up to 60 min late (saves battery)“ (nur die Verspätung ist begrenzt, „±“ wäre irreführend).
+- Doppelte Erinnerung verhindern: kommt ein Etappen-Alarm in [Ziel − 1 min, Ziel) an, zählt er als Erinnerung; ein anderer `reschedule()`-Aufrufer (Kaltstart, BootReceiver, Einstellungsänderung) plante danach dasselbe Ziel erneut. Fix: zuletzt gezeigtes Ziel in DataStore persistieren, beim Anzeigen setzen; `reschedule()` plant immer nach `max(now, lastShown)`.
+
+- [ ] **Step 1: Failing Tests** – Etappe 30 s vor Ziel wird angezeigt; danach `reschedule()` ohne Argument plant den Folge-Slot, nicht dasselbe Ziel; Repo-Roundtrip für `reminder_last_shown`; alte „±“-Tests angepasst.
 - [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren**.
+- [ ] **Step 3: Implementieren.**
 - [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `feat(onboarding): first-start welcome with reminder setup and permission`.
+- [ ] **Step 5: Commit** – `fix(reminders): honest accuracy labels, never remind twice for the same slot`.
 
 ---
 
@@ -272,21 +458,16 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - Modify: `README.md` (Stand Phase 3), `CLAUDE.md` (Pakete `reminder`, `backup`, `data/settings`, `ui/settings`, `ui/feelings`, `ui/onboarding`; Regel Sicherung; Berechtigungs-Liste)
 
 - [ ] **Step 1: Gerätetest** (Galaxy A54, `adb -s RZCW81045KL`, adb unter `C:/Users/Admin/AppData/Local/Android/Sdk/platform-tools/adb.exe`; Screenshots aus Git Bash `adb exec-out screencap -p > f.png`; Wolfgang fasst das Handy währenddessen nicht an): App-Daten löschen → Onboarding → Berechtigung erlauben; Einstellungen: Fenster so legen, dass in ~3 min eine Erinnerung kommt → Benachrichtigung erscheint, Tipp öffnet Eingabe; `adb shell dumpsys alarm | grep feelingsdiary` zeigt genau einen Alarm; `adb reboot` → Alarm wieder da; Theme Hell/System/Dunkel; Sprache EN↔DE → Gefühlsnamen im Verlauf sofort gewechselt; Schnell-Blatt-Modus + Benachrichtigung → Blatt; Gefühl umbenennen/ausblenden; Sicherung aus → `bmgr backupnow` liefert nichts.
-- [ ] **Step 2: Doku committen** – `docs: readme and claude guide for phase 3`.
+- [x] **Step 2: Doku committen** – `docs: readme and claude guide for phase 3`.
 - [ ] **Step 3: Push + PR** – `git remote get-url origin` und `git branch --show-current` prüfen; `git push -u origin feat/phase3-reminders-settings`; `gh pr create --base main` (Body: Zusammenfassung, Planer-Entscheidungen E1–E11, Gerätetest mit Screenshots, endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`); `gh pr checks --watch` → `build` grün. Nicht mergen.
 
 ---
 
 ## Nachträge während der Umsetzung
 
-Auf Wunsch von Wolfgang während der Umsetzung ergänzt:
+Die auf Wunsch von Wolfgang ergänzten Zusatz-Tasks stehen als vollständige Abschnitte hinter ihrem Haupt-Task: **9b, 9c, 9d** (nach Task 9) und **10b, 10c, 10d, 10e** (nach Task 10). Ihr Stand steht in der Tabelle „Bearbeitungsstand“ oben.
 
-- **Task 9b:** Graph und Eintragsreihenfolge nach echter Zeit (`epochMinute`) statt Ortszeit, korrekt über Sommerzeitwechsel und Zeitzonenwechsel.
-- **Task 9c:** Hinweis „(UTC+1)“ (Offset) in den Eintragsdetails, wenn der Offset vom aktuellen abweicht.
-- **Task 9d:** Cloud-Sicherung nur Ende-zu-Ende-verschlüsselt, Gerätewechsel (D2D) bleibt erlaubt; ersetzt die ursprünglich pauschale Sicherungsregel aus Task 9.
-- **Task 10b:** Erinnerung als Heads-up-Benachrichtigung mit Standardton, optional mit Alarmton.
-
-Korrekturwelle nach dem Abschluss-Review:
+### Fix-Runde nach Gesamt-Review
 
 - Beschädigte oder unlesbare Einstellungsdatei: Rückfall auf Standardwerte.
 - Sommerzeit-Lücke (Vorstellen der Uhr): kein Termin geht verloren.
@@ -296,3 +477,9 @@ Korrekturwelle nach dem Abschluss-Review:
 - Erinnerungen erst nach abgeschlossenem Onboarding.
 - Benachrichtigungs-Berechtigung bei „Los geht's“ anfragen.
 - Sicherungsschalter unter API 28 ausgeblendet.
+
+### Gerätetest-Befunde
+
+- **Samsung Freecess (Galaxy A54):** Die Erinnerungen von 15:10 und 15:25 kamen nicht. Ursache laut Log: `AlarmManager: Deferring alarm … due to freecess` – Samsung friert die App 1–2 min nach dem Wechsel in den Hintergrund ein und hält ihre Alarme zurück. Mit Akku „Nicht eingeschränkt“ kam die Erinnerung von 15:45 um 15:49 (Benachrichtigung angezeigt, nächste um 20:00). Kein Code-Fehler → Task 10d (Hinweis + Knopf zu den Akku-Einstellungen).
+- **Verspätung durch das `setAndAllowWhileIdle`-Fenster:** Android liefert in einem Fenster von ≈ 0,75 × Abstand aus (höchstens 1 h); gemessen 2 min 19 s bei 3 min Vorlauf → Task 10c (Etappen-Planung, Genauigkeit einstellbar).
+- Ohne Befund: Onboarding, Berechtigungsdialog, Rücksicherung der Datenbank, Einstellungen/Zeitwähler, sofortiges Neuplanen, Heads-up-Popup (Wichtigkeit 4, Kategorie Erinnerung).
