@@ -274,3 +274,25 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - [ ] **Step 1: Gerätetest** (Galaxy A54, `adb -s RZCW81045KL`, adb unter `C:/Users/Admin/AppData/Local/Android/Sdk/platform-tools/adb.exe`; Screenshots aus Git Bash `adb exec-out screencap -p > f.png`; Wolfgang fasst das Handy währenddessen nicht an): App-Daten löschen → Onboarding → Berechtigung erlauben; Einstellungen: Fenster so legen, dass in ~3 min eine Erinnerung kommt → Benachrichtigung erscheint, Tipp öffnet Eingabe; `adb shell dumpsys alarm | grep feelingsdiary` zeigt genau einen Alarm; `adb reboot` → Alarm wieder da; Theme Hell/System/Dunkel; Sprache EN↔DE → Gefühlsnamen im Verlauf sofort gewechselt; Schnell-Blatt-Modus + Benachrichtigung → Blatt; Gefühl umbenennen/ausblenden; Sicherung aus → `bmgr backupnow` liefert nichts.
 - [ ] **Step 2: Doku committen** – `docs: readme and claude guide for phase 3`.
 - [ ] **Step 3: Push + PR** – `git remote get-url origin` und `git branch --show-current` prüfen; `git push -u origin feat/phase3-reminders-settings`; `gh pr create --base main` (Body: Zusammenfassung, Planer-Entscheidungen E1–E11, Gerätetest mit Screenshots, endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`); `gh pr checks --watch` → `build` grün. Nicht mergen.
+
+---
+
+## Nachträge während der Umsetzung
+
+Auf Wunsch von Wolfgang während der Umsetzung ergänzt:
+
+- **Task 9b:** Graph und Eintragsreihenfolge nach echter Zeit (`epochMinute`) statt Ortszeit, korrekt über Sommerzeitwechsel und Zeitzonenwechsel.
+- **Task 9c:** Hinweis „(UTC+1)“ (Offset) in den Eintragsdetails, wenn der Offset vom aktuellen abweicht.
+- **Task 9d:** Cloud-Sicherung nur Ende-zu-Ende-verschlüsselt, Gerätewechsel (D2D) bleibt erlaubt; ersetzt die ursprünglich pauschale Sicherungsregel aus Task 9.
+- **Task 10b:** Erinnerung als Heads-up-Benachrichtigung mit Standardton, optional mit Alarmton.
+
+Korrekturwelle nach dem Abschluss-Review:
+
+- Beschädigte oder unlesbare Einstellungsdatei: Rückfall auf Standardwerte.
+- Sommerzeit-Lücke (Vorstellen der Uhr): kein Termin geht verloren.
+- Nachtruhe: kein verspäteter Alarm in der Nachtruhe.
+- Neuplanung im `finally`, sodass die Alarmkette bei Fehlern erhalten bleibt.
+- Theme-Startwert bei Neuerstellung der Activity (kein Aufblitzen).
+- Erinnerungen erst nach abgeschlossenem Onboarding.
+- Benachrichtigungs-Berechtigung bei „Los geht's“ anfragen.
+- Sicherungsschalter unter API 28 ausgeblendet.

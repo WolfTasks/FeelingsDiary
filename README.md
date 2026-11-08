@@ -2,22 +2,21 @@
 
 Android-App: erinnert 1–4× täglich daran festzuhalten, wie man sich fühlt und wie viele Menschen um einen herum sind, und zeigt beides als Verlauf (Jahr/Monat/Woche/Tag). Daten bleiben auf dem Handy. UI Deutsch/Englisch.
 
-## Stand: Phase 2 (Verlauf-Graph)
+## Stand: Phase 3 (Erinnerungen und Einstellungen)
 
-Umgesetzt (zusätzlich zu Phase 1: Fundament + Eingabe):
+Umgesetzt (zusätzlich zu Phase 1: Fundament + Eingabe und Phase 2: Verlauf):
 
-- Verlauf-Graph (Variante B) auf der Startseite: Zeiträume Jahr/Monat/Woche/Tag sowie freier Tagesbereich, Blättern mit ‹ ›
-- Aggregation täglich/wöchentlich bei langen Zeiträumen
-- Personenbereich mit eigener Skala, Legende
-- Eintragsliste unter dem Graph; Details mit Bearbeiten (Gefühle und Personenzahl, Zeit bleibt unverändert) und Löschen mit Bestätigung
-- Datums- und Achsenbeschriftung folgen der Sprache (Deutsch/Englisch)
-- Eingabe-Bildschirm mit Mehrfachauswahl von Gefühlen (erstes gewähltes = Hauptgefühl), Vorschlägen, eigenen Gefühlen und Personenzahl (Anzahl der anderen Menschen, 0–999)
+- Erinnerungen 1–4× täglich: zufällig in Zeitfenstern oder zu festen Uhrzeiten, mit Nachtruhe; ungenaue Alarme (keine exakten Alarme), Neuplanung nach Neustart
+- Heads-up-Benachrichtigung mit Standardton, optional mit Alarmton; Tipp öffnet die Eingabe
+- Einstellungen: Theme (System/Hell/Dunkel), Sprache, Eingabemodus (Vollbild oder Schnell-Blatt), Gefühle verwalten (Farbe, Valenz, eigene umbenennen, ausblenden), Android-Sicherung (Standard aus; Cloud nur Ende-zu-Ende-verschlüsselt, Gerätewechsel erlaubt)
+- Onboarding beim ersten Start mit Erinnerungsauswahl und Benachrichtigungs-Berechtigung
+- Graph nach echter Zeit, korrekt über Sommerzeitwechsel und Zeitzonen; Details zeigen bei abweichendem Offset einen Hinweis „(UTC+1)“
+- Berechtigungen nur `POST_NOTIFICATIONS` und `RECEIVE_BOOT_COMPLETED`; keine `INTERNET`-Berechtigung
+- Verlauf-Graph, Eintragsliste, Bearbeiten und Löschen (Phase 2); Eingabe mit Mehrfachauswahl, Vorschlägen, eigenen Gefühlen und Personenzahl (Anzahl der anderen Menschen, 0–999)
 - Platzsparende lokale Speicherung (Room), Valenz −2…+2 je Gefühl als Momentaufnahme pro Eintrag
-- Dunkles/helles Theme
-- Keine INTERNET-Berechtigung, keine exakten Alarme, `allowBackup=false`
 - CI (Build, Tests, ktlint, Lint, Security-Scan)
 
-Noch nicht enthalten: Erinnerungen und Einstellungen (Phase 3), Export und Release (Phase 4).
+Noch nicht enthalten: Export und Release (Phase 4).
 
 ## Bauen und Testen
 
@@ -36,4 +35,5 @@ Optional: `scripts/install-hooks.sh` installiert einen Pre-Commit-Hook (ktlint, 
 ## Dokumentation
 
 - [Design/Spec](docs/superpowers/specs/2026-11-07-feelings-diary-design.md) (Mockups unter `docs/superpowers/specs/mockups/`)
-- [Plan Phase 1](docs/superpowers/plans/2026-11-07-feelings-diary-phase1-foundation-entry.md) – enthält den Phasen-Fahrplan (Phase 2: Verlauf, erledigt; 3: Erinnerungen und Einstellungen, 4: Export und Release)
+- [Plan Phase 1](docs/superpowers/plans/2026-11-07-feelings-diary-phase1-foundation-entry.md) – enthält den Phasen-Fahrplan (Phase 2: Verlauf, 3: Erinnerungen und Einstellungen, beide erledigt; 4: Export und Release)
+- [Plan Phase 3](docs/superpowers/plans/2026-11-08-feelings-diary-phase3-reminders-settings.md)
