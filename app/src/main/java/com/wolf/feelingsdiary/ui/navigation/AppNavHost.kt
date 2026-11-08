@@ -16,7 +16,7 @@ internal const val ROUTE_ENTRY = "entry"
 fun AppNavHost() {
     AppNavGraph(
         nav = rememberNavController(),
-        home = { onAdd -> HomeRoute(onAdd = onAdd) },
+        home = { onAdd -> HomeRoute(onAdd = onAdd, onEdit = {}) },
         entry = { onDone -> EntryRoute(onDone = onDone) },
     )
 }
