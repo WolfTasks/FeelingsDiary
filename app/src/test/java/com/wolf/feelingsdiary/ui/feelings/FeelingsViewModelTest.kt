@@ -37,7 +37,7 @@ class FeelingsViewModelTest {
     private val feelings = MutableStateFlow(listOf(wehmut, sad, hiddenAngst, customHappy, happy))
     private val repo = mockk<DiaryRepository>()
     private val labels = mapOf("happy" to "fröhlich", "sad" to "traurig")
-    private val labeler = FeelingLabeler { it.customName ?: labels.getValue(it.baseKey!!) }
+    private val labeler = FeelingLabeler { it.customName ?: labels.getValue(checkNotNull(it.baseKey)) }
     private val localeSource = LocaleSource().apply { update(Locale.GERMAN) }
 
     @Before
@@ -149,7 +149,8 @@ class FeelingsViewModelTest {
             val english = mapOf("happy" to "Happy", "sad" to "Sad")
             val localized =
                 FeelingLabeler {
-                    it.customName ?: (if (localeSource.locale.value.language == "de") labels else english).getValue(it.baseKey!!)
+                    it.customName
+                        ?: (if (localeSource.locale.value.language == "de") labels else english).getValue(checkNotNull(it.baseKey))
                 }
             val vm = FeelingsViewModel(repo, localized, localeSource)
             runCurrent()
@@ -171,5 +172,19 @@ class FeelingsViewModelTest {
                     .label,
             )
             assertTrue(vm.save(10, "Happy", 0, 1))
+        }
+
+    @Test
+    fun invalidInputIsRejected() =
+        runTest {
+            val vm = vm()
+            assertFalse(vm.save(99, "Neu", 0, 0))
+            assertFalse(vm.save(11, "Wehmut", 0, 3))
+            assertFalse(vm.save(11, "  ", 0, 0))
+            assertFalse(vm.add("  ", 0, 0))
+            assertFalse(vm.add("Neu", 0, -3))
+            runCurrent()
+            coVerify(exactly = 0) { repo.updateFeeling(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repo.addCustomFeeling(any(), any(), any()) }
         }
 }

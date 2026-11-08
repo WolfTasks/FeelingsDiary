@@ -106,4 +106,12 @@ class FeelingsScreenTest {
         rule.onNodeWithContentDescription(ctx.getString(R.string.settings_back_cd)).performClick()
         assertEquals(listOf("back"), calls)
     }
+
+    @Test
+    fun rowsShowValenceAndHiddenState() {
+        show()
+        rule.onNodeWithText("good (+2)").assertExists()
+        rule.onNodeWithText("bad (-2) · hidden").assertExists()
+        rule.onNodeWithText("bad (-1)").assertExists()
+    }
 }
