@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- API 31+. Only read when the user turned backup on (DiaryBackupAgent); keep in sync with backup_rules.xml. -->
+<!-- API 31+. Only read when the user turned backup on (DiaryBackupAgent); cloud only end-to-end encrypted (also enforced by the agent for API 28-30); keep in sync with backup_rules.xml. -->
 <data-extraction-rules>
-    <cloud-backup>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
         <include domain="database" path="." />
         <include domain="file" path="datastore/settings.preferences_pb" />
     </cloud-backup>

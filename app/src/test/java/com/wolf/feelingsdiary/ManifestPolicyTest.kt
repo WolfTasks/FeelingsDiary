@@ -79,4 +79,13 @@ class ManifestPolicyTest {
             assertEquals(name, expected, includes)
         }
     }
+
+    @Test
+    fun cloudBackupRequiresEncryption() {
+        val extraction = File("src/main/res/xml/data_extraction_rules.xml").readText()
+        val cloud = requireNotNull(Regex("<cloud-backup[^>]*>").find(extraction)) { "cloud-backup missing" }.value
+        val transfer = requireNotNull(Regex("<device-transfer[^>]*>").find(extraction)) { "device-transfer missing" }.value
+        assertTrue(cloud, cloud.contains("disableIfNoEncryptionCapabilities=\"true\""))
+        assertFalse(transfer, transfer.contains("disableIfNoEncryptionCapabilities"))
+    }
 }

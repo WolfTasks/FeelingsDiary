@@ -1,5 +1,6 @@
 package com.wolf.feelingsdiary.backup
 
+import android.app.backup.BackupAgent
 import android.app.backup.FullBackupDataOutput
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -14,6 +15,8 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,8 +67,27 @@ class DiaryBackupAgentTest {
     }
 
     @Test
-    fun onDelegates() {
+    fun onWithoutEncryptionDoesNotDelegate() {
         setBackup(true)
+        every { output.transportFlags } returns 0
+        val agent = agent()
+        agent.onFullBackup(output)
+        verify(exactly = 0) { agent.delegateFullBackup(any()) }
+    }
+
+    @Test
+    fun onWithEncryptionDelegates() {
+        setBackup(true)
+        every { output.transportFlags } returns BackupAgent.FLAG_CLIENT_SIDE_ENCRYPTION_ENABLED
+        val agent = agent()
+        agent.onFullBackup(output)
+        verify(exactly = 1) { agent.delegateFullBackup(output) }
+    }
+
+    @Test
+    fun onWithDeviceTransferDelegates() {
+        setBackup(true)
+        every { output.transportFlags } returns BackupAgent.FLAG_DEVICE_TO_DEVICE_TRANSFER
         val agent = agent()
         agent.onFullBackup(output)
         verify(exactly = 1) { agent.delegateFullBackup(output) }
@@ -78,5 +100,18 @@ class DiaryBackupAgentTest {
         every { agent.readBackupEnabled() } throws IOException("corrupt store")
         agent.onFullBackup(output)
         verify(exactly = 0) { agent.delegateFullBackup(any()) }
+    }
+
+    private val e2e = BackupAgent.FLAG_CLIENT_SIDE_ENCRYPTION_ENABLED
+    private val d2d = BackupAgent.FLAG_DEVICE_TO_DEVICE_TRANSFER
+
+    @Test
+    fun mayLeaveDeviceRules() {
+        assertFalse(mayLeaveDevice(false, 36, e2e or d2d))
+        assertFalse(mayLeaveDevice(true, 36, 0))
+        assertTrue(mayLeaveDevice(true, 36, e2e))
+        assertTrue(mayLeaveDevice(true, 36, d2d))
+        assertFalse(mayLeaveDevice(true, 27, e2e or d2d))
+        assertTrue(mayLeaveDevice(true, 28, e2e))
     }
 }
