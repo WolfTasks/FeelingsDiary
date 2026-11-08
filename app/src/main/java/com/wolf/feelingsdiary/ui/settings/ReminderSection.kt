@@ -104,6 +104,12 @@ fun ReminderSection(
             }
         }
         SwitchRow(stringResource(R.string.reminder_switch), s.enabled) { on -> onChange { it.copy(enabled = on) } }
+        SwitchRow(
+            stringResource(R.string.reminder_alarm_sound),
+            s.alarmSound,
+            enabled = s.enabled,
+            hint = stringResource(R.string.reminder_alarm_sound_hint),
+        ) { on -> onChange { it.copy(alarmSound = on) } }
 
         ReminderCountRow(s.count, s.enabled) { perDay -> onChange { it.copy(count = perDay) } }
 

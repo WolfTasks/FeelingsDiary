@@ -71,6 +71,39 @@ class SettingsRepositoryTest {
         }
 
     @Test
+    fun alarmSoundDefaultsOffAndRoundTrips() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repo = SettingsRepository(store())
+            assertEquals(
+                false,
+                repo.settings
+                    .first()
+                    .reminders.alarmSound,
+            )
+            repo.update { it.copy(reminders = it.reminders.copy(alarmSound = true)) }
+            assertEquals(
+                true,
+                repo.settings
+                    .first()
+                    .reminders.alarmSound,
+            )
+        }
+
+    @Test
+    fun corruptAlarmSoundFallsBackToOff() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit { it[stringPreferencesKey("reminder_alarm_sound")] = "loud" }
+            assertEquals(
+                false,
+                SettingsRepository(store)
+                    .settings
+                    .first()
+                    .reminders.alarmSound,
+            )
+        }
+
+    @Test
     fun corruptValuesFallBackPerField() =
         runTest(UnconfinedTestDispatcher()) {
             val store = store()

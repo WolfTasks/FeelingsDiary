@@ -141,6 +141,20 @@ class ReminderSectionTest {
     }
 
     @Test
+    fun alarmSoundSwitchCallsChange() {
+        show(ReminderSettings())
+        rule.onNodeWithText(str(R.string.reminder_alarm_sound)).performClick()
+        assertTrue(changes.single()(ReminderSettings()).alarmSound)
+        rule.onNodeWithText(str(R.string.reminder_alarm_sound_hint)).assertExists()
+    }
+
+    @Test
+    fun alarmSoundDisabledWhenRemindersOff() {
+        show(ReminderSettings(enabled = false))
+        rule.onNodeWithText(str(R.string.reminder_alarm_sound)).assertIsNotEnabled()
+    }
+
+    @Test
     fun switchOffDisablesRows() {
         show(ReminderSettings(enabled = false, count = 2))
         rule.onNodeWithText(str(R.string.reminder_window_morning)).assertIsNotEnabled()

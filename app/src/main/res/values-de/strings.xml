@@ -74,12 +74,15 @@
         <item quantity="other">Graph, %d Einträge</item>
     </plurals>
     <string name="reminder_channel_name">Erinnerungen</string>
+    <string name="reminder_channel_alarm_name">Erinnerungen mit Alarmton</string>
     <string name="reminder_text">Tippen, um es festzuhalten</string>
     <string name="settings_title">Einstellungen</string>
     <string name="settings_open_cd">Einstellungen</string>
     <string name="settings_back_cd">Zurück</string>
     <string name="settings_section_reminders">Erinnerungen</string>
     <string name="reminder_switch">Erinnerungen</string>
+    <string name="reminder_alarm_sound">Mit Alarmton</string>
+    <string name="reminder_alarm_sound_hint">Klingelt mit dem Wecker-Ton statt mit dem Benachrichtigungston</string>
     <string name="reminder_count">Erinnerungen pro Tag</string>
     <string name="reminder_mode_random">Zufällig im Zeitfenster</string>
     <string name="reminder_mode_fixed">Feste Uhrzeiten</string>

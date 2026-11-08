@@ -60,7 +60,7 @@ class ReminderScheduler
                 val current = settings.settings.first()
                 val reminders = current.reminders
                 val remind = reminders.enabled && current.onboardingDone && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)
-                if (remind) notifier.show()
+                if (remind) notifier.show(reminders.alarmSound)
             } finally {
                 reschedule()
             }

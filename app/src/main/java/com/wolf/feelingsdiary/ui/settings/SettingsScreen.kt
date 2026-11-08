@@ -154,7 +154,7 @@ fun SettingsScreen(
                 }
                 if (showBackup) {
                     SectionTitle(R.string.settings_section_privacy)
-                    SwitchRow(stringResource(R.string.backup_switch), state.backupEnabled, actions.onBackup)
+                    SwitchRow(stringResource(R.string.backup_switch), state.backupEnabled, onCheckedChange = actions.onBackup)
                     Text(
                         stringResource(R.string.backup_explanation),
                         style = MaterialTheme.typography.bodySmall,
@@ -215,18 +215,27 @@ internal fun ChoiceRow(
 internal fun SwitchRow(
     label: String,
     checked: Boolean,
+    enabled: Boolean = true,
+    hint: String? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val color = MaterialTheme.colorScheme.onSurface
+    val textColor = if (enabled) color else color.copy(alpha = DISABLED_TEXT_ALPHA)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(label, color = textColor)
+            if (hint != null) {
+                Text(hint, style = MaterialTheme.typography.bodySmall, color = textColor)
+            }
+        }
         // The row handles the tap; the switch only shows the state.
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 

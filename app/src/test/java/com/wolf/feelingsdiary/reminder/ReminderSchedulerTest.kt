@@ -179,6 +179,16 @@ class ReminderSchedulerTest {
         }
 
     @Test
+    fun alarmPassesTheAlarmSoundSetting() =
+        runTest {
+            setUp(notifier = spyk(ReminderNotifier(app)))
+            grantNotifications()
+            repo.update { it.copy(reminders = it.reminders.copy(alarmSound = true)) }
+            scheduler.onAlarm()
+            verify(exactly = 1) { notifier.show(true) }
+        }
+
+    @Test
     fun nothingIsPlannedBeforeTheOnboarding() =
         runTest {
             setUp()

@@ -74,12 +74,15 @@
         <item quantity="other">Graph, %d entries</item>
     </plurals>
     <string name="reminder_channel_name">Reminders</string>
+    <string name="reminder_channel_alarm_name">Reminders with alarm sound</string>
     <string name="reminder_text">Tap to note it down</string>
     <string name="settings_title">Settings</string>
     <string name="settings_open_cd">Settings</string>
     <string name="settings_back_cd">Back</string>
     <string name="settings_section_reminders">Reminders</string>
     <string name="reminder_switch">Reminders</string>
+    <string name="reminder_alarm_sound">Alarm sound</string>
+    <string name="reminder_alarm_sound_hint">Rings with the alarm tone instead of the notification sound</string>
     <string name="reminder_count">Reminders per day</string>
     <string name="reminder_mode_random">Random within time window</string>
     <string name="reminder_mode_fixed">Fixed times</string>

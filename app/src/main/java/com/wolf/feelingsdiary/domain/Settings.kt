@@ -25,6 +25,7 @@ data class ReminderSettings(
     val fixedTimes: List<LocalTime> = DEFAULT_TIMES,
     val quietStart: LocalTime = LocalTime.of(22, 0),
     val quietEnd: LocalTime = LocalTime.of(8, 0),
+    val alarmSound: Boolean = false,
 ) {
     init {
         require(count in 1..4) { "count must be 1..4" }

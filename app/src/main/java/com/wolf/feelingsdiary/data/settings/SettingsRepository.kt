@@ -66,6 +66,7 @@ class SettingsRepository
             private val FIXED = stringPreferencesKey("reminder_fixed_times")
             private val QUIET_START = intPreferencesKey("quiet_start")
             private val QUIET_END = intPreferencesKey("quiet_end")
+            private val ALARM_SOUND = booleanPreferencesKey("reminder_alarm_sound")
             private val THEME = stringPreferencesKey("theme")
             private val INPUT = stringPreferencesKey("input_mode")
             private val BACKUP = booleanPreferencesKey("backup_enabled")
@@ -118,6 +119,7 @@ class SettingsRepository
                         fixedTimes = parseTimes(typed(FIXED)) ?: d.fixedTimes,
                         quietStart = typed(QUIET_START)?.let(::time) ?: d.quietStart,
                         quietEnd = typed(QUIET_END)?.let(::time) ?: d.quietEnd,
+                        alarmSound = typed(ALARM_SOUND) ?: d.alarmSound,
                     ),
                 theme = enumOr(typed(THEME), ThemeMode.DARK),
                 input = enumOr(typed(INPUT), InputMode.SCREEN),
@@ -135,6 +137,7 @@ class SettingsRepository
             this[FIXED] = r.fixedTimes.joinToString(",") { minutes(it).toString() }
             this[QUIET_START] = minutes(r.quietStart)
             this[QUIET_END] = minutes(r.quietEnd)
+            this[ALARM_SOUND] = r.alarmSound
             this[THEME] = s.theme.name
             this[INPUT] = s.input.name
             this[BACKUP] = s.backupEnabled
