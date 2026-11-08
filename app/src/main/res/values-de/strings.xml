@@ -119,4 +119,7 @@
     <string name="settings_section_input">Eingabe</string>
     <string name="settings_input_screen">Eigener Bildschirm (Standard)</string>
     <string name="settings_input_sheet">Schnell-Blatt von unten</string>
+    <string name="settings_section_privacy">Datenschutz</string>
+    <string name="backup_switch">Android-Sicherung</string>
+    <string name="backup_explanation">Aus: Deine Einträge verlassen nie das Gerät. An: Android darf sie mit deiner Google-Sicherung und beim Gerätewechsel übertragen.</string>
 </resources>

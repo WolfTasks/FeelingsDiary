@@ -5,11 +5,19 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!--
+        Backup is allowed only so that DiaryBackupAgent runs: it hands over to Auto Backup only when the
+        user turned backup on in the settings (default off); otherwise nothing leaves the device.
+        The rules (backup_rules for API <= 30, data_extraction_rules for 31+) include only the database
+        and the settings file.
+    -->
     <application
         android:name=".FeelingsDiaryApp"
-        android:allowBackup="false"
+        android:allowBackup="true"
+        android:backupAgent=".backup.DiaryBackupAgent"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:fullBackupOnly="true"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"

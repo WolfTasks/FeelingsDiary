@@ -1,6 +1,8 @@
 package com.wolf.feelingsdiary.ui.settings
 
 import android.content.Context
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -35,6 +37,7 @@ class SettingsScreenTest {
     private val languages = mutableListOf<String?>()
     private var backs = 0
     private var manageFeelings = 0
+    private val backups = mutableListOf<Boolean>()
     private val reminderChanges = mutableListOf<(ReminderSettings) -> ReminderSettings>()
     private val actions =
         SettingsActions(
@@ -46,6 +49,7 @@ class SettingsScreenTest {
             onRequestNotifications = {},
             onOpenNotificationSettings = {},
             onManageFeelings = { manageFeelings++ },
+            onBackup = { backups += it },
         )
 
     private fun show(
@@ -119,5 +123,29 @@ class SettingsScreenTest {
         show()
         rule.onNodeWithText(ctx.getString(R.string.feelings_title)).performScrollTo().performClick()
         assertEquals(1, manageFeelings)
+    }
+
+    @Test
+    fun backupSwitchCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_privacy)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.backup_explanation)).performScrollTo().assertExists()
+        rule
+            .onNodeWithText(ctx.getString(R.string.backup_switch))
+            .performScrollTo()
+            .assertIsOff()
+            .performClick()
+        assertEquals(listOf(true), backups)
+    }
+
+    @Test
+    fun backupSwitchShowsOnAndTurnsOff() {
+        show(AppSettings(backupEnabled = true))
+        rule
+            .onNodeWithText(ctx.getString(R.string.backup_switch))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+        assertEquals(listOf(false), backups)
     }
 }

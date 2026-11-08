@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.ReminderMode
@@ -115,17 +112,7 @@ fun ReminderSection(
                 }) { Text(stringResource(R.string.reminder_allow)) }
             }
         }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .toggleable(value = s.enabled, role = Role.Switch, onValueChange = { on -> onChange { it.copy(enabled = on) } }),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(stringResource(R.string.reminder_switch), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-            // The row handles the tap; the switch only shows the state.
-            Switch(checked = s.enabled, onCheckedChange = null)
-        }
+        SwitchRow(stringResource(R.string.reminder_switch), s.enabled) { on -> onChange { it.copy(enabled = on) } }
 
         Text(
             stringResource(R.string.reminder_count),

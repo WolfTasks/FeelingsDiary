@@ -40,21 +40,24 @@ class SettingsRepository
             return result
         }
 
-        private companion object {
-            val ENABLED = booleanPreferencesKey("reminder_enabled")
-            val COUNT = intPreferencesKey("reminder_count")
-            val MODE = stringPreferencesKey("reminder_mode")
-            val WINDOWS = stringPreferencesKey("reminder_windows")
-            val FIXED = stringPreferencesKey("reminder_fixed_times")
-            val QUIET_START = intPreferencesKey("quiet_start")
-            val QUIET_END = intPreferencesKey("quiet_end")
-            val THEME = stringPreferencesKey("theme")
-            val INPUT = stringPreferencesKey("input_mode")
-            val BACKUP = booleanPreferencesKey("backup_enabled")
-            val ONBOARDING = booleanPreferencesKey("onboarding_done")
-            val SALT = longPreferencesKey("reminder_salt")
+        companion object {
+            private val ENABLED = booleanPreferencesKey("reminder_enabled")
+            private val COUNT = intPreferencesKey("reminder_count")
+            private val MODE = stringPreferencesKey("reminder_mode")
+            private val WINDOWS = stringPreferencesKey("reminder_windows")
+            private val FIXED = stringPreferencesKey("reminder_fixed_times")
+            private val QUIET_START = intPreferencesKey("quiet_start")
+            private val QUIET_END = intPreferencesKey("quiet_end")
+            private val THEME = stringPreferencesKey("theme")
+            private val INPUT = stringPreferencesKey("input_mode")
+            private val BACKUP = booleanPreferencesKey("backup_enabled")
+            private val ONBOARDING = booleanPreferencesKey("onboarding_done")
+            private val SALT = longPreferencesKey("reminder_salt")
 
-            const val MINUTES_PER_DAY = 24 * 60
+            private const val MINUTES_PER_DAY = 24 * 60
+
+            /** The backup flag alone, for callers outside Hilt (the backup agent); default off. */
+            fun backupEnabled(prefs: Preferences): Boolean = prefs[BACKUP] ?: false
         }
 
         private fun minutes(t: LocalTime) = t.hour * 60 + t.minute
@@ -97,7 +100,7 @@ class SettingsRepository
                     ),
                 theme = enumOr(this[THEME], ThemeMode.DARK),
                 input = enumOr(this[INPUT], InputMode.SCREEN),
-                backupEnabled = this[BACKUP] ?: false,
+                backupEnabled = backupEnabled(this),
                 onboardingDone = this[ONBOARDING] ?: false,
             )
         }

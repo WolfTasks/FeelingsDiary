@@ -2,6 +2,7 @@ package com.wolf.feelingsdiary.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wolf.feelingsdiary.backup.BackupNotifier
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.InputMode
@@ -19,6 +20,7 @@ class SettingsViewModel
     @Inject
     constructor(
         private val repo: SettingsRepository,
+        private val backup: BackupNotifier,
     ) : ViewModel() {
         val state: StateFlow<AppSettings> =
             repo.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), AppSettings())
@@ -27,7 +29,13 @@ class SettingsViewModel
 
         fun setInput(input: InputMode) = update { it.copy(input = input) }
 
-        fun setBackup(enabled: Boolean) = update { it.copy(backupEnabled = enabled) }
+        /** Turning backup on also tells Android there is data to back up, once the flag is stored. */
+        fun setBackup(enabled: Boolean) {
+            viewModelScope.launch {
+                repo.update { it.copy(backupEnabled = enabled) }
+                if (enabled) backup.dataChanged()
+            }
+        }
 
         fun updateReminders(transform: (ReminderSettings) -> ReminderSettings) = update { it.copy(reminders = transform(it.reminders)) }
 

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -58,7 +60,6 @@ import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
 import com.wolf.feelingsdiary.reminder.canPostNotifications
 
-/** Later sections (privacy) add their callbacks here. */
 data class SettingsActions(
     val onBack: () -> Unit,
     val onTheme: (ThemeMode) -> Unit,
@@ -68,6 +69,7 @@ data class SettingsActions(
     val onRequestNotifications: () -> Unit,
     val onOpenNotificationSettings: () -> Unit,
     val onManageFeelings: () -> Unit,
+    val onBackup: (Boolean) -> Unit,
 )
 
 private val THEMES =
@@ -123,13 +125,13 @@ fun SettingsRoute(
             },
             onOpenNotificationSettings = { openNotificationSettings(context) },
             onManageFeelings = onManageFeelings,
+            onBackup = vm::setBackup,
         )
     SettingsScreen(state, actions, language, notificationsAllowed)
 }
 
 /**
  * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy.
- * Privacy follows in a later step and slots in at its place below.
  */
 @Composable
 fun SettingsScreen(
@@ -172,7 +174,13 @@ fun SettingsScreen(
                         LANGUAGES.forEach { (tag, label) -> ChoiceRow(stringResource(label), language == tag) { actions.onLanguage(tag) } }
                     }
                 }
-                // Privacy goes here.
+                SectionTitle(R.string.settings_section_privacy)
+                SwitchRow(stringResource(R.string.backup_switch), state.backupEnabled, actions.onBackup)
+                Text(
+                    stringResource(R.string.backup_explanation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Spacer(Modifier.size(16.dp))
             }
         }
@@ -219,6 +227,26 @@ internal fun ChoiceRow(
         Spacer(Modifier.size(12.dp))
         val color = MaterialTheme.colorScheme.onSurface
         Text(label, color = if (enabled) color else color.copy(alpha = DISABLED_TEXT_ALPHA))
+    }
+}
+
+/** An on/off row; the whole row is the touch target. */
+@Composable
+internal fun SwitchRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+        // The row handles the tap; the switch only shows the state.
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

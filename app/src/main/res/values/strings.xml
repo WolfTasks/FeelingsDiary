@@ -119,4 +119,7 @@
     <string name="settings_section_input">Input</string>
     <string name="settings_input_screen">Own screen (default)</string>
     <string name="settings_input_sheet">Quick sheet from below</string>
+    <string name="settings_section_privacy">Privacy</string>
+    <string name="backup_switch">Android backup</string>
+    <string name="backup_explanation">Off: your entries never leave this device. On: Android may include them in your Google backup and when you move to a new phone.</string>
 </resources>
