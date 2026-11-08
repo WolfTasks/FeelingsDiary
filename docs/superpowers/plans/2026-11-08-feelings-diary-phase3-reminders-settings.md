@@ -32,11 +32,11 @@ Legende: ✅ erledigt + reviewt · 🔄 in Arbeit · ⏳ offen. Bei ✅-Tasks si
 | 10b | Heads-up-Popup mit Standardton, Alarmton optional | ✅ | `d89a8eb` |
 | 10c | Verspätung begrenzen (Etappen-Planung, einstellbar) | ✅ | `b3ab809` |
 | 10d | Hinweis „Akku nicht einschränken“ (Samsung Freecess) | ✅ | `f69b976` |
-| 10e | Nacharbeit 10c: ehrliche Beschriftung, keine Doppel-Erinnerung | 🔄 | in Arbeit |
+| 10e | Nacharbeit 10c: ehrliche Beschriftung, keine Doppel-Erinnerung | ✅ | `5942312`..`9b0fcbf` |
 | Gesamt-Review + Fix-Runde | Abschluss-Review über Tasks 1–10, 9 Korrekturen | ✅ | `40cee5b`..`cee1b4d` |
-| 11 | Gerätetest, Doku, PR | 🔄 | Doku `b529f1d` |
+| 11 | Gerätetest, Doku, PR | 🔄 | Doku `b529f1d`, `237126f`; Gerätetest ✅ (Samsung-Freecess → 10d); PR offen |
 
-**Task 11 im Detail:** Doku ✅ (`b529f1d`). Gerätetest teilweise: Onboarding, Berechtigung, Popup und Datenrücksicherung ok; Samsung-Freecess-Befund führte zu Task 10d (siehe „Gerätetest-Befunde“). Schlusstest nach 10e und PR offen.
+**Task 11 im Detail:** Doku ✅ (`b529f1d`, `237126f`). Gerätetest ✅: Onboarding, Berechtigung, Popup (Heads-up, Standardton), Datenrücksicherung, Einstellungen/Uhrzeit-Auswahl, sofortiges Umplanen, Akku-Hinweis mit Weg zu „Nicht eingeschränkt“ und Verschwinden nach Rückkehr, Beschriftung Genauigkeit; Erinnerung mit Akku-Ausnahme pünktlich im Fenster (15:45 → 15:49). Prüfkette: 349 Tests grün. PR offen.
 
 ## Global Constraints
 
@@ -444,11 +444,11 @@ Inhalt: Schalter „Erinnerungen“; Anzahl 1–4 (vier Knöpfe); Modus „Zufä
 - Beschriftung Genauigkeit: „Bis 5 Min. später“, „Bis 15 Min. später“, „Bis 60 Min. später (spart Akku)“ / „Up to 5 min late“, „Up to 15 min late“, „Up to 60 min late (saves battery)“ (nur die Verspätung ist begrenzt, „±“ wäre irreführend).
 - Doppelte Erinnerung verhindern: kommt ein Etappen-Alarm in [Ziel − 1 min, Ziel) an, zählt er als Erinnerung; ein anderer `reschedule()`-Aufrufer (Kaltstart, BootReceiver, Einstellungsänderung) plante danach dasselbe Ziel erneut. Fix: zuletzt gezeigtes Ziel in DataStore persistieren, beim Anzeigen setzen; `reschedule()` plant immer nach `max(now, lastShown)`.
 
-- [ ] **Step 1: Failing Tests** – Etappe 30 s vor Ziel wird angezeigt; danach `reschedule()` ohne Argument plant den Folge-Slot, nicht dasselbe Ziel; Repo-Roundtrip für `reminder_last_shown`; alte „±“-Tests angepasst.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren.**
-- [ ] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
-- [ ] **Step 5: Commit** – `fix(reminders): honest accuracy labels, never remind twice for the same slot`.
+- [x] **Step 1: Failing Tests** – Etappe 30 s vor Ziel wird angezeigt; danach `reschedule()` ohne Argument plant den Folge-Slot, nicht dasselbe Ziel; Repo-Roundtrip für `reminder_last_shown`; alte „±“-Tests angepasst.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS, volle Prüfkette grün.
+- [x] **Step 5: Commit** – `fix(reminders): honest accuracy labels, never remind twice for the same slot`.
 
 ---
 
