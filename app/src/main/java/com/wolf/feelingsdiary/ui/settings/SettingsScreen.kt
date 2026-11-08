@@ -1,5 +1,6 @@
 package com.wolf.feelingsdiary.ui.settings
 
+import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -107,7 +108,7 @@ fun SettingsRoute(
 }
 
 /**
- * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy.
+ * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy (API 28+).
  */
 @Composable
 fun SettingsScreen(
@@ -116,6 +117,7 @@ fun SettingsScreen(
     language: String?,
     notificationsAllowed: Boolean = true,
     showLanguage: Boolean = supportsAppLanguage,
+    showBackup: Boolean = supportsBackup,
 ) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 16.dp)) {
@@ -150,13 +152,15 @@ fun SettingsScreen(
                         LANGUAGES.forEach { (tag, label) -> ChoiceRow(stringResource(label), language == tag) { actions.onLanguage(tag) } }
                     }
                 }
-                SectionTitle(R.string.settings_section_privacy)
-                SwitchRow(stringResource(R.string.backup_switch), state.backupEnabled, actions.onBackup)
-                Text(
-                    stringResource(R.string.backup_explanation),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (showBackup) {
+                    SectionTitle(R.string.settings_section_privacy)
+                    SwitchRow(stringResource(R.string.backup_switch), state.backupEnabled, actions.onBackup)
+                    Text(
+                        stringResource(R.string.backup_explanation),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.size(16.dp))
             }
         }
@@ -245,3 +249,6 @@ private fun NavigationRow(
 }
 
 internal const val DISABLED_TEXT_ALPHA = 0.38f
+
+/** Backup can leave the device only from API 28 on (see DiaryBackupAgent); below, the switch would do nothing. */
+val supportsBackup: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P

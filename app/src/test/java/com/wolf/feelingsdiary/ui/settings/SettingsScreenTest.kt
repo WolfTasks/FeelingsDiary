@@ -55,8 +55,29 @@ class SettingsScreenTest {
     private fun show(
         state: AppSettings = AppSettings(),
         language: String? = null,
+        showBackup: Boolean? = null,
     ) {
-        rule.setContent { FeelingsDiaryTheme { SettingsScreen(state, actions, language) } }
+        rule.setContent {
+            FeelingsDiaryTheme {
+                if (showBackup ==
+                    null
+                ) {
+                    SettingsScreen(state, actions, language)
+                } else {
+                    SettingsScreen(state, actions, language, showBackup = showBackup)
+                }
+            }
+        }
+    }
+
+    /** Below API 28 the backup agent never lets data out, so the switch would promise nothing. */
+    @Test
+    fun privacySectionHiddenWithoutBackup() {
+        show(showBackup = false)
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_appearance)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_privacy)).assertDoesNotExist()
+        rule.onNodeWithText(ctx.getString(R.string.backup_switch)).assertDoesNotExist()
+        rule.onNodeWithText(ctx.getString(R.string.backup_explanation)).assertDoesNotExist()
     }
 
     @Test
