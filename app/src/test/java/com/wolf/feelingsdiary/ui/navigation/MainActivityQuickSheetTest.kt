@@ -10,10 +10,8 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
 import com.wolf.feelingsdiary.R
-import com.wolf.feelingsdiary.data.settings.SettingsRepository
-import com.wolf.feelingsdiary.data.settings.settingsDataStore
 import com.wolf.feelingsdiary.domain.InputMode
-import kotlinx.coroutines.runBlocking
+import com.wolf.feelingsdiary.testutil.resetSettings
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -33,18 +31,16 @@ class MainActivityQuickSheetTest {
 
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
 
-    // The DataStore delegate is process-wide, so the mode is reset after each test.
-    private val settings = SettingsRepository(ctx.settingsDataStore)
     private val question = ctx.getString(R.string.entry_question)
     private val add = ctx.getString(R.string.home_add)
     private val happy = ctx.getString(R.string.feeling_happy)
 
     // Onboarding done: the app starts at Home.
     @Before
-    fun quickMode() = runBlocking { settings.update { it.copy(input = InputMode.QUICK_SHEET, onboardingDone = true) } }
+    fun quickMode() = resetSettings { it.copy(input = InputMode.QUICK_SHEET, onboardingDone = true) }
 
     @After
-    fun screenMode() = runBlocking { settings.update { it.copy(input = InputMode.SCREEN) } }
+    fun defaults() = resetSettings()
 
     /** Home has loaded once the empty hint shows; the mode is part of that same state. */
     private fun awaitHome() = rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.history_empty)) }

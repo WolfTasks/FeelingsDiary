@@ -13,6 +13,7 @@ import com.wolf.feelingsdiary.MainActivity
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.data.settings.settingsDataStore
+import com.wolf.feelingsdiary.testutil.resetSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -37,14 +38,13 @@ class MainActivityOnboardingTest {
 
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
 
-    // The DataStore delegate is process-wide, so the state is reset around each test.
     private val settings = SettingsRepository(ctx.settingsDataStore)
 
     @Before
-    fun firstStart() = runBlocking { settings.update { it.copy(onboardingDone = false) } }
+    fun firstStart() = resetSettings()
 
     @After
-    fun done() = runBlocking { settings.update { it.copy(onboardingDone = true) } }
+    fun defaults() = resetSettings()
 
     private fun grantNotifications() = shadowOf(ctx as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
 

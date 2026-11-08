@@ -8,12 +8,10 @@ import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
-import com.wolf.feelingsdiary.data.settings.SettingsRepository
-import com.wolf.feelingsdiary.data.settings.settingsDataStore
 import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ReminderPlanner
 import com.wolf.feelingsdiary.domain.ReminderSettings
-import kotlinx.coroutines.runBlocking
+import com.wolf.feelingsdiary.testutil.resetSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -48,18 +46,15 @@ class ReminderReceiverTest {
         fail("condition not met in time")
     }
 
-    // The DataStore delegate is process-wide, so the state is set around each test.
-    private val settings = SettingsRepository(app.settingsDataStore)
-
     // Reminders active at any wall-clock time: fixed slots, no quiet hours, onboarding done.
     private val reminders =
         ReminderSettings(count = 4, mode = ReminderMode.FIXED, quietStart = LocalTime.MIDNIGHT, quietEnd = LocalTime.MIDNIGHT)
 
     @Before
-    fun activeReminders() = runBlocking { settings.update { it.copy(reminders = reminders, onboardingDone = true) } }
+    fun activeReminders() = resetSettings { it.copy(reminders = reminders, onboardingDone = true) }
 
     @After
-    fun defaultReminders() = runBlocking { settings.update { it.copy(reminders = ReminderSettings()) } }
+    fun defaults() = resetSettings()
 
     /**
      * App start schedules once, and again once it sees the settings of [activeReminders]; wait for the
