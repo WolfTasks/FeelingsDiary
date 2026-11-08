@@ -2,13 +2,13 @@ package com.wolf.feelingsdiary.domain
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 class ReminderPlannerTest {
@@ -144,16 +144,44 @@ class ReminderPlannerTest {
         assertNull(ReminderPlanner.next(ReminderSettings(enabled = false), ZonedDateTime.of(day, t(8), berlin), 1L))
     }
 
+    /** Successive reminders from [start] on, as the alarm chain plans them (each one after the previous). */
+    private fun chain(
+        s: ReminderSettings,
+        start: ZonedDateTime,
+        n: Int,
+    ) = generateSequence(ReminderPlanner.next(s, start, 1L)) { ReminderPlanner.next(s, it, 1L) }.take(n).toList()
+
+    private fun fixedNoQuiet(vararg times: LocalTime) =
+        ReminderSettings(count = 4, mode = ReminderMode.FIXED, fixedTimes = times.toList(), quietStart = t(0), quietEnd = t(0))
+
+    /** 29.03.2026, 02:00 CET jumps to 03:00 CEST: a slot in the gap moves to 03:59 and must not hide 03:10. */
     @Test
-    fun dstDaysKeepWallClock() {
-        val s = ReminderSettings(count = 3)
-        for (date in listOf(LocalDate.of(2026, 3, 29), LocalDate.of(2026, 10, 25))) {
-            val after = ZonedDateTime.of(date, t(0), berlin)
-            val result = ReminderPlanner.next(s, after, 9L)
-            assertNotNull(result)
-            assertEquals(ReminderPlanner.slotsFor(date, s, 9L).first(), result!!.toLocalTime())
-            assertTrue(result.isAfter(after))
-        }
+    fun springForwardGapLosesNoSlot() {
+        val date = LocalDate.of(2026, 3, 29)
+        val s = fixedNoQuiet(t(2, 59), t(3, 10), t(9), t(20))
+        val after = ZonedDateTime.of(date, t(3), berlin)
+        assertEquals(ZoneOffset.ofHours(2), after.offset)
+        val expected =
+            listOf(
+                ZonedDateTime.of(date, t(3, 10), berlin),
+                ZonedDateTime.of(date, t(3, 59), berlin),
+                ZonedDateTime.of(date, t(9), berlin),
+                ZonedDateTime.of(date, t(20), berlin),
+            )
+        assertEquals(expected, chain(s, after, 4))
+        // Planned from before the jump: the same reminders, none lost, none twice.
+        assertEquals(expected, chain(s, ZonedDateTime.of(date, t(1), berlin), 4))
+    }
+
+    /** 25.10.2026, 03:00 CEST falls back to 02:00 CET: 02:30 exists twice but reminds only once. */
+    @Test
+    fun fallBackSlotFiresOnce() {
+        val date = LocalDate.of(2026, 10, 25)
+        val s = fixedNoQuiet(t(2, 30), t(9), t(15), t(20))
+        val plan = chain(s, ZonedDateTime.of(date, t(0), berlin), 4)
+        assertEquals(listOf(t(2, 30), t(9), t(15), t(20)), plan.map { it.toLocalTime() })
+        assertEquals(ZoneOffset.ofHours(2), plan.first().offset)
+        assertTrue(plan.zipWithNext().all { (a, b) -> b.isAfter(a) })
     }
 
     @Test

@@ -53,10 +53,12 @@ object ReminderPlanner {
         val zone = after.zone
         for (offset in 0..SEARCH_DAYS) {
             val date = after.toLocalDate().plusDays(offset)
-            for (slot in slotsFor(date, s, salt)) {
-                val candidate = ZonedDateTime.of(date, slot, zone)
-                if (candidate.isAfter(after)) return candidate
-            }
+            // A slot in a spring-forward gap moves behind later slots, so all of the day are compared.
+            slotsFor(date, s, salt)
+                .map { ZonedDateTime.of(date, it, zone) }
+                .filter { it.isAfter(after) }
+                .minOrNull()
+                ?.let { return it }
         }
         return null
     }
