@@ -71,9 +71,10 @@ class ManifestPolicyTest {
             val includes =
                 rules.map { rule ->
                     assertTrue("$name: only includes allowed, found $rule", rule.startsWith("<include"))
-                    val domain = Regex("""domain="([^"]+)"""").find(rule)!!.groupValues[1]
-                    val path = Regex("""path="([^"]+)"""").find(rule)!!.groupValues[1]
-                    domain to path
+
+                    fun attr(key: String) =
+                        requireNotNull(Regex("""$key="([^"]+)"""").find(rule)) { "$name: $rule lacks $key" }.groupValues[1]
+                    attr("domain") to attr("path")
                 }
             assertEquals(name, expected, includes)
         }

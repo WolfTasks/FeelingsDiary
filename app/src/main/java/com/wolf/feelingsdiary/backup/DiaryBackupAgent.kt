@@ -41,14 +41,17 @@ open class DiaryBackupAgent : BackupAgent() {
     internal open fun delegateFullBackup(data: FullBackupDataOutput) = super.onFullBackup(data)
 
     // Any failure to read the setting counts as off: when in doubt, nothing leaves the device.
-    @Suppress("TooGenericExceptionCaught")
     private fun backupEnabled(): Boolean =
         try {
-            runBlocking { SettingsRepository.backupEnabled(applicationContext.settingsDataStore.data.first()) }
-        } catch (e: Exception) {
-            Log.w(TAG, "Backup setting unreadable, skipping backup", e)
+            readBackupEnabled()
+        } catch (error: Exception) {
+            Log.w(TAG, "Backup setting unreadable, skipping backup", error)
             false
         }
+
+    /** Test seam: the stored setting, read straight from the store (no Hilt). */
+    internal open fun readBackupEnabled(): Boolean =
+        runBlocking { SettingsRepository.backupEnabled(applicationContext.settingsDataStore.data.first()) }
 
     private companion object {
         const val TAG = "DiaryBackupAgent"

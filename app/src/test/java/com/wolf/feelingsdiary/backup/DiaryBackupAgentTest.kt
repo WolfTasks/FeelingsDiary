@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class DiaryBackupAgentTest {
@@ -68,5 +69,14 @@ class DiaryBackupAgentTest {
         val agent = agent()
         agent.onFullBackup(output)
         verify(exactly = 1) { agent.delegateFullBackup(output) }
+    }
+
+    @Test
+    fun unreadableSettingCountsAsOff() {
+        setBackup(true)
+        val agent = agent()
+        every { agent.readBackupEnabled() } throws IOException("corrupt store")
+        agent.onFullBackup(output)
+        verify(exactly = 0) { agent.delegateFullBackup(any()) }
     }
 }
