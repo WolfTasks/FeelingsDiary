@@ -44,18 +44,20 @@ object GraphBuilder {
         val periodMinutes = period.days * MINUTES_PER_DAY
         val points =
             if (aggregation == Aggregation.NONE) {
-                inPeriod.map { (entry, local) ->
-                    val minutes = ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local)
-                    GraphPoint(
-                        x = minutes / periodMinutes,
-                        valence = entry.valences.average().toFloat(),
-                        mainFeelingId = entry.feelingIds.first(),
-                        otherFeelingIds = entry.feelingIds.drop(1),
-                        people = entry.people.toFloat(),
-                        entryId = entry.id,
-                        bucketStart = local.toLocalDate(),
-                    )
-                }
+                inPeriod
+                    .map { (entry, local) ->
+                        val minutes = ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local)
+                        GraphPoint(
+                            x = minutes / periodMinutes,
+                            valence = entry.valences.average().toFloat(),
+                            mainFeelingId = entry.feelingIds.first(),
+                            otherFeelingIds = entry.feelingIds.drop(1),
+                            people = entry.people.toFloat(),
+                            entryId = entry.id,
+                            bucketStart = local.toLocalDate(),
+                        )
+                        // inPeriod is ordered by (epochMinute, id) and sortedBy is stable: ties on x keep that order.
+                    }.sortedBy { it.x }
             } else {
                 inPeriod
                     .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }

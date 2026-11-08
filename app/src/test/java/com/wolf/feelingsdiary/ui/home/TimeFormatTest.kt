@@ -6,12 +6,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.TextStyle
 import java.util.Locale
 
+@RunWith(RobolectricTestRunner::class)
 class TimeFormatTest {
     private val time = LocalDateTime.of(2026, 11, 7, 19, 22)
 
@@ -57,5 +60,12 @@ class TimeFormatTest {
         assertEquals(12, xAxisLabels(year, Locale.GERMANY).size)
         val range = GraphPeriod.range(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 21))
         assertEquals(5, xAxisLabels(range, Locale.GERMANY).size)
+    }
+
+    @Test
+    fun rangeAxisIsLocalized() {
+        val range = GraphPeriod.range(LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 21))
+        assertEquals("7.11.", xAxisLabels(range, Locale.GERMANY).first().text)
+        assertEquals("11/7", xAxisLabels(range, Locale.US).first().text)
     }
 }

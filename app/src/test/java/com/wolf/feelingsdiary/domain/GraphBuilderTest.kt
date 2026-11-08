@@ -157,6 +157,26 @@ class GraphBuilderTest {
     }
 
     @Test
+    fun singleEntriesAreOrderedByLocalX() {
+        // Entry 1 is earlier in UTC (06:00Z) but later on the wall clock (23:00 at +17h) than entry 2 (07:00Z, 08:00 at +1h).
+        val entries = listOf(entry(1, "2026-11-03T23:00", 17 * 60), entry(2, "2026-11-03T08:00", 60))
+        val points = GraphBuilder.build(entries, week, monday).points
+        assertEquals(listOf(2L, 1L), points.map { it.entryId })
+        assertTrue(points[0].x < points[1].x)
+    }
+
+    @Test
+    fun rangeAggregationBoundaries() {
+        val start = LocalDate.of(2026, 1, 1)
+
+        fun agg(days: Long) = GraphBuilder.build(emptyList(), GraphPeriod.range(start, start.plusDays(days - 1)), monday).aggregation
+        assertEquals(Aggregation.NONE, agg(31))
+        assertEquals(Aggregation.DAILY, agg(32))
+        assertEquals(Aggregation.DAILY, agg(366))
+        assertEquals(Aggregation.WEEKLY, agg(367))
+    }
+
+    @Test
     fun peopleScale() {
         fun scale(people: Int) = GraphBuilder.build(listOf(entry(1, "2026-11-03T08:00", 60, people = people)), week, monday).peopleScaleMax
         assertEquals(5, scale(0))

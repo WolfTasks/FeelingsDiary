@@ -1,5 +1,6 @@
 package com.wolf.feelingsdiary.ui.home
 
+import android.text.format.DateFormat
 import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.PeriodKind
 import java.time.LocalDate
@@ -77,7 +78,7 @@ fun xAxisLabels(
         }
 
         PeriodKind.RANGE -> {
-            val f = DateTimeFormatter.ofPattern("d.M.", locale)
+            val f = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dM"), locale)
             (0 until RANGE_LABEL_COUNT).map { i ->
                 val date = p.start.plusDays(Math.round((p.days - 1) * i / (RANGE_LABEL_COUNT - 1f)).toLong())
                 AxisLabel(dayX(date), date.format(f))

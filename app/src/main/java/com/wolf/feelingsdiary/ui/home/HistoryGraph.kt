@@ -42,6 +42,7 @@ private val LINE_WIDTH = 2.5.dp
 private val MAIN_RADIUS = 4.dp
 private val OTHER_RADIUS = 2.dp
 private val OTHER_SPACING = 6.dp
+private const val MAX_DRAWN_OTHERS = 3
 private val TAP_RADIUS = 24.dp
 private val LABEL_GAP = 4.dp
 private const val AREA_ALPHA = 0.16f
@@ -96,7 +97,7 @@ fun HistoryGraph(
         drawLineSegments(offsets, mainColors)
         offsets.forEachIndexed { i, o ->
             drawCircle(mainColors[i], MAIN_RADIUS.toPx(), o)
-            data.points[i].otherFeelingIds.forEachIndexed { j, id ->
+            data.points[i].otherFeelingIds.take(MAX_DRAWN_OTHERS).forEachIndexed { j, id ->
                 drawCircle(resolve(id), OTHER_RADIUS.toPx(), Offset(o.x, o.y + OTHER_SPACING.toPx() * (j + 1)))
             }
         }
