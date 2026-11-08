@@ -125,6 +125,10 @@ class EntryViewModel
                 try {
                     if (editId != null) repo.updateEntry(editId, people, ids) else repo.addEntry(people, ids)
                     saved.value = true
+                } catch (e: IllegalArgumentException) {
+                    // Entry deleted meanwhile: nothing left to update, so close like a missing entry does.
+                    if (editId == null) throw e
+                    saved.value = true
                 } finally {
                     if (!saved.value) saving = false
                 }

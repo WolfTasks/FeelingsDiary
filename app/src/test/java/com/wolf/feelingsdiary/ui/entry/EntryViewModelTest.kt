@@ -205,6 +205,18 @@ class EntryViewModelTest {
         }
 
     @Test
+    fun editSaveOfVanishedEntryCloses() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored
+            coEvery { repo.updateEntry(any(), any(), any()) } throws IllegalArgumentException("gone")
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            vm.save()
+            runCurrent()
+            assertTrue(vm.state.value.saved)
+        }
+
+    @Test
     fun editOfMissingEntryCloses() =
         runTest {
             coEvery { repo.getEntry(5) } returns null
