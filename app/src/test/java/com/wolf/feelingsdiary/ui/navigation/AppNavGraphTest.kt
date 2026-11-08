@@ -11,9 +11,11 @@ import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.wolf.feelingsdiary.domain.InputMode
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,7 +32,7 @@ class AppNavGraphTest {
     private var mode = InputMode.SCREEN
     private val sheetOpenings = mutableListOf<Unit>()
 
-    private fun setGraph() {
+    private fun setGraph(onboardingDone: suspend () -> Boolean = { true }) {
         rule.setContent {
             nav = rememberNavController()
             AppNavGraph(
@@ -92,6 +94,16 @@ class AppNavGraphTest {
                         },
                     )
                 },
+                onboarding = { onDone ->
+                    Text(
+                        "start",
+                        Modifier.clickable {
+                            onDone()
+                            onDone()
+                        },
+                    )
+                },
+                onboardingDone = onboardingDone,
                 newEntryRequests = requests.receiveAsFlow(),
                 inputMode = { mode },
             )
@@ -211,5 +223,54 @@ class AppNavGraphTest {
         rule.onNodeWithText("feelingsBack").performClick()
         rule.waitForIdle()
         assertEquals(listOf(ROUTE_HOME, ROUTE_SETTINGS), routes())
+    }
+
+    @Test
+    fun firstStartShowsOnboarding() {
+        val loaded = CompletableDeferred<Boolean>()
+        setGraph { loaded.await() }
+        // Until the settings are loaded nothing is shown: no Home flashing up before the onboarding.
+        rule.waitForIdle()
+        rule.onNodeWithText("add").assertDoesNotExist()
+        rule.onNodeWithText("start").assertDoesNotExist()
+        assertEquals(emptyList<String>(), routes())
+        loaded.complete(false)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_ONBOARDING), routes())
+        rule.onNodeWithText("start").assertExists()
+        rule.onNodeWithText("add").assertDoesNotExist()
+    }
+
+    @Test
+    fun doneStartsAtHome() {
+        setGraph { true }
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME), routes())
+        rule.onNodeWithText("start").assertDoesNotExist()
+    }
+
+    @Test
+    fun finishStoresChoicesAndNavigatesHome() {
+        setGraph { false }
+        rule.onNodeWithText("start").performClick()
+        rule.waitForIdle()
+        // Double finish pushes Home once; the onboarding is gone, so Back leaves the app.
+        assertEquals(listOf(ROUTE_HOME), routes())
+        assertNull(nav.previousBackStackEntry)
+    }
+
+    @Test
+    fun newEntryRequestDuringOnboardingIsIgnored() {
+        setGraph { false }
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_ONBOARDING), routes())
+        rule.onNodeWithText("start").performClick()
+        rule.waitForIdle()
+        // The ignored request is not replayed after the onboarding.
+        assertEquals(listOf(ROUTE_HOME), routes())
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
     }
 }

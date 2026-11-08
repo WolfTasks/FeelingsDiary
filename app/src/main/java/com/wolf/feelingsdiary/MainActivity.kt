@@ -50,7 +50,11 @@ class MainActivity : ComponentActivity() {
             val dark = theme.isDark()
             LaunchedEffect(dark) { applySystemBars(dark) }
             FeelingsDiaryTheme(theme) {
-                AppNavHost(requests, inputMode = { settingsRepository.settings.first().input })
+                AppNavHost(
+                    requests,
+                    inputMode = { settingsRepository.settings.first().input },
+                    onboardingDone = { settingsRepository.settings.first().onboardingDone },
+                )
             }
         }
     }

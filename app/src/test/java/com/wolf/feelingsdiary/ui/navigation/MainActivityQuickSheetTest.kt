@@ -39,8 +39,9 @@ class MainActivityQuickSheetTest {
     private val add = ctx.getString(R.string.home_add)
     private val happy = ctx.getString(R.string.feeling_happy)
 
+    // Onboarding done: the app starts at Home.
     @Before
-    fun quickMode() = runBlocking { settings.update { it.copy(input = InputMode.QUICK_SHEET) } }
+    fun quickMode() = runBlocking { settings.update { it.copy(input = InputMode.QUICK_SHEET, onboardingDone = true) } }
 
     @After
     fun screenMode() = runBlocking { settings.update { it.copy(input = InputMode.SCREEN) } }

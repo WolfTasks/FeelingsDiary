@@ -7,6 +7,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
 import com.wolf.feelingsdiary.R
+import com.wolf.feelingsdiary.data.settings.SettingsRepository
+import com.wolf.feelingsdiary.data.settings.settingsDataStore
+import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +26,10 @@ class MainActivityNewEntryTest {
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
     private val save = ctx.getString(R.string.entry_save)
     private val newEntry = Intent(ctx, MainActivity::class.java).setAction(MainActivity.ACTION_NEW_ENTRY)
+
+    // The DataStore delegate is process-wide; with the onboarding done the app starts at Home.
+    @Before
+    fun onboardingDone() = runBlocking { SettingsRepository(ctx.settingsDataStore).update { it.copy(onboardingDone = true) } }
 
     @Test
     fun launchFromNotificationOpensEntry() {

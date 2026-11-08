@@ -123,4 +123,9 @@
     <string name="settings_section_privacy">Datenschutz</string>
     <string name="backup_switch">Android-Sicherung</string>
     <string name="backup_explanation">Aus: Deine Einträge verlassen nie das Gerät. An: Android darf sie beim Umzug auf ein neues Handy übertragen und Ende-zu-Ende-verschlüsselt in deiner Google-Sicherung ablegen (nur mit Bildschirmsperre).</string>
+    <string name="onboarding_title">Willkommen</string>
+    <string name="onboarding_text">Halte ein paar Mal am Tag fest, wie du dich fühlst und wie viele Menschen um dich sind. Deine Daten bleiben auf diesem Handy.</string>
+    <string name="onboarding_allow">Erinnerungen erlauben</string>
+    <string name="onboarding_start">Los geht\'s</string>
+    <string name="onboarding_settings_hint">Zeitfenster und Nachtruhe kannst du in den Einstellungen anpassen.</string>
 </resources>
