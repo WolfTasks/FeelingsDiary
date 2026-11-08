@@ -7,32 +7,63 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.wolf.feelingsdiary.data.settings.SettingsRepository
+import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.ui.LocaleSource
 import com.wolf.feelingsdiary.ui.navigation.AppNavHost
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
+import com.wolf.feelingsdiary.ui.theme.isDark
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     // Buffered until the nav graph collects, consumed once; a recreated activity starts empty.
     private val newEntryRequests = Channel<Unit>(Channel.CONFLATED)
 
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    lateinit var localeSource: LocaleSource
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Same edge-to-edge layout on every API level; the app is always dark, so light bar icons.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-        )
+        // Same edge-to-edge layout on every API level. Dark until the settings are loaded, so dark users never see a light flash.
+        applySystemBars(dark = true)
         super.onCreate(savedInstanceState)
+        // A language change recreates the activity: the new locale relabels feelings in the surviving ViewModels.
+        localeSource.update(resources.configuration.locales[0])
         // On recreation (rotation, process death) the launch intent was already handled.
         if (savedInstanceState == null) handle(intent)
         val requests = newEntryRequests.receiveAsFlow()
+        val themes = settingsRepository.settings.map { it.theme }.distinctUntilChanged()
         setContent {
-            FeelingsDiaryTheme {
+            val theme by themes.collectAsStateWithLifecycle(ThemeMode.DARK)
+            val dark = theme.isDark()
+            LaunchedEffect(dark) { applySystemBars(dark) }
+            FeelingsDiaryTheme(theme) {
                 AppNavHost(requests)
             }
         }
+    }
+
+    /** Bar icons contrast with the effective theme: light icons on dark, dark icons on light. */
+    private fun applySystemBars(dark: Boolean) {
+        val style =
+            if (dark) {
+                SystemBarStyle.dark(Color.TRANSPARENT)
+            } else {
+                // The scrim only shows where dark icons are unsupported (navigation bar on API 26).
+                SystemBarStyle.light(Color.TRANSPARENT, LIGHT_THEME_FALLBACK_SCRIM)
+            }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -48,5 +79,8 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val ACTION_NEW_ENTRY = "com.wolf.feelingsdiary.NEW_ENTRY"
+
+        // Same value as androidx.activity's default dark scrim.
+        private val LIGHT_THEME_FALLBACK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
     }
 }

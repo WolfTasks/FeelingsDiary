@@ -9,6 +9,7 @@ import com.wolf.feelingsdiary.domain.FeelingSuggester
 import com.wolf.feelingsdiary.domain.Suggestions
 import com.wolf.feelingsdiary.reminder.ReminderNotifier
 import com.wolf.feelingsdiary.ui.FeelingLabeler
+import com.wolf.feelingsdiary.ui.LocaleSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +27,7 @@ class EntryViewModel
     constructor(
         private val repo: DiaryRepository,
         val labeler: FeelingLabeler,
+        private val localeSource: LocaleSource,
         private val savedState: SavedStateHandle,
         private val notifier: ReminderNotifier,
     ) : ViewModel() {
@@ -41,7 +43,8 @@ class EntryViewModel
         private val editTimeFlow = savedState.getStateFlow<String?>(KEY_EDIT_TIME, null)
 
         val state: StateFlow<EntryUiState> =
-            combine(repo.observeFeelings(), queryFlow, selection, peopleFlow, saved, editTimeFlow) { values ->
+            // The locale only triggers a recompute: query matching depends on the (localized) labels.
+            combine(repo.observeFeelings(), queryFlow, selection, peopleFlow, saved, editTimeFlow, localeSource.locale) { values ->
                 @Suppress("UNCHECKED_CAST")
                 val feelings = values[0] as List<Feeling>
                 val query = values[1] as String

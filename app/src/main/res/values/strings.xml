@@ -74,4 +74,15 @@
     </plurals>
     <string name="reminder_channel_name">Reminders</string>
     <string name="reminder_text">Tap to note it down</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_open_cd">Settings</string>
+    <string name="settings_back_cd">Back</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_language">Language</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">Follow system</string>
+    <string name="language_system">System language</string>
+    <string name="language_de">Deutsch</string>
+    <string name="language_en">English</string>
 </resources>

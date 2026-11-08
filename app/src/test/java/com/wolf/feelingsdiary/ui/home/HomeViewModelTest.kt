@@ -10,6 +10,7 @@ import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.FeelingLabeler
+import com.wolf.feelingsdiary.ui.LocaleSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,6 +44,7 @@ class HomeViewModelTest {
     private val happy = Feeling(1, "happy", null, 0x111111, 2, false, null)
     private val repo = mockk<DiaryRepository>()
     private val labeler = FeelingLabeler { it.baseKey!! }
+    private val localeSource = LocaleSource().apply { update(Locale.ENGLISH) }
     private val clock = Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneId.of("Europe/Berlin"))
     private val entries = MutableStateFlow<List<Entry>>(emptyList())
     private lateinit var oldLocale: Locale
@@ -63,7 +65,7 @@ class HomeViewModelTest {
         Locale.setDefault(oldLocale)
     }
 
-    private fun vm(saved: SavedStateHandle = SavedStateHandle()) = HomeViewModel(repo, labeler, saved, clock)
+    private fun vm(saved: SavedStateHandle = SavedStateHandle()) = HomeViewModel(repo, labeler, localeSource, saved, clock)
 
     private fun TestScope.observe(vm: HomeViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
@@ -188,5 +190,30 @@ class HomeViewModelTest {
             val vm = vm()
             vm.delete(7)
             coVerify { repo.deleteEntry(7) }
+        }
+
+    @Test
+    fun labelsFollowLocaleChange() =
+        runTest {
+            val localized = FeelingLabeler { if (localeSource.locale.value.language == "de") "Glücklich" else "Happy" }
+            val vm = HomeViewModel(repo, localized, localeSource, SavedStateHandle(), clock)
+            observe(vm)
+            val minute = (Instant.parse("2026-11-04T12:00:00Z").epochSecond / 60).toInt()
+            entries.value = listOf(Entry(5, EntryTime(minute, 60), 2, listOf(1), listOf(2)))
+            assertEquals(
+                listOf("Happy" to 0x111111),
+                vm.state.value.rows
+                    .single()
+                    .feelings,
+            )
+            // No new repository emission: the locale change alone must refresh the labels.
+            localeSource.update(Locale.GERMAN)
+            assertEquals(
+                listOf("Glücklich" to 0x111111),
+                vm.state.value.rows
+                    .single()
+                    .feelings,
+            )
+            assertEquals(listOf("Glücklich" to 0x111111), vm.state.value.legend)
         }
 }

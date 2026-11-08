@@ -20,7 +20,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,12 +58,14 @@ data class HomeActions(
     val onRow: (Long) -> Unit,
     val onEdit: (Long) -> Unit,
     val onDelete: (Long) -> Unit,
+    val onSettings: () -> Unit,
 )
 
 @Composable
 fun HomeRoute(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
+    onSettings: () -> Unit,
     vm: HomeViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -73,6 +79,7 @@ fun HomeRoute(
             onRow = {},
             onEdit = onEdit,
             onDelete = vm::delete,
+            onSettings = onSettings,
         )
     HomeScreen(state, actions)
 }
@@ -108,11 +115,16 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
-                    Text(
-                        stringResource(R.string.history_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(vertical = 16.dp),
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.history_title),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.weight(1f).padding(vertical = 16.dp),
+                        )
+                        IconButton(onClick = actions.onSettings) {
+                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_open_cd))
+                        }
+                    }
                 }
                 item { PeriodBar(state.period, locale, actions.onKind, actions.onRange, actions.onShift) }
                 item {

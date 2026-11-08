@@ -42,6 +42,7 @@ class HomeScreenTest {
     private val kinds = mutableListOf<PeriodKind>()
     private val shifts = mutableListOf<Int>()
     private val deletes = mutableListOf<Long>()
+    private var settingsTaps = 0
     private val actions =
         HomeActions(
             onAdd = { adds++ },
@@ -52,6 +53,7 @@ class HomeScreenTest {
             onRow = {},
             onEdit = {},
             onDelete = { deletes += it },
+            onSettings = { settingsTaps++ },
         )
     private val week = GraphPeriod(PeriodKind.WEEK, LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 8))
     private val happy = 0xFFFFC107.toInt()
@@ -98,6 +100,13 @@ class HomeScreenTest {
         show(state(emptyList()))
         rule.onNodeWithText("+ How are you feeling?").performClick()
         assertEquals(1, adds)
+    }
+
+    @Test
+    fun gearOpensSettings() {
+        show(state(emptyList()))
+        rule.onNodeWithContentDescription("Settings").performClick()
+        assertEquals(1, settingsTaps)
     }
 
     @Test

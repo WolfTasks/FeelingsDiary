@@ -1,6 +1,7 @@
 package com.wolf.feelingsdiary.ui.navigation
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -30,15 +31,25 @@ class AppNavGraphTest {
             nav = rememberNavController()
             AppNavGraph(
                 nav = nav,
-                home = { onAdd, onEdit ->
-                    Text(
-                        "add",
-                        Modifier.clickable {
-                            onAdd()
-                            onAdd()
-                        },
-                    )
-                    Text("edit", Modifier.clickable { onEdit(5) })
+                home = { onAdd, onEdit, onSettings ->
+                    // Stacked texts would overlap and steal each other's taps.
+                    Column {
+                        Text(
+                            "add",
+                            Modifier.clickable {
+                                onAdd()
+                                onAdd()
+                            },
+                        )
+                        Text("edit", Modifier.clickable { onEdit(5) })
+                        Text(
+                            "gear",
+                            Modifier.clickable {
+                                onSettings()
+                                onSettings()
+                            },
+                        )
+                    }
                 },
                 entry = { onDone ->
                     Text(
@@ -46,6 +57,15 @@ class AppNavGraphTest {
                         Modifier.clickable {
                             onDone()
                             onDone()
+                        },
+                    )
+                },
+                settings = { onBack ->
+                    Text(
+                        "back",
+                        Modifier.clickable {
+                            onBack()
+                            onBack()
                         },
                     )
                 },
@@ -104,6 +124,17 @@ class AppNavGraphTest {
         rule.onNodeWithText("add").performClick()
         rule.waitForIdle()
         rule.onNodeWithText("close").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME), routes())
+    }
+
+    @Test
+    fun gearOpensSettingsAndBackReturns() {
+        setGraph()
+        rule.onNodeWithText("gear").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ROUTE_SETTINGS), routes())
+        rule.onNodeWithText("back").performClick()
         rule.waitForIdle()
         assertEquals(listOf(ROUTE_HOME), routes())
     }

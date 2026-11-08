@@ -13,11 +13,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.wolf.feelingsdiary.ui.entry.EntryRoute
 import com.wolf.feelingsdiary.ui.home.HomeRoute
+import com.wolf.feelingsdiary.ui.settings.SettingsRoute
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
 internal const val ROUTE_HOME = "home"
 internal const val ROUTE_ENTRY = "entry"
+internal const val ROUTE_SETTINGS = "settings"
 private const val ARG_ENTRY_ID = "entryId"
 private const val NO_ENTRY = -1L
 
@@ -29,21 +31,23 @@ internal fun entryRoute(id: Long? = null): String = if (id == null) ROUTE_ENTRY 
 fun AppNavHost(newEntryRequests: Flow<Unit>) {
     AppNavGraph(
         nav = rememberNavController(),
-        home = { onAdd, onEdit -> HomeRoute(onAdd = onAdd, onEdit = onEdit) },
+        home = { onAdd, onEdit, onSettings -> HomeRoute(onAdd = onAdd, onEdit = onEdit, onSettings = onSettings) },
         entry = { onDone -> EntryRoute(onDone = onDone) },
+        settings = { onBack -> SettingsRoute(onBack = onBack) },
         newEntryRequests = newEntryRequests,
     )
 }
 
 /**
  * Navigation callbacks are wrapped in [dropUnlessResumed] so a double tap or a Close racing a
- * save-completion cannot push a second Entry screen or pop Home off the back stack.
+ * save-completion cannot push a second Entry/Settings screen or pop Home off the back stack.
  */
 @Composable
 internal fun AppNavGraph(
     nav: NavHostController,
-    home: @Composable (onAdd: () -> Unit, onEdit: (Long) -> Unit) -> Unit,
+    home: @Composable (onAdd: () -> Unit, onEdit: (Long) -> Unit, onSettings: () -> Unit) -> Unit,
     entry: @Composable (onDone: () -> Unit) -> Unit,
+    settings: @Composable (onBack: () -> Unit) -> Unit,
     newEntryRequests: Flow<Unit> = emptyFlow(),
 ) {
     NavHost(navController = nav, startDestination = ROUTE_HOME) {
@@ -52,8 +56,10 @@ internal fun AppNavGraph(
             home(
                 dropUnlessResumed { nav.navigate(entryRoute()) },
                 { id -> if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) nav.navigate(entryRoute(id)) },
+                dropUnlessResumed { nav.navigate(ROUTE_SETTINGS) },
             )
         }
+        composable(ROUTE_SETTINGS) { settings(dropUnlessResumed { nav.popBackStack() }) }
         composable(
             "$ROUTE_ENTRY?$ARG_ENTRY_ID={$ARG_ENTRY_ID}",
             arguments =

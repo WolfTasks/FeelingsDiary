@@ -12,6 +12,7 @@ import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.FeelingLabeler
+import com.wolf.feelingsdiary.ui.LocaleSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,7 @@ class HomeViewModel
     constructor(
         private val repo: DiaryRepository,
         private val labeler: FeelingLabeler,
+        private val localeSource: LocaleSource,
         private val savedState: SavedStateHandle,
         clock: Clock,
     ) : ViewModel() {
@@ -71,7 +73,12 @@ class HomeViewModel
         val state: StateFlow<HomeUiState> =
             period
                 .flatMapLatest { p ->
-                    combine(repo.observeEntriesBetween(p.start, p.endInclusive), repo.observeFeelings()) { entries, feelings ->
+                    // The locale is a trigger only: the labeler reads it itself, so a language change relabels without a new query.
+                    combine(
+                        repo.observeEntriesBetween(p.start, p.endInclusive),
+                        repo.observeFeelings(),
+                        localeSource.locale,
+                    ) { entries, feelings, _ ->
                         val byId = feelings.associateBy { it.id }
                         val graph = GraphBuilder.build(entries, p, firstDayOfWeek())
                         val used = feelings.filter { it.id in graph.feelingIds }
