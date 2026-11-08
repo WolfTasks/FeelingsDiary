@@ -11,7 +11,7 @@ class FeelingNamesTest {
     private val feelings = listOf(happy, hiddenSad, wehmut)
     private val labels = mapOf("happy" to "fröhlich", "sad" to "traurig")
 
-    private fun label(f: Feeling) = f.customName ?: labels.getValue(f.baseKey!!)
+    private fun label(feeling: Feeling) = feeling.customName ?: labels.getValue(checkNotNull(feeling.baseKey))
 
     @Test
     fun matchesIgnoringCaseAccentsAndSpaces() {

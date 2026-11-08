@@ -32,6 +32,7 @@ class SettingsScreenTest {
     private val themes = mutableListOf<ThemeMode>()
     private val languages = mutableListOf<String?>()
     private var backs = 0
+    private var manageFeelings = 0
     private val reminderChanges = mutableListOf<(ReminderSettings) -> ReminderSettings>()
     private val actions =
         SettingsActions(
@@ -41,6 +42,7 @@ class SettingsScreenTest {
             onReminders = { reminderChanges += it },
             onRequestNotifications = {},
             onOpenNotificationSettings = {},
+            onManageFeelings = { manageFeelings++ },
         )
 
     private fun show(
@@ -92,5 +94,12 @@ class SettingsScreenTest {
         assertTrue(reminders.positionInRoot.y < appearance.positionInRoot.y)
         rule.onNodeWithText(ctx.getString(R.string.reminder_mode_fixed)).performScrollTo().performClick()
         assertEquals(ReminderMode.FIXED, reminderChanges.single()(ReminderSettings()).mode)
+    }
+
+    @Test
+    fun manageFeelingsRowCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.feelings_title)).performScrollTo().performClick()
+        assertEquals(1, manageFeelings)
     }
 }

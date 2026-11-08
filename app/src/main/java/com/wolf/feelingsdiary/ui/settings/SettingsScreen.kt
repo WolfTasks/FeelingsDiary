@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -29,6 +30,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +65,7 @@ data class SettingsActions(
     val onReminders: ((ReminderSettings) -> ReminderSettings) -> Unit,
     val onRequestNotifications: () -> Unit,
     val onOpenNotificationSettings: () -> Unit,
+    val onManageFeelings: () -> Unit,
 )
 
 private val THEMES =
@@ -78,6 +81,7 @@ private val LANGUAGES = listOf(null to R.string.language_system, "de" to R.strin
 @Composable
 fun SettingsRoute(
     onBack: () -> Unit,
+    onManageFeelings: () -> Unit,
     vm: SettingsViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -109,13 +113,14 @@ fun SettingsRoute(
                 }
             },
             onOpenNotificationSettings = { openNotificationSettings(context) },
+            onManageFeelings = onManageFeelings,
         )
     SettingsScreen(state, actions, language, notificationsAllowed)
 }
 
 /**
  * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy.
- * Input, Manage feelings and Privacy follow in later steps and slot in at their place below.
+ * Input and Privacy follow in later steps and slot in at their place below.
  */
 @Composable
 fun SettingsScreen(
@@ -145,7 +150,9 @@ fun SettingsScreen(
                     actions.onRequestNotifications,
                     actions.onOpenNotificationSettings,
                 )
-                // Input and Manage feelings go here.
+                // Input goes here.
+                SectionTitle(R.string.settings_section_feelings)
+                NavigationRow(stringResource(R.string.feelings_title), actions.onManageFeelings)
                 Section(R.string.settings_section_appearance) {
                     THEMES.forEach { (mode, label) -> ChoiceRow(stringResource(label), state.theme == mode) { actions.onTheme(mode) } }
                 }
@@ -201,6 +208,24 @@ internal fun ChoiceRow(
         Spacer(Modifier.size(12.dp))
         val color = MaterialTheme.colorScheme.onSurface
         Text(label, color = if (enabled) color else color.copy(alpha = DISABLED_TEXT_ALPHA))
+    }
+}
+
+/** A row that opens another screen. */
+@Composable
+private fun NavigationRow(
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
     }
 }
 

@@ -102,4 +102,13 @@
     <string name="language_system">Systemsprache</string>
     <string name="language_de">Deutsch</string>
     <string name="language_en">English</string>
+    <string name="settings_section_feelings">Gefühle</string>
+    <string name="feelings_title">Gefühle verwalten</string>
+    <string name="feelings_hide_cd">Ausblenden</string>
+    <string name="feelings_show_cd">Einblenden</string>
+    <string name="feelings_hidden">%1$s · ausgeblendet</string>
+    <string name="feelings_valence">%1$s (%2$s)</string>
+    <string name="feelings_add">Gefühl hinzufügen</string>
+    <string name="feeling_edit_title">Gefühl bearbeiten</string>
+    <string name="feeling_name_exists">Ein Gefühl mit diesem Namen gibt es schon</string>
 </resources>

@@ -60,9 +60,27 @@ class AppNavGraphTest {
                         },
                     )
                 },
-                settings = { onBack ->
+                settings = { onBack, onManageFeelings ->
+                    Column {
+                        Text(
+                            "back",
+                            Modifier.clickable {
+                                onBack()
+                                onBack()
+                            },
+                        )
+                        Text(
+                            "feelings",
+                            Modifier.clickable {
+                                onManageFeelings()
+                                onManageFeelings()
+                            },
+                        )
+                    }
+                },
+                feelings = { onBack ->
                     Text(
-                        "back",
+                        "feelingsBack",
                         Modifier.clickable {
                             onBack()
                             onBack()
@@ -137,5 +155,18 @@ class AppNavGraphTest {
         rule.onNodeWithText("back").performClick()
         rule.waitForIdle()
         assertEquals(listOf(ROUTE_HOME), routes())
+    }
+
+    @Test
+    fun manageFeelingsOpensOnceAndBackReturnsToSettings() {
+        setGraph()
+        rule.onNodeWithText("gear").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("feelings").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ROUTE_SETTINGS, ROUTE_FEELINGS), routes())
+        rule.onNodeWithText("feelingsBack").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ROUTE_SETTINGS), routes())
     }
 }

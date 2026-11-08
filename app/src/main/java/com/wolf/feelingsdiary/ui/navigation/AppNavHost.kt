@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.wolf.feelingsdiary.ui.entry.EntryRoute
+import com.wolf.feelingsdiary.ui.feelings.FeelingsRoute
 import com.wolf.feelingsdiary.ui.home.HomeRoute
 import com.wolf.feelingsdiary.ui.settings.SettingsRoute
 import kotlinx.coroutines.flow.Flow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.emptyFlow
 internal const val ROUTE_HOME = "home"
 internal const val ROUTE_ENTRY = "entry"
 internal const val ROUTE_SETTINGS = "settings"
+internal const val ROUTE_FEELINGS = "feelings"
 private const val ARG_ENTRY_ID = "entryId"
 private const val NO_ENTRY = -1L
 
@@ -33,21 +35,23 @@ fun AppNavHost(newEntryRequests: Flow<Unit>) {
         nav = rememberNavController(),
         home = { onAdd, onEdit, onSettings -> HomeRoute(onAdd = onAdd, onEdit = onEdit, onSettings = onSettings) },
         entry = { onDone -> EntryRoute(onDone = onDone) },
-        settings = { onBack -> SettingsRoute(onBack = onBack) },
+        settings = { onBack, onManageFeelings -> SettingsRoute(onBack = onBack, onManageFeelings = onManageFeelings) },
+        feelings = { onBack -> FeelingsRoute(onBack = onBack) },
         newEntryRequests = newEntryRequests,
     )
 }
 
 /**
  * Navigation callbacks are wrapped in [dropUnlessResumed] so a double tap or a Close racing a
- * save-completion cannot push a second Entry/Settings screen or pop Home off the back stack.
+ * save-completion cannot push a second Entry/Settings/Feelings screen or pop Home off the back stack.
  */
 @Composable
 internal fun AppNavGraph(
     nav: NavHostController,
     home: @Composable (onAdd: () -> Unit, onEdit: (Long) -> Unit, onSettings: () -> Unit) -> Unit,
     entry: @Composable (onDone: () -> Unit) -> Unit,
-    settings: @Composable (onBack: () -> Unit) -> Unit,
+    settings: @Composable (onBack: () -> Unit, onManageFeelings: () -> Unit) -> Unit,
+    feelings: @Composable (onBack: () -> Unit) -> Unit,
     newEntryRequests: Flow<Unit> = emptyFlow(),
 ) {
     NavHost(navController = nav, startDestination = ROUTE_HOME) {
@@ -59,7 +63,10 @@ internal fun AppNavGraph(
                 dropUnlessResumed { nav.navigate(ROUTE_SETTINGS) },
             )
         }
-        composable(ROUTE_SETTINGS) { settings(dropUnlessResumed { nav.popBackStack() }) }
+        composable(ROUTE_SETTINGS) {
+            settings(dropUnlessResumed { nav.popBackStack() }, dropUnlessResumed { nav.navigate(ROUTE_FEELINGS) })
+        }
+        composable(ROUTE_FEELINGS) { feelings(dropUnlessResumed { nav.popBackStack() }) }
         composable(
             "$ROUTE_ENTRY?$ARG_ENTRY_ID={$ARG_ENTRY_ID}",
             arguments =

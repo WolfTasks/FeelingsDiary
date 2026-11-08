@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -54,35 +55,67 @@ val CustomFeelingColors: List<Int> =
 private const val VALENCE_MIN = -2
 private const val VALENCE_MAX = 2
 
+/** Values of a feeling being edited; [name] is the displayed (localized) name. */
+data class FeelingDraft(
+    val name: String,
+    val colorArgb: Int,
+    val valence: Int,
+)
+
+/**
+ * Creates ([initial] null, prefilled with [initialName]) or edits a feeling. Base feelings keep their
+ * name ([nameEditable] false). A starting colour outside the palette is offered as the first swatch.
+ * [error] is shown under the name until the name is changed.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun NewFeelingDialog(
-    initialName: String,
+fun FeelingEditDialog(
+    initial: FeelingDraft?,
+    nameEditable: Boolean,
+    error: String?,
     onConfirm: (name: String, colorArgb: Int, valence: Int) -> Unit,
     onDismiss: () -> Unit,
+    initialName: String = "",
 ) {
-    var name by rememberSaveable { mutableStateOf(initialName) }
-    var colorIndex by rememberSaveable { mutableIntStateOf(0) }
-    var valence by rememberSaveable { mutableIntStateOf(0) }
+    var name by rememberSaveable { mutableStateOf(initial?.name ?: initialName) }
+    var color by rememberSaveable { mutableIntStateOf(initial?.colorArgb ?: CustomFeelingColors.first()) }
+    var valence by rememberSaveable { mutableIntStateOf(initial?.valence ?: 0) }
+    // Hidden once the name changes, shown again with the next confirm.
+    var showError by rememberSaveable { mutableStateOf(true) }
+    val palette =
+        remember(initial) {
+            initial?.colorArgb?.takeIf { it !in CustomFeelingColors }?.let { listOf(it) + CustomFeelingColors }
+                ?: CustomFeelingColors
+        }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.new_feeling_title)) },
+        title = { Text(stringResource(if (initial == null) R.string.new_feeling_title else R.string.feeling_edit_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.new_feeling_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                val visibleError = error?.takeIf { showError }
+                if (nameEditable) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                            showError = false
+                        },
+                        label = { Text(stringResource(R.string.new_feeling_name)) },
+                        singleLine = true,
+                        isError = visibleError != null,
+                        supportingText = visibleError?.let { { Text(it) } },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    Text(name, style = MaterialTheme.typography.titleMedium)
+                }
                 Text(stringResource(R.string.new_feeling_color), style = MaterialTheme.typography.labelLarge)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    CustomFeelingColors.forEachIndexed { index, argb ->
-                        val selected = index == colorIndex
+                    palette.forEachIndexed { index, argb ->
+                        val selected = argb == color
                         val cd =
                             if (selected) {
                                 stringResource(R.string.new_feeling_color_selected_cd, index + 1)
@@ -95,7 +128,7 @@ fun NewFeelingDialog(
                                 .background(Color(argb), CircleShape)
                                 .border(if (selected) 3.dp else 0.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                 .semantics { contentDescription = cd }
-                                .clickable(role = Role.RadioButton) { colorIndex = index },
+                                .clickable(role = Role.RadioButton) { color = argb },
                         )
                     }
                 }
@@ -117,7 +150,10 @@ fun NewFeelingDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name.trim(), CustomFeelingColors[colorIndex], valence) },
+                onClick = {
+                    showError = true
+                    onConfirm(name.trim(), color, valence)
+                },
                 enabled = name.isNotBlank(),
             ) { Text(stringResource(R.string.dialog_ok)) }
         },
