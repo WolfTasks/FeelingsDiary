@@ -33,7 +33,7 @@ Legende: ✅ erledigt + reviewt · 🔄 in Arbeit · ⏳ offen. Bei ✅-Tasks si
 | 10c | Verspätung begrenzen (Etappen-Planung, einstellbar) | ✅ | `b3ab809` |
 | 10d | Hinweis „Akku nicht einschränken“ (Samsung Freecess) | ✅ | `f69b976` |
 | 10e | Nacharbeit 10c: ehrliche Beschriftung, keine Doppel-Erinnerung | ✅ | `5942312`..`9b0fcbf` |
-| 10f | Bei 3 Erinnerungen Vormittag/Mittag/Abend | ✅ | `TBD` |
+| 10f | Bei 3 Erinnerungen Vormittag/Mittag/Abend | ✅ | `6922cad` |
 | Gesamt-Review + Fix-Runde | Abschluss-Review über Tasks 1–10, 9 Korrekturen | ✅ | `40cee5b`..`cee1b4d` |
 | 11 | Gerätetest, Doku, PR | 🔄 | Doku `b529f1d`, `237126f`; Gerätetest ✅ (Samsung-Freecess → 10d); PR offen |
 
