@@ -34,12 +34,15 @@ class ReminderScheduler
 
         suspend fun reschedule() =
             lock.withLock {
-                val reminders = settings.settings.first().reminders
+                val current = settings.settings.first()
+                val reminders = current.reminders
+                // No reminders before the onboarding is finished: the user has not chosen yet.
+                val active = reminders.enabled && current.onboardingDone
                 val alarms = ctx.getSystemService(AlarmManager::class.java)
                 val operation = alarmIntent()
-                if (!reminders.enabled) notifier.cancel()
+                if (!active) notifier.cancel()
                 val next =
-                    if (reminders.enabled) ReminderPlanner.next(reminders, ZonedDateTime.now(clock), settings.reminderSalt()) else null
+                    if (active) ReminderPlanner.next(reminders, ZonedDateTime.now(clock), settings.reminderSalt()) else null
                 if (next == null) {
                     alarms.cancel(operation)
                 } else {
@@ -50,12 +53,14 @@ class ReminderScheduler
 
         /**
          * The alarm fired: remind now, then plan the next one. The inexact alarm may arrive late, inside the
-         * quiet hours, or after reminders were turned off; then it only plans. The chain never breaks.
+         * quiet hours, or after reminders were turned off; then it only plans (or cancels). The chain never breaks.
          */
         suspend fun onAlarm() {
             try {
-                val reminders = settings.settings.first().reminders
-                if (reminders.enabled && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)) notifier.show()
+                val current = settings.settings.first()
+                val reminders = current.reminders
+                val remind = reminders.enabled && current.onboardingDone && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)
+                if (remind) notifier.show()
             } finally {
                 reschedule()
             }

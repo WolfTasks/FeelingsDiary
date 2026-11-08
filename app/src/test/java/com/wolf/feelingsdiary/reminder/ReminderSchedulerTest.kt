@@ -62,13 +62,15 @@ class ReminderSchedulerTest {
     @After
     fun restoreZone() = TimeZone.setDefault(originalZone)
 
-    private fun TestScope.setUp(
+    private suspend fun TestScope.setUp(
         clock: Clock = this@ReminderSchedulerTest.clock,
         notifier: ReminderNotifier = ReminderNotifier(app),
     ) {
         repo = SettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope) { File(tmp.root, "s.preferences_pb") })
         this@ReminderSchedulerTest.notifier = notifier
         scheduler = ReminderScheduler(app, repo, clock, notifier)
+        // Reminders start only after the onboarding.
+        repo.update { it.copy(onboardingDone = true) }
     }
 
     private fun grantNotifications() = shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
@@ -174,6 +176,17 @@ class ReminderSchedulerTest {
             val error = runCatching { scheduler.onAlarm() }.exceptionOrNull()
             assertEquals("boom", error?.message)
             assertEquals(1, alarms.size)
+        }
+
+    @Test
+    fun nothingIsPlannedBeforeTheOnboarding() =
+        runTest {
+            setUp()
+            scheduler.reschedule()
+            assertEquals(1, alarms.size)
+            repo.update { it.copy(onboardingDone = false) }
+            scheduler.reschedule()
+            assertTrue(alarms.isEmpty())
         }
 
     /** Robolectric runs API 36 here, so POST_NOTIFICATIONS (API 33+) is a runtime permission. */

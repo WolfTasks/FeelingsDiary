@@ -8,13 +8,23 @@ import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
+import com.wolf.feelingsdiary.data.settings.SettingsRepository
+import com.wolf.feelingsdiary.data.settings.settingsDataStore
+import com.wolf.feelingsdiary.domain.ReminderMode
+import com.wolf.feelingsdiary.domain.ReminderPlanner
+import com.wolf.feelingsdiary.domain.ReminderSettings
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import java.time.LocalTime
+import java.time.ZonedDateTime
 
 /**
  * End-to-end through the real Hilt app: the manifest-declared receivers get their collaborators
@@ -36,9 +46,28 @@ class ReminderReceiverTest {
         fail("condition not met in time")
     }
 
-    /** App start schedules once; clear that so the receiver's own work becomes observable. */
+    // The DataStore delegate is process-wide, so the state is set around each test.
+    private val settings = SettingsRepository(app.settingsDataStore)
+
+    // Reminders active at any wall-clock time: fixed slots, no quiet hours, onboarding done.
+    private val reminders =
+        ReminderSettings(count = 4, mode = ReminderMode.FIXED, quietStart = LocalTime.MIDNIGHT, quietEnd = LocalTime.MIDNIGHT)
+
+    @Before
+    fun activeReminders() = runBlocking { settings.update { it.copy(reminders = reminders, onboardingDone = true) } }
+
+    @After
+    fun defaultReminders() = runBlocking { settings.update { it.copy(reminders = ReminderSettings()) } }
+
+    /**
+     * App start schedules once, and again once it sees the settings of [activeReminders]; wait for the
+     * alarm those settings plan (fixed slots, so salt-free), then clear it so the receiver's own work becomes observable.
+     */
     private fun clearStartupAlarm() {
-        awaitUntil { alarms.isNotEmpty() }
+        awaitUntil {
+            alarms.singleOrNull()?.triggerAtMs ==
+                ReminderPlanner.next(reminders, ZonedDateTime.now(), 0L)?.toInstant()?.toEpochMilli()
+        }
         alarms.forEach { alarmManager.cancel(it.operation!!) }
         assertTrue(alarms.isEmpty())
     }
@@ -57,16 +86,16 @@ class ReminderReceiverTest {
 
     @Test
     fun bootReceiverReschedules() {
+        clearStartupAlarm()
         listOf(
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
         ).forEach { action ->
-            if (alarms.isEmpty()) awaitUntil { alarms.isNotEmpty() }
-            alarms.forEach { alarmManager.cancel(it.operation!!) }
             app.sendBroadcast(Intent(action).setPackage(app.packageName))
             awaitUntil { alarms.size == 1 }
+            alarms.forEach { alarmManager.cancel(it.operation!!) }
         }
         assertTrue(nm.allNotifications.isEmpty())
     }
