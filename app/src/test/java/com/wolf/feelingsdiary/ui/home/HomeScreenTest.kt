@@ -1,7 +1,9 @@
 package com.wolf.feelingsdiary.ui.home
 
 import android.content.res.Configuration
+import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.positionInRoot
@@ -18,8 +20,11 @@ import androidx.compose.ui.text.TextLayoutResult
 import com.wolf.feelingsdiary.domain.Aggregation
 import com.wolf.feelingsdiary.domain.GraphData
 import com.wolf.feelingsdiary.domain.GraphPeriod
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Rule
@@ -42,6 +47,7 @@ class HomeScreenTest {
     private val kinds = mutableListOf<PeriodKind>()
     private val shifts = mutableListOf<Int>()
     private val deletes = mutableListOf<Long>()
+    private var settingsTaps = 0
     private val actions =
         HomeActions(
             onAdd = { adds++ },
@@ -52,6 +58,7 @@ class HomeScreenTest {
             onRow = {},
             onEdit = {},
             onDelete = { deletes += it },
+            onSettings = { settingsTaps++ },
         )
     private val week = GraphPeriod(PeriodKind.WEEK, LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 8))
     private val happy = 0xFFFFC107.toInt()
@@ -101,6 +108,74 @@ class HomeScreenTest {
     }
 
     @Test
+    fun addNavigatesInScreenMode() {
+        val keys = mutableListOf<String>()
+        rule.setContent {
+            FeelingsDiaryTheme {
+                HomeScreen(state(emptyList()), actions, quickSheet = { key, _ -> keys += key })
+            }
+        }
+        rule.onNodeWithText("+ How are you feeling?").performClick()
+        assertEquals(1, adds)
+        assertEquals(emptyList<String>(), keys)
+    }
+
+    @Test
+    fun addOpensSheetInQuickMode() {
+        val shown = mutableListOf<String>()
+        var close: () -> Unit = {}
+        rule.setContent {
+            FeelingsDiaryTheme {
+                HomeScreen(state(emptyList()).copy(inputMode = InputMode.QUICK_SHEET), actions, quickSheet = { key, onDone ->
+                    close = onDone
+                    SideEffect { if (shown.lastOrNull() != key) shown += key }
+                    Text("sheet $key")
+                })
+            }
+        }
+        rule.onNodeWithText("+ How are you feeling?").performClick()
+        rule.onNodeWithText("sheet", substring = true).assertExists()
+        assertEquals(0, adds)
+        close()
+        rule.waitForIdle()
+        rule.onNodeWithText("sheet", substring = true).assertDoesNotExist()
+        rule.onNodeWithText("+ How are you feeling?").performClick()
+        rule.waitForIdle()
+        // A new key per opening gives the sheet a fresh ViewModel.
+        assertEquals(2, shown.size)
+        assertNotEquals(shown[0], shown[1])
+    }
+
+    @Test
+    fun sheetRequestOpensSheetOnce() {
+        val requests = Channel<Unit>(Channel.UNLIMITED)
+        val shown = mutableListOf<String>()
+        rule.setContent {
+            FeelingsDiaryTheme {
+                HomeScreen(state(emptyList()), actions, requests.receiveAsFlow(), quickSheet = { key, _ ->
+                    SideEffect { if (shown.lastOrNull() != key) shown += key }
+                    Text("sheet $key")
+                })
+            }
+        }
+        rule.onNodeWithText("sheet", substring = true).assertDoesNotExist()
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        rule.onNodeWithText("sheet", substring = true).assertExists()
+        // A request while the sheet is open keeps the running entry.
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(1, shown.size)
+    }
+
+    @Test
+    fun gearOpensSettings() {
+        show(state(emptyList()))
+        rule.onNodeWithContentDescription("Settings").performClick()
+        assertEquals(1, settingsTaps)
+    }
+
+    @Test
     fun chipsAndArrowsCallActions() {
         show(state(emptyList()))
         rule.onNodeWithText("Month").performClick()
@@ -108,6 +183,12 @@ class HomeScreenTest {
         rule.onNodeWithContentDescription("Next period").performClick()
         assertEquals(listOf(PeriodKind.MONTH), kinds)
         assertEquals(listOf(-1, 1), shifts)
+    }
+
+    @Test
+    fun loadingStateShowsNoEmptyHint() {
+        show(state(emptyList()).copy(loading = true))
+        rule.onNodeWithText("No entries in this period").assertDoesNotExist()
     }
 
     @Test
@@ -128,6 +209,21 @@ class HomeScreenTest {
         rule.onNodeWithText("Delete this entry?").assertExists()
         rule.onNode(hasText("Delete") and hasAnyAncestor(hasAnyDescendant(hasText("This cannot be undone.")))).performClick()
         assertEquals(listOf(1L), deletes)
+    }
+
+    @Test
+    fun detailsShowOffsetOnlyWhenLabelled() {
+        show(state(listOf(twoRows[0].copy(offsetLabel = "UTC+1"), twoRows[1])))
+        rule.onNodeWithText(formatEntryTime(time.plusHours(1), Locale.US), substring = true).performClick()
+        rule.onNodeWithText("(UTC+1)", substring = true).assertExists()
+    }
+
+    @Test
+    fun detailsWithoutLabelHaveNoParenthesis() {
+        show(state(twoRows))
+        rule.onNodeWithText("tired", substring = true).performClick()
+        rule.onNodeWithText("Edit").assertExists()
+        rule.onNodeWithText("(UTC", substring = true).assertDoesNotExist()
     }
 
     @Test

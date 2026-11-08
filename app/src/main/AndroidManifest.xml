@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Reminders: the notification itself, and re-planning the one inexact alarm after a reboot. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        Backup is allowed only so that DiaryBackupAgent runs: it hands over to Auto Backup only when the
+        user turned backup on in the settings (default off); otherwise nothing leaves the device.
+        The rules (backup_rules for API <= 30, data_extraction_rules for 31+) include only the database
+        and the settings file.
+    -->
     <application
         android:name=".FeelingsDiaryApp"
-        android:allowBackup="false"
+        android:allowBackup="true"
+        android:backupAgent=".backup.DiaryBackupAgent"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:fullBackupOnly="true"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
@@ -15,12 +27,29 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".reminder.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- Exported only because the system broadcasts below come from outside the app. -->
+        <receiver
+            android:name=".reminder.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

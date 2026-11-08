@@ -10,21 +10,27 @@ data class Suggestions(
 )
 
 object FeelingSuggester {
+    /**
+     * [alwaysInclude]: ids shown even when hidden (e.g. selected in the entry being edited); with an
+     * empty query, such hidden feelings head the recent section.
+     */
     fun suggest(
         query: String,
         feelings: List<Feeling>,
         label: (Feeling) -> String,
         recentCount: Int = 5,
+        alwaysInclude: Set<Long> = emptySet(),
     ): Suggestions {
-        val visible = feelings.filter { !it.hidden }
+        val visible = feelings.filter { !it.hidden || it.id in alwaysInclude }
         val normalizedQuery = normalize(query.trim())
         val listOrder = baseListOrder(visible, label)
         return if (normalizedQuery.isEmpty()) {
             val recent =
-                visible
-                    .filter { it.lastUsedAt != null }
-                    .sortedByDescending { it.lastUsedAt }
-                    .take(recentCount)
+                listOrder.filter { it.hidden } +
+                    visible
+                        .filter { !it.hidden && it.lastUsedAt != null }
+                        .sortedByDescending { it.lastUsedAt }
+                        .take(recentCount)
             val recentIds = recent.map { it.id }.toSet()
             Suggestions(recent, listOrder.filter { it.id !in recentIds }, canCreate = false)
         } else {
@@ -46,6 +52,25 @@ object FeelingSuggester {
                 canCreate = labels.values.none { it == normalizedQuery },
             )
         }
+    }
+
+    /**
+     * Chips of the quick sheet: up to [count] visible feelings by last use, filled up to [count] with the
+     * remaining visible ones in base-list order. [selected] feelings missing from that list follow in tap order.
+     */
+    fun quick(
+        feelings: List<Feeling>,
+        label: (Feeling) -> String,
+        selected: List<Long>,
+        count: Int = 8,
+    ): List<Feeling> {
+        val visible = feelings.filter { !it.hidden }
+        val recent = visible.filter { it.lastUsedAt != null }.sortedByDescending { it.lastUsedAt }.take(count)
+        val recentIds = recent.map { it.id }.toSet()
+        val shown = recent + baseListOrder(visible.filter { it.id !in recentIds }, label).take(count - recent.size)
+        val shownIds = shown.map { it.id }.toSet()
+        val byId = feelings.associateBy { it.id }
+        return shown + selected.filter { it !in shownIds }.mapNotNull { byId[it] }
     }
 
     /** Base feelings by ascending id, then custom feelings alphabetically by label. */

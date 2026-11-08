@@ -1,6 +1,8 @@
 # FeelingsDiary – Phase 2: Verlauf-Graph – Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+> **Status:** ✅ abgeschlossen – PR #5 gemergt am 2026-11-08 (main `f502d41`), CI grün, Gerätetest auf Galaxy A54. Alle Tasks erledigt; verschobene Punkte (Gefühlsnamen nach Sprachwechsel, Leer-Hinweis beim Kaltstart, Wochenmittel > 7 Jahre) in Phase 3 erledigt (Tasks 1 und 5).
 
 **Goal:** Die Startseite wird zum Verlauf „Variante B“: Graph (Valenz-Linie in Hauptgefühl-Farben + Personen-Fläche) mit Filtern Jahr/Monat/Woche/Tag/Tagesbereich, Blättern, Aggregation, Legende und Eintrag-Details mit Bearbeiten/Löschen; dazu die drei aus Phase 1 verschobenen Punkte (R8).
 
@@ -55,11 +57,11 @@
 **Interfaces:**
 - Produces: Hook wählt ein JDK, das `bin/jlink` (bzw. `jlink.exe`) besitzt, und führt `./gradlew ktlintCheck testDebugUnitTest` aus.
 
-- [ ] **Step 1: JDK-Auswahl nach `scripts/select-jdk.sh` auslagern** (`pre-commit` macht nach dem `cd "$REPO_ROOT"` ein `source scripts/select-jdk.sh`) – Ein gesetztes `JAVA_HOME` wird nur behalten, wenn `"$JAVA_HOME/bin/jlink"` oder `"$JAVA_HOME/bin/jlink.exe"` existiert. Sonst Kandidaten in dieser Reihenfolge, erster mit `jlink` gewinnt: `/c/Program Files/Eclipse Adoptium/jdk-21*`, `$HOME/.jdks/temurin-21*`, `$HOME/.jdks/*21*`, `/c/Program Files/Android/Android Studio/jbr`, `/Applications/Android Studio.app/Contents/jbr/Contents/Home`. Kein Treffer → Meldung `✗ Kein JDK mit jlink gefunden – JAVA_HOME auf JDK 21 setzen` und `exit 1`. Gewähltes JDK ausgeben (`echo "JDK: $JAVA_HOME"`).
-- [ ] **Step 2: Test-Task** – `./gradlew test` → `./gradlew testDebugUnitTest` (Release-Unit-Tests verdoppeln nur die Laufzeit; CI nutzt ebenfalls `testDebugUnitTest`).
-- [ ] **Step 3: Worktree-fähige Installation** – `install-hooks.sh` schreibt nach `"$(git rev-parse --git-common-dir)/hooks/pre-commit"` statt `.git/hooks` (in Worktrees ist `.git` eine Datei).
-- [ ] **Step 4: Prüfen** – `bash -n scripts/pre-commit scripts/install-hooks.sh` → keine Ausgabe. Im Worktree `bash scripts/install-hooks.sh` → Erfolgsmeldung. `env -u JAVA_HOME bash -c '. scripts/select-jdk.sh && echo $JAVA_HOME'` → Adoptium-JDK-21-Pfad. Mit `JAVA_HOME` auf eine IntelliJ-JBR ohne `jlink` gesetzt → ebenfalls Adoptium-Pfad.
-- [ ] **Step 5: Commit** – `git add scripts/select-jdk.sh scripts/pre-commit scripts/install-hooks.sh CLAUDE.md`; `git commit -m "build(hooks): pick a JDK with jlink and run debug unit tests only"`.
+- [x] **Step 1: JDK-Auswahl nach `scripts/select-jdk.sh` auslagern** (`pre-commit` macht nach dem `cd "$REPO_ROOT"` ein `source scripts/select-jdk.sh`) – Ein gesetztes `JAVA_HOME` wird nur behalten, wenn `"$JAVA_HOME/bin/jlink"` oder `"$JAVA_HOME/bin/jlink.exe"` existiert. Sonst Kandidaten in dieser Reihenfolge, erster mit `jlink` gewinnt: `/c/Program Files/Eclipse Adoptium/jdk-21*`, `$HOME/.jdks/temurin-21*`, `$HOME/.jdks/*21*`, `/c/Program Files/Android/Android Studio/jbr`, `/Applications/Android Studio.app/Contents/jbr/Contents/Home`. Kein Treffer → Meldung `✗ Kein JDK mit jlink gefunden – JAVA_HOME auf JDK 21 setzen` und `exit 1`. Gewähltes JDK ausgeben (`echo "JDK: $JAVA_HOME"`).
+- [x] **Step 2: Test-Task** – `./gradlew test` → `./gradlew testDebugUnitTest` (Release-Unit-Tests verdoppeln nur die Laufzeit; CI nutzt ebenfalls `testDebugUnitTest`).
+- [x] **Step 3: Worktree-fähige Installation** – `install-hooks.sh` schreibt nach `"$(git rev-parse --git-common-dir)/hooks/pre-commit"` statt `.git/hooks` (in Worktrees ist `.git` eine Datei).
+- [x] **Step 4: Prüfen** – `bash -n scripts/pre-commit scripts/install-hooks.sh` → keine Ausgabe. Im Worktree `bash scripts/install-hooks.sh` → Erfolgsmeldung. `env -u JAVA_HOME bash -c '. scripts/select-jdk.sh && echo $JAVA_HOME'` → Adoptium-JDK-21-Pfad. Mit `JAVA_HOME` auf eine IntelliJ-JBR ohne `jlink` gesetzt → ebenfalls Adoptium-Pfad.
+- [x] **Step 5: Commit** – `git add scripts/select-jdk.sh scripts/pre-commit scripts/install-hooks.sh CLAUDE.md`; `git commit -m "build(hooks): pick a JDK with jlink and run debug unit tests only"`.
 
 ---
 
@@ -72,11 +74,11 @@
 **Interfaces:**
 - Consumes/Produces: Signatur `PeopleSelector(people: Int?, onPeople: (Int) -> Unit)` bleibt unverändert.
 
-- [ ] **Step 1: Failing Test** – in `PeopleSelectorTest` (vorhandenes `show()` mit 288 dp und `LARGE_FONT_SCALE`): `everyButtonIsAtLeast48dpWide` – für die Knoten mit Content-Description `"Alone, no other people"`, `"1 other people"` … `"5 other people"` und `"6+ opens a number field"` gilt `getBoundsInRoot().width >= 48.dp` und `height >= 48.dp`. Zusätzlich `numbersStayOnOneRowWhenTheyFit`: bei `Density(density, 1f)` und 360 dp Breite haben alle sieben Knöpfe dasselbe `top`.
-- [ ] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*PeopleSelectorTest*"` → FAIL (Zahlknöpfe < 48 dp bei großer Schrift).
-- [ ] **Step 3: Implementieren** – `BoxWithConstraints`; Breite des „allein“-Labels mit `rememberTextMeasurer()` + `MaterialTheme.typography.labelLarge` messen (+ `2 * ALONE_LABEL_PADDING`). Passt `aloneWidth + 6 * 48.dp + 6 * BUTTON_GAP` in `maxWidth` → bisherige einzeilige Anordnung. Sonst zwei Zeilen: Zeile 1 = allein, 1, 2, 3; Zeile 2 = 4, 5, 6+; Zahlknöpfe je Zeile mit `weight(1f)`.
-- [ ] **Step 4: Laufen lassen** → PASS (inkl. der bestehenden Ein-Zeilen-Tests für die Labels).
-- [ ] **Step 5: Commit** – `git commit -m "fix(entry): wrap people buttons to keep 48dp targets on narrow screens"`.
+- [x] **Step 1: Failing Test** – in `PeopleSelectorTest` (vorhandenes `show()` mit 288 dp und `LARGE_FONT_SCALE`): `everyButtonIsAtLeast48dpWide` – für die Knoten mit Content-Description `"Alone, no other people"`, `"1 other people"` … `"5 other people"` und `"6+ opens a number field"` gilt `getBoundsInRoot().width >= 48.dp` und `height >= 48.dp`. Zusätzlich `numbersStayOnOneRowWhenTheyFit`: bei `Density(density, 1f)` und 360 dp Breite haben alle sieben Knöpfe dasselbe `top`.
+- [x] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*PeopleSelectorTest*"` → FAIL (Zahlknöpfe < 48 dp bei großer Schrift).
+- [x] **Step 3: Implementieren** – `BoxWithConstraints`; Breite des „allein“-Labels mit `rememberTextMeasurer()` + `MaterialTheme.typography.labelLarge` messen (+ `2 * ALONE_LABEL_PADDING`). Passt `aloneWidth + 6 * 48.dp + 6 * BUTTON_GAP` in `maxWidth` → bisherige einzeilige Anordnung. Sonst zwei Zeilen: Zeile 1 = allein, 1, 2, 3; Zeile 2 = 4, 5, 6+; Zahlknöpfe je Zeile mit `weight(1f)`.
+- [x] **Step 4: Laufen lassen** → PASS (inkl. der bestehenden Ein-Zeilen-Tests für die Labels).
+- [x] **Step 5: Commit** – `git commit -m "fix(entry): wrap people buttons to keep 48dp targets on narrow screens"`.
 
 ---
 
@@ -97,16 +99,16 @@
     - `suspend fun deleteEntry(id: Long)`
   - Room-Schema bleibt `version = 1` (nur neue Queries).
 
-- [ ] **Step 1: Failing Tests** (`DiaryRepositoryTest`, In-Memory-DB, fester Clock wie Phase 1):
+- [x] **Step 1: Failing Tests** (`DiaryRepositoryTest`, In-Memory-DB, fester Clock wie Phase 1):
   - `rangeUsesEntryLocalDate`: Clock `2026-07-01T22:30:00Z` in `Europe/Berlin` (lokal 2. Juli 00:30) → `addEntry`; `observeEntriesBetween(2026-07-02, 2026-07-02).first()` enthält ihn, `observeEntriesBetween(2026-07-01, 2026-07-01).first()` ist leer (Review Focus 1).
   - `rangeKeepsExtremeOffsets`: Einträge mit Zone `Pacific/Kiritimati` (+14) lokal 2026-07-02 00:10 und `Etc/GMT+12` (−12) lokal 2026-07-02 23:50 → beide in `observeEntriesBetween(2026-07-02, 2026-07-02)`, aufsteigend sortiert.
   - `updateKeepsTimeAndOldValences`: Eintrag [stressed, tired] anlegen; Valenz von tired in der DB auf +1 ändern; `updateEntry(id, 4, listOf(tired, happy))` → `getEntry(id)`: `time` unverändert, `people == 4`, `feelingIds == listOf(tired, happy)`, `valences == listOf(-1, 2)` (Review Focus 2).
   - `updateRejectsUnknownEntryAndInvalidInput`: `assertThrows<IllegalArgumentException>` für unbekannte id, leere Liste, `people = 1000`.
   - `deleteEntryRemovesIt`: nach `deleteEntry(id)` → `getEntry(id) == null`.
-- [ ] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*DiaryRepositoryTest*"` → FAIL.
-- [ ] **Step 3: DAO-Methoden und Repository-Funktionen implementieren** (Mapping wie Phase 1 über das vorhandene `EntryWithFeelings.toDomain()`).
-- [ ] **Step 4: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS; `app/schemas/.../1.json` unverändert (`git diff --exit-code app/schemas`).
-- [ ] **Step 5: Commit** – `git commit -m "feat(data): entry range query, update and delete"`.
+- [x] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*DiaryRepositoryTest*"` → FAIL.
+- [x] **Step 3: DAO-Methoden und Repository-Funktionen implementieren** (Mapping wie Phase 1 über das vorhandene `EntryWithFeelings.toDomain()`).
+- [x] **Step 4: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS; `app/schemas/.../1.json` unverändert (`git diff --exit-code app/schemas`).
+- [x] **Step 5: Commit** – `git commit -m "feat(data): entry range query, update and delete"`.
 
 ---
 
@@ -134,11 +136,11 @@
   - `peopleScaleMax` = kleinster Wert aus `5, 10, 20, 50, 100, 200, 500, 1000`, der ≥ maximaler `people` ist.
   - `feelingIds` = alle Gefühle (Haupt + weitere) der Einträge im Zeitraum (Legende).
 
-- [ ] **Step 1: Failing Tests `GraphPeriodTest`**
+- [x] **Step 1: Failing Tests `GraphPeriodTest`**
   - `weekStartsByLocale`: `containing(WEEK, 2026-11-07, MONDAY)` → 2026-11-02…2026-11-08; mit `SUNDAY` → 2026-11-01…2026-11-07.
   - `shiftIsGapless`: MONTH 2026-01 `shift(1)` → 2026-02-01…2026-02-28, nochmal → März; YEAR 2028 hat `days == 366`; WEEK mit Start 2026-12-28 `shift(1)` → 2027-01-04…; RANGE 2026-11-01…2026-11-10 `shift(-1)` → 2026-10-22…2026-10-31 (Review Focus 4).
   - `rangeSortsEnds`: `range(2026-11-10, 2026-11-01).start == 2026-11-01`.
-- [ ] **Step 2: Failing Tests `GraphBuilderTest`** (Einträge per Helfer `entry(id, "2026-11-03T08:00", offsetMin = 60, people, feelings = listOf(a to 2, b to -1))`)
+- [x] **Step 2: Failing Tests `GraphBuilderTest`** (Einträge per Helfer `entry(id, "2026-11-03T08:00", offsetMin = 60, people, feelings = listOf(a to 2, b to -1))`)
   - `entryHeightIsMeanOfStoredValences`: Gefühle mit Valenz +2 und −1 → `valence == 0.5f`, `mainFeelingId == a`, `otherFeelingIds == listOf(b)`.
   - `xIsPositionInPeriod`: Woche ab Mo 2026-11-02, Eintrag Mi 12:00 → `x == (2*1440 + 720) / (7*1440f)`.
   - `emptyAndSingle`: leere Liste → `points.isEmpty()`, `peopleScaleMax == 5`; ein Eintrag → genau ein Punkt (Review Focus 3).
@@ -147,10 +149,10 @@
   - `yearAggregatesDaily`: 1.500 Einträge über 2026 (4/Tag) → `aggregation == DAILY`, `points.size <= 366`, Tag mit Hauptgefühlen [a, b, b] → `mainFeelingId == b`; Gleichstand [a, b] → Hauptgefühl des späteren Eintrags.
   - `longRangeAggregatesWeekly`: RANGE 2026-01-01…2027-06-30 → `aggregation == WEEKLY`.
   - `peopleScale`: max people 0 → 5; 7 → 10; 999 → 1000.
-- [ ] **Step 3: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*GraphPeriodTest*" --tests "*GraphBuilderTest*"` → FAIL.
-- [ ] **Step 4: Implementieren** (inkl. `baseListOrder`-Refactoring; `FeelingSuggesterTest` muss unverändert grün bleiben).
-- [ ] **Step 5: Laufen lassen** → PASS.
-- [ ] **Step 6: Commit** – `git commit -m "feat(domain): graph periods and graph data with aggregation"`.
+- [x] **Step 3: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*GraphPeriodTest*" --tests "*GraphBuilderTest*"` → FAIL.
+- [x] **Step 4: Implementieren** (inkl. `baseListOrder`-Refactoring; `FeelingSuggesterTest` muss unverändert grün bleiben).
+- [x] **Step 5: Laufen lassen** → PASS.
+- [x] **Step 6: Commit** – `git commit -m "feat(domain): graph periods and graph data with aggregation"`.
 
 ---
 
@@ -171,12 +173,12 @@
   - `@Composable fun GraphLegend(feelings: List<Pair<String, Color>>)` – `FlowRow`, Farbpunkt + Label, Reihenfolge = `FeelingSuggester.baseListOrder`.
   - Neue Strings: `history_people_axis` („👥 People“/„👥 Personen“), Plural `history_graph_cd`.
 
-- [ ] **Step 1: Failing Tests `GraphGeometryTest`**: `valenceToY` mit `Rect(0,0,100,200)`: +2 → 0, 0 → 100, −2 → 200; `peopleToY(5f, 10, rect) == 100f`; `hitTest` trifft den nächsten von zwei Punkten innerhalb 24 px und liefert `null` bei 30 px Abstand; leere Liste → `null`.
-- [ ] **Step 2: Failing Tests `HistoryGraphTest`** (Robolectric + `createComposeRule`): `tapOnPointReportsIt` – zwei Punkte bei x = 0.25/0.75, `performTouchInput { click(pointOffsets(points, plotRect(width, height, density))[0]) }` → `onPointTap` mit dem ersten Punkt; `emptyDataDrawsWithoutCrash` und `singlePointDrawsWithoutCrash` (Review Focus 3); `hasGraphDescription` – Knoten mit `"Graph, 2 entries"`.
-- [ ] **Step 3: Laufen lassen** → FAIL.
-- [ ] **Step 4: Implementieren.**
-- [ ] **Step 5: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS (inkl. `StringsParityTest`).
-- [ ] **Step 6: Commit** – `git commit -m "feat(home): canvas history graph with people area and legend"`.
+- [x] **Step 1: Failing Tests `GraphGeometryTest`**: `valenceToY` mit `Rect(0,0,100,200)`: +2 → 0, 0 → 100, −2 → 200; `peopleToY(5f, 10, rect) == 100f`; `hitTest` trifft den nächsten von zwei Punkten innerhalb 24 px und liefert `null` bei 30 px Abstand; leere Liste → `null`.
+- [x] **Step 2: Failing Tests `HistoryGraphTest`** (Robolectric + `createComposeRule`): `tapOnPointReportsIt` – zwei Punkte bei x = 0.25/0.75, `performTouchInput { click(pointOffsets(points, plotRect(width, height, density))[0]) }` → `onPointTap` mit dem ersten Punkt; `emptyDataDrawsWithoutCrash` und `singlePointDrawsWithoutCrash` (Review Focus 3); `hasGraphDescription` – Knoten mit `"Graph, 2 entries"`.
+- [x] **Step 3: Laufen lassen** → FAIL.
+- [x] **Step 4: Implementieren.**
+- [x] **Step 5: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS (inkl. `StringsParityTest`).
+- [x] **Step 6: Commit** – `git commit -m "feat(home): canvas history graph with people area and legend"`.
 
 ---
 
@@ -199,13 +201,13 @@
   - Aufbau (Mockup `graph-b-themes.html`): Titel „Mein Verlauf“; `PeriodBar` (FilterChips Jahr/Monat/Woche/Tag, Kalender-`IconButton` → `DateRangePicker`-Dialog, darunter ‹ Zeitraumtext ›); `HistoryGraph`; `GraphLegend`; Eintragsliste (E1) bzw. Hinweis `history_empty` bei leerem Zeitraum; Knopf „+ Wie fühlst du dich?“ unten (bestehend). `onPoint` bei `entryId != null` und `onRow` öffnen `EntryDetailSheet` (ModalBottomSheet: Zeit, alle Gefühle mit Farbpunkt, Personen, Knöpfe Bearbeiten/Löschen); Löschen → Bestätigungsdialog (E5). Die Sheet-id liegt in `rememberSaveable`; verschwindet der Eintrag aus `rows`, schließt das Sheet.
   - Neue Strings (EN/DE): `history_title`, `period_year`, `period_month`, `period_week`, `period_day`, `period_range_cd`, `period_prev_cd`, `period_next_cd`, `history_empty`, `detail_edit`, `detail_delete`, `delete_title`, `delete_message`, `delete_confirm`.
 
-- [ ] **Step 1: Failing Tests `TimeFormatTest`** – `formatEntryTime(2026-11-07T19:22, Locale.GERMANY) == "07.11.26, 19:22"` und mit `Locale.US` ≠ deutscher Text (enthält „PM“); `formatPeriod(WEEK 2.–8.11.2026, GERMANY)` enthält „02.11.2026“ und „08.11.2026“; `xAxisLabels(WEEK ab Mo, GERMANY).first().text == DayOfWeek.MONDAY.getDisplayName(TextStyle.SHORT, Locale.GERMANY)`.
-- [ ] **Step 2: Failing Tests `HomeViewModelTest`** (MockK-Repository, `observeEntriesBetween` liefert `MutableStateFlow`, fester Clock 2026-11-07 Berlin, Default-Locale GERMANY): `startsWithCurrentWeek` (Periode 2.–8.11.); `shiftLoadsNeighbour` (`shift(-1)` → `coVerify`/`verify { repo.observeEntriesBetween(2026-10-26, 2026-11-01) }`); `selectKindKeepsAnchor` (Woche → `selectKind(MONTH)` → 2026-11-01…30); `openBucketOfDailyPointShowsDay`; `periodSurvivesProcessDeath` (`SavedStateHandle(mapOf("kind" to "MONTH", "start" to "2026-03-01", "end" to "2026-03-31"))`); `deleteDelegates` (`coVerify { repo.deleteEntry(7) }`).
-- [ ] **Step 3: Failing Tests `HomeScreenTest`** (bestehende Tests an `HomeActions` anpassen; neu): `chipsAndArrowsCallActions` (Klick „Month“ → `onKind(MONTH)`, Klick ‹ → `onShift(-1)`); `emptyPeriodShowsHint`; `rowOpensDetailsAndDeleteAsksFirst` (Klick Zeile → Sheet mit „Edit“/„Delete“; „Delete“ → Dialog; „Cancel“ → kein `onDelete`; erneut + Bestätigen → `onDelete(id)`); `sheetClosesWhenEntryDisappears` (State ohne die Zeile neu setzen → „Edit“ existiert nicht mehr, Review Focus 5); `timeFollowsLocaleChange` (`CompositionLocalProvider(LocalConfiguration provides Configuration().apply { setLocale(Locale.US) })` → US-Format, danach GERMANY → deutsches Format, ohne neuen State; Review Focus 5 / R8a).
-- [ ] **Step 4: Laufen lassen** → FAIL.
-- [ ] **Step 5: Implementieren** (Navigation-Anpassung `HomeRoute(onAdd, onEdit)` in `AppNavHost` vorerst mit `onEdit = {}`; Task 7 verdrahtet es).
-- [ ] **Step 6: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
-- [ ] **Step 7: Commit** – `git commit -m "feat(home): history screen with period filters, graph, entry list and delete"`.
+- [x] **Step 1: Failing Tests `TimeFormatTest`** – `formatEntryTime(2026-11-07T19:22, Locale.GERMANY) == "07.11.26, 19:22"` und mit `Locale.US` ≠ deutscher Text (enthält „PM“); `formatPeriod(WEEK 2.–8.11.2026, GERMANY)` enthält „02.11.2026“ und „08.11.2026“; `xAxisLabels(WEEK ab Mo, GERMANY).first().text == DayOfWeek.MONDAY.getDisplayName(TextStyle.SHORT, Locale.GERMANY)`.
+- [x] **Step 2: Failing Tests `HomeViewModelTest`** (MockK-Repository, `observeEntriesBetween` liefert `MutableStateFlow`, fester Clock 2026-11-07 Berlin, Default-Locale GERMANY): `startsWithCurrentWeek` (Periode 2.–8.11.); `shiftLoadsNeighbour` (`shift(-1)` → `coVerify`/`verify { repo.observeEntriesBetween(2026-10-26, 2026-11-01) }`); `selectKindKeepsAnchor` (Woche → `selectKind(MONTH)` → 2026-11-01…30); `openBucketOfDailyPointShowsDay`; `periodSurvivesProcessDeath` (`SavedStateHandle(mapOf("kind" to "MONTH", "start" to "2026-03-01", "end" to "2026-03-31"))`); `deleteDelegates` (`coVerify { repo.deleteEntry(7) }`).
+- [x] **Step 3: Failing Tests `HomeScreenTest`** (bestehende Tests an `HomeActions` anpassen; neu): `chipsAndArrowsCallActions` (Klick „Month“ → `onKind(MONTH)`, Klick ‹ → `onShift(-1)`); `emptyPeriodShowsHint`; `rowOpensDetailsAndDeleteAsksFirst` (Klick Zeile → Sheet mit „Edit“/„Delete“; „Delete“ → Dialog; „Cancel“ → kein `onDelete`; erneut + Bestätigen → `onDelete(id)`); `sheetClosesWhenEntryDisappears` (State ohne die Zeile neu setzen → „Edit“ existiert nicht mehr, Review Focus 5); `timeFollowsLocaleChange` (`CompositionLocalProvider(LocalConfiguration provides Configuration().apply { setLocale(Locale.US) })` → US-Format, danach GERMANY → deutsches Format, ohne neuen State; Review Focus 5 / R8a).
+- [x] **Step 4: Laufen lassen** → FAIL.
+- [x] **Step 5: Implementieren** (Navigation-Anpassung `HomeRoute(onAdd, onEdit)` in `AppNavHost` vorerst mit `onEdit = {}`; Task 7 verdrahtet es).
+- [x] **Step 6: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
+- [x] **Step 7: Commit** – `git commit -m "feat(home): history screen with period filters, graph, entry list and delete"`.
 
 ---
 
@@ -225,13 +227,13 @@
   - `EntryViewModel`: liest `savedState.get<Long>("entryId")`; bei `> 0` und noch ohne `KEY_SELECTED` im SavedState einmalig `repo.getEntry(id)` → `selected`, `people`, `editingTime` setzen; `save()` ruft dann `repo.updateEntry(id, people, selectedIds)` statt `addEntry`. Existiert der Eintrag nicht (mehr) → `saved = true` (Bildschirm schließt).
   - `EntryScreen`-Kopf: bei `editingTime != null` `entry_title_edit` mit `formatEntryTime(editingTime, locale)`; `EntryRoute` reicht den Wert durch.
 
-- [ ] **Step 1: Failing Tests `EntryViewModelTest`**: `editLoadsEntryInOrder` (`SavedStateHandle(mapOf("entryId" to 5L))`, `getEntry(5)` liefert [b, a], people 2 → `selectedIds == listOf(b, a)`, `people == 2`, `editingTime != null`); `editSaveUpdatesInsteadOfAdding` (`coVerify { repo.updateEntry(5, 2, listOf(b, a)) }`, `coVerify(exactly = 0) { repo.addEntry(any(), any()) }`); `editDoesNotOverwriteRestoredSelection` (SavedState hat `entryId` **und** `"selected"` → `getEntry` wird nicht aufgerufen); `editOfMissingEntryCloses` (`getEntry` → null → `saved == true`).
-- [ ] **Step 2: Failing Tests `AppNavGraphTest`**: `editNavigatesWithId` – `home`-Lambda ruft `onEdit(5)` → aktuelle Route `entry?entryId={entryId}` mit Argument 5; `addStillOpensNewEntry` (bestehender Test angepasst).
-- [ ] **Step 3: Failing Test `EntryScreenTest`**: `editTitleShown` – State mit `editingTime = 2026-11-07T19:22` → Text „Edit entry · …“ sichtbar.
-- [ ] **Step 4: Laufen lassen** → FAIL.
-- [ ] **Step 5: Implementieren.**
-- [ ] **Step 6: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
-- [ ] **Step 7: Commit** – `git commit -m "feat(entry): edit existing entries from history details"`.
+- [x] **Step 1: Failing Tests `EntryViewModelTest`**: `editLoadsEntryInOrder` (`SavedStateHandle(mapOf("entryId" to 5L))`, `getEntry(5)` liefert [b, a], people 2 → `selectedIds == listOf(b, a)`, `people == 2`, `editingTime != null`); `editSaveUpdatesInsteadOfAdding` (`coVerify { repo.updateEntry(5, 2, listOf(b, a)) }`, `coVerify(exactly = 0) { repo.addEntry(any(), any()) }`); `editDoesNotOverwriteRestoredSelection` (SavedState hat `entryId` **und** `"selected"` → `getEntry` wird nicht aufgerufen); `editOfMissingEntryCloses` (`getEntry` → null → `saved == true`).
+- [x] **Step 2: Failing Tests `AppNavGraphTest`**: `editNavigatesWithId` – `home`-Lambda ruft `onEdit(5)` → aktuelle Route `entry?entryId={entryId}` mit Argument 5; `addStillOpensNewEntry` (bestehender Test angepasst).
+- [x] **Step 3: Failing Test `EntryScreenTest`**: `editTitleShown` – State mit `editingTime = 2026-11-07T19:22` → Text „Edit entry · …“ sichtbar.
+- [x] **Step 4: Laufen lassen** → FAIL.
+- [x] **Step 5: Implementieren.**
+- [x] **Step 6: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
+- [x] **Step 7: Commit** – `git commit -m "feat(entry): edit existing entries from history details"`.
 
 ---
 
@@ -240,6 +242,6 @@
 **Files:**
 - Modify: `README.md` (Stand Phase 2), `CLAUDE.md` (Pakete: `ui/home` = Verlauf; `domain` um `GraphPeriod`, `GraphBuilder`)
 
-- [ ] **Step 1: Gerätetest** (Galaxy A54, `adb -s RZCW81045KL`, `./gradlew installDebug`; Screenshots aus Git Bash mit `adb exec-out screencap -p > f.png`): drei Einträge anlegen (verschiedene Hauptgefühle, Personen 0/2/7) → Woche zeigt Linie mit Farbverlauf, Personen-Fläche, Legende; Chips Monat/Jahr/Tag und ‹ › durchklicken; Tagesbereich wählen; Punkt antippen → Details → Bearbeiten (Hauptgefühl tauschen) → Linienfarbe ändert sich, Zeit gleich; Löschen mit Bestätigung; helles Theme ist erst in Phase 3 schaltbar, daher nur dunkel prüfen; Sprache EN/DE umschalten → Datums- und Achsentexte wechseln ohne App-Neustart; Entry-Screen bei Schriftgröße max. → Personen-Knöpfe zweizeilig, ≥ 48 dp.
-- [ ] **Step 2: Doku committen** – `git commit -m "docs: readme and claude guide for phase 2"`.
-- [ ] **Step 3: Push + PR** – `git remote get-url origin` und `git branch --show-current` prüfen; Branch `feat/phase2-history-graph`, `gh pr create --base main` (Body: Zusammenfassung, Planer-Entscheidungen E1–E8, Gerätetest-Ergebnis mit Screenshots, endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`); `gh pr checks --watch` → `build` grün. Nicht mergen.
+- [x] **Step 1: Gerätetest** (Galaxy A54, `adb -s RZCW81045KL`, `./gradlew installDebug`; Screenshots aus Git Bash mit `adb exec-out screencap -p > f.png`): drei Einträge anlegen (verschiedene Hauptgefühle, Personen 0/2/7) → Woche zeigt Linie mit Farbverlauf, Personen-Fläche, Legende; Chips Monat/Jahr/Tag und ‹ › durchklicken; Tagesbereich wählen; Punkt antippen → Details → Bearbeiten (Hauptgefühl tauschen) → Linienfarbe ändert sich, Zeit gleich; Löschen mit Bestätigung; helles Theme ist erst in Phase 3 schaltbar, daher nur dunkel prüfen; Sprache EN/DE umschalten → Datums- und Achsentexte wechseln ohne App-Neustart; Entry-Screen bei Schriftgröße max. → Personen-Knöpfe zweizeilig, ≥ 48 dp.
+- [x] **Step 2: Doku committen** – `git commit -m "docs: readme and claude guide for phase 2"`.
+- [x] **Step 3: Push + PR** – `git remote get-url origin` und `git branch --show-current` prüfen; Branch `feat/phase2-history-graph`, `gh pr create --base main` (Body: Zusammenfassung, Planer-Entscheidungen E1–E8, Gerätetest-Ergebnis mit Screenshots, endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`); `gh pr checks --watch` → `build` grün. Nicht mergen.

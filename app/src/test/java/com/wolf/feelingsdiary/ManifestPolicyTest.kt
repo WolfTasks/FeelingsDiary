@@ -1,10 +1,14 @@
 package com.wolf.feelingsdiary
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
+import com.wolf.feelingsdiary.backup.DiaryBackupAgent
+import com.wolf.feelingsdiary.reminder.BootReceiver
+import com.wolf.feelingsdiary.reminder.ReminderReceiver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -26,22 +30,62 @@ class ManifestPolicyTest {
     }
 
     @Test
-    fun backupDisabled() {
-        assertEquals(0, ctx.applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP)
+    fun permissionsAreExactlyTheAllowedSet() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val own = Regex("""<uses-permission\s+android:name="([^"]+)"""").findAll(manifest).map { it.groupValues[1] }.toSet()
+        assertEquals(setOf(Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.RECEIVE_BOOT_COMPLETED), own)
     }
 
     @Test
-    fun deviceTransferAndCloudBackupExcludeEverything() {
+    fun onlyBootReceiverIsExported() {
+        val pm = ctx.packageManager
+        val reminder = pm.getReceiverInfo(ComponentName(ctx, ReminderReceiver::class.java), 0)
+        val boot = pm.getReceiverInfo(ComponentName(ctx, BootReceiver::class.java), 0)
+        assertFalse(reminder.exported)
+        assertTrue(boot.exported)
+    }
+
+    @Test
+    fun backupAgentDeclared() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
+        assertTrue(manifest.contains("""android:backupAgent=".backup.DiaryBackupAgent""""))
+        assertTrue(manifest.contains("""android:fullBackupOnly="true""""))
+        assertTrue(manifest.contains("""android:fullBackupContent="@xml/backup_rules""""))
         assertTrue(manifest.contains("""android:dataExtractionRules="@xml/data_extraction_rules""""))
-        assertTrue(manifest.contains("""android:fullBackupContent="false""""))
-        val rules = File("src/main/res/xml/data_extraction_rules.xml").readText()
-        listOf("cloud-backup", "device-transfer").forEach { section ->
-            val body = Regex("<$section[^>]*>(.*?)</$section>", RegexOption.DOT_MATCHES_ALL).find(rules)?.groupValues?.get(1)
-            assertTrue("$section missing", body != null)
-            listOf("root", "file", "database", "sharedpref", "external").forEach { domain ->
-                assertTrue("$section must exclude $domain", body!!.contains("""<exclude domain="$domain""""))
-            }
+        // Backup is allowed only so the agent runs; the agent itself decides whether anything leaves the device.
+        assertTrue(ctx.applicationInfo.flags and ApplicationInfo.FLAG_ALLOW_BACKUP != 0)
+        assertEquals(DiaryBackupAgent::class.java.name, ctx.applicationInfo.backupAgentName)
+    }
+
+    @Test
+    fun rulesIncludeOnlyDatabaseAndSettings() {
+        val expected = listOf("database" to ".", "file" to "datastore/settings.preferences_pb")
+        val extraction = File("src/main/res/xml/data_extraction_rules.xml").readText()
+        val sections =
+            listOf("cloud-backup", "device-transfer").map { section ->
+                val body = Regex("<$section[^>]*>(.*?)</$section>", RegexOption.DOT_MATCHES_ALL).find(extraction)?.groupValues?.get(1)
+                section to requireNotNull(body) { "$section missing" }
+            } + ("backup_rules.xml" to File("src/main/res/xml/backup_rules.xml").readText())
+        sections.forEach { (name, body) ->
+            val rules = Regex("""<(include|exclude)\b[^>]*>""").findAll(body).map { it.value }.toList()
+            val includes =
+                rules.map { rule ->
+                    assertTrue("$name: only includes allowed, found $rule", rule.startsWith("<include"))
+
+                    fun attr(key: String) =
+                        requireNotNull(Regex("""$key="([^"]+)"""").find(rule)) { "$name: $rule lacks $key" }.groupValues[1]
+                    attr("domain") to attr("path")
+                }
+            assertEquals(name, expected, includes)
         }
+    }
+
+    @Test
+    fun cloudBackupRequiresEncryption() {
+        val extraction = File("src/main/res/xml/data_extraction_rules.xml").readText()
+        val cloud = requireNotNull(Regex("<cloud-backup[^>]*>").find(extraction)) { "cloud-backup missing" }.value
+        val transfer = requireNotNull(Regex("<device-transfer[^>]*>").find(extraction)) { "device-transfer missing" }.value
+        assertTrue(cloud, cloud.contains("disableIfNoEncryptionCapabilities=\"true\""))
+        assertFalse(transfer, transfer.contains("disableIfNoEncryptionCapabilities"))
     }
 }

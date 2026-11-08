@@ -92,6 +92,31 @@ class DiaryRepositoryTest {
         }
 
     @Test
+    fun lastPeopleIsNullWithoutEntriesElseLatestByTime() =
+        runBlocking {
+            val happy = idOf("happy")
+            assertNull(repo.lastPeople())
+            repoAt("2026-07-01T10:00:00Z", "Europe/Berlin").addEntry(4, listOf(happy))
+            // Inserted later but earlier in time: the latest by time wins, not the newest row.
+            repoAt("2026-06-30T10:00:00Z", "Europe/Berlin").addEntry(7, listOf(happy))
+            assertEquals(4, repo.lastPeople())
+        }
+
+    @Test
+    fun previousOffsetFindsChronologicalPredecessor() =
+        runBlocking {
+            val happy = idOf("happy")
+            // Same minute twice (id tiebreak), then a later one; inserted out of time order.
+            val a = repoAt("2026-07-01T10:00:00Z", "Europe/Berlin").addEntry(0, listOf(happy)) // +120
+            val b = repoAt("2026-07-01T10:00:00Z", "Europe/London").addEntry(0, listOf(happy)) // +60
+            val c = repoAt("2026-07-01T11:00:00Z", "Asia/Kolkata").addEntry(0, listOf(happy)) // +330
+            val minute = (Instant.parse("2026-07-01T10:00:00Z").epochSecond / 60).toInt()
+            assertNull(repo.previousOffsetMinutes(minute, a))
+            assertEquals(120, repo.previousOffsetMinutes(minute, b))
+            assertEquals(60, repo.previousOffsetMinutes(minute + 60, c))
+        }
+
+    @Test
     fun addCustomFeelingIsObservable() =
         runBlocking {
             val id = repo.addCustomFeeling("Wehmut", 0xFF123456.toInt(), -1)
@@ -172,5 +197,80 @@ class DiaryRepositoryTest {
             val id = repo.addEntry(0, listOf(idOf("happy")))
             repo.deleteEntry(id)
             assertNull(repo.getEntry(id))
+        }
+
+    @Test
+    fun updateFeelingKeepsStoredEntryValences() =
+        runBlocking {
+            val stressed = idOf("stressed")
+            val id = repo.addEntry(2, listOf(stressed))
+            val stored = repo.getEntry(id)!!.valences.single()
+
+            repo.updateFeeling(stressed, null, 0xFF123456.toInt(), 2)
+
+            assertEquals(listOf(stored), repo.getEntry(id)!!.valences)
+            val feeling = repo.observeFeelings().first().first { it.id == stressed }
+            assertEquals(0xFF123456.toInt(), feeling.colorArgb)
+            assertEquals(2, feeling.valence)
+            assertEquals("stressed", feeling.baseKey)
+            // lastUsedAt from the entry is not clobbered by the edit.
+            assertEquals(clock.millis(), feeling.lastUsedAt)
+        }
+
+    @Test
+    fun baseFeelingNameCannotChange() =
+        runBlocking {
+            val happy = idOf("happy")
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateFeeling(happy, "Joy", 0, 1) } }
+            val feeling = repo.observeFeelings().first().first { it.id == happy }
+            assertEquals("happy", feeling.baseKey)
+            assertNull(feeling.customName)
+            assertEquals(2, feeling.valence)
+        }
+
+    @Test
+    fun customFeelingCanBeRenamedAndValenceIsBounded() =
+        runBlocking {
+            val id = repo.addCustomFeeling("Wehmut", 1, -1)
+            repo.updateFeeling(id, "Sehnsucht", 2, 1)
+            val feeling = repo.observeFeelings().first().first { it.id == id }
+            assertEquals("Sehnsucht", feeling.customName)
+            assertEquals(2, feeling.colorArgb)
+            assertEquals(1, feeling.valence)
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateFeeling(id, null, 2, 3) } }
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateFeeling(id, " ", 2, 0) } }
+            assertThrows(IllegalArgumentException::class.java) { runBlocking { repo.updateFeeling(id + 99, null, 2, 0) } }
+            assertEquals(
+                "Sehnsucht",
+                repo
+                    .observeFeelings()
+                    .first()
+                    .first { it.id == id }
+                    .customName,
+            )
+        }
+
+    @Test
+    fun setHiddenTogglesFlag() =
+        runBlocking {
+            val sad = idOf("sad")
+            repo.setHidden(sad, true)
+            assertEquals(
+                true,
+                repo
+                    .observeFeelings()
+                    .first()
+                    .first { it.id == sad }
+                    .hidden,
+            )
+            repo.setHidden(sad, false)
+            assertEquals(
+                false,
+                repo
+                    .observeFeelings()
+                    .first()
+                    .first { it.id == sad }
+                    .hidden,
+            )
         }
 }

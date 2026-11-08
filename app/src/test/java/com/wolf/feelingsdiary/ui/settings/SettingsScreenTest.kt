@@ -1,0 +1,172 @@
+package com.wolf.feelingsdiary.ui.settings
+
+import android.content.Context
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
+import com.wolf.feelingsdiary.R
+import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.domain.InputMode
+import com.wolf.feelingsdiary.domain.ReminderMode
+import com.wolf.feelingsdiary.domain.ReminderSettings
+import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+class SettingsScreenTest {
+    @get:Rule
+    val rule = createComposeRule()
+
+    private val ctx = ApplicationProvider.getApplicationContext<Context>()
+    private val themes = mutableListOf<ThemeMode>()
+    private val inputs = mutableListOf<InputMode>()
+    private val languages = mutableListOf<String?>()
+    private var backs = 0
+    private var manageFeelings = 0
+    private val backups = mutableListOf<Boolean>()
+    private val reminderChanges = mutableListOf<(ReminderSettings) -> ReminderSettings>()
+    private val actions =
+        SettingsActions(
+            onBack = { backs++ },
+            onTheme = { themes += it },
+            onInput = { inputs += it },
+            onLanguage = { languages += it },
+            onReminders = { reminderChanges += it },
+            onRequestNotifications = {},
+            onOpenNotificationSettings = {},
+            onManageFeelings = { manageFeelings++ },
+            onBackup = { backups += it },
+        )
+
+    private fun show(
+        state: AppSettings = AppSettings(),
+        language: String? = null,
+        showBackup: Boolean? = null,
+    ) {
+        rule.setContent {
+            FeelingsDiaryTheme {
+                if (showBackup ==
+                    null
+                ) {
+                    SettingsScreen(state, actions, language)
+                } else {
+                    SettingsScreen(state, actions, language, showBackup = showBackup)
+                }
+            }
+        }
+    }
+
+    /** Below API 28 the backup agent never lets data out, so the switch would promise nothing. */
+    @Test
+    fun privacySectionHiddenWithoutBackup() {
+        show(showBackup = false)
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_appearance)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_privacy)).assertDoesNotExist()
+        rule.onNodeWithText(ctx.getString(R.string.backup_switch)).assertDoesNotExist()
+        rule.onNodeWithText(ctx.getString(R.string.backup_explanation)).assertDoesNotExist()
+    }
+
+    @Test
+    fun themeChoiceCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.theme_dark)).assertIsSelected()
+        rule.onNodeWithText(ctx.getString(R.string.theme_light)).performScrollTo().performClick()
+        assertEquals(listOf(ThemeMode.LIGHT), themes)
+    }
+
+    @Test
+    fun inputChoiceCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_input)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_screen)).performScrollTo().assertIsSelected()
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_sheet)).performScrollTo().performClick()
+        assertEquals(listOf(InputMode.QUICK_SHEET), inputs)
+    }
+
+    @Test
+    fun quickSheetShownAsSelected() {
+        show(AppSettings(input = InputMode.QUICK_SHEET))
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_sheet)).performScrollTo().assertIsSelected()
+    }
+
+    @Test
+    fun backArrowCallsAction() {
+        show()
+        rule.onNodeWithContentDescription(ctx.getString(R.string.settings_back_cd)).performClick()
+        assertEquals(1, backs)
+    }
+
+    @Test
+    @Config(sdk = [32])
+    fun languageRowHiddenBelowApi33() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_language)).assertDoesNotExist()
+        rule.onNodeWithText(ctx.getString(R.string.language_system)).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun languageRowShownOnApi33() {
+        show(language = "de")
+        rule.onNodeWithText(ctx.getString(R.string.language_de)).performScrollTo().assertIsSelected()
+        rule.onNodeWithText(ctx.getString(R.string.language_en)).performScrollTo().performClick()
+        rule.onNodeWithText(ctx.getString(R.string.language_system)).performScrollTo().performClick()
+        assertEquals(listOf("en", null), languages)
+    }
+
+    @Test
+    fun reminderSectionComesFirstAndForwardsChanges() {
+        show()
+        // The section title and the switch share the text; the title comes first.
+        val reminders = rule.onAllNodesWithText(ctx.getString(R.string.settings_section_reminders))[0].fetchSemanticsNode()
+        val appearance = rule.onNodeWithText(ctx.getString(R.string.settings_section_appearance)).fetchSemanticsNode()
+        assertTrue(reminders.positionInRoot.y < appearance.positionInRoot.y)
+        rule.onNodeWithText(ctx.getString(R.string.reminder_mode_fixed)).performScrollTo().performClick()
+        assertEquals(ReminderMode.FIXED, reminderChanges.single()(ReminderSettings()).mode)
+    }
+
+    @Test
+    fun manageFeelingsRowCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.feelings_title)).performScrollTo().performClick()
+        assertEquals(1, manageFeelings)
+    }
+
+    @Test
+    fun backupSwitchCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_privacy)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.backup_explanation)).performScrollTo().assertExists()
+        rule
+            .onNodeWithText(ctx.getString(R.string.backup_switch))
+            .performScrollTo()
+            .assertIsOff()
+            .performClick()
+        assertEquals(listOf(true), backups)
+    }
+
+    @Test
+    fun backupSwitchShowsOnAndTurnsOff() {
+        show(AppSettings(backupEnabled = true))
+        rule
+            .onNodeWithText(ctx.getString(R.string.backup_switch))
+            .performScrollTo()
+            .assertIsOn()
+            .performClick()
+        assertEquals(listOf(false), backups)
+    }
+}

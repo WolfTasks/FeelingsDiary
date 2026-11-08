@@ -25,6 +25,23 @@ interface FeelingDao {
     @Query("SELECT COUNT(*) FROM feelings")
     suspend fun count(): Int
 
+    /** [customName] null keeps the stored name; lastUsedAt and hidden stay untouched. */
+    @Query(
+        "UPDATE feelings SET customName = COALESCE(:customName, customName), colorArgb = :colorArgb, valence = :valence WHERE id = :id",
+    )
+    suspend fun update(
+        id: Long,
+        customName: String?,
+        colorArgb: Int,
+        valence: Int,
+    )
+
+    @Query("UPDATE feelings SET hidden = :hidden WHERE id = :id")
+    suspend fun setHidden(
+        id: Long,
+        hidden: Boolean,
+    )
+
     @Query("UPDATE feelings SET lastUsedAt = :at WHERE id IN (:ids)")
     suspend fun touch(
         ids: List<Long>,

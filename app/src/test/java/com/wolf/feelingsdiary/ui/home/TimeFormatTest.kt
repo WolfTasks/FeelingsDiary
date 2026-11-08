@@ -19,6 +19,30 @@ class TimeFormatTest {
     private val time = LocalDateTime.of(2026, 11, 7, 19, 22)
 
     @Test
+    fun utcOffsetIsFormattedCompactly() {
+        assertEquals("UTC+1", formatUtcOffset(60))
+        assertEquals("UTC+2", formatUtcOffset(120))
+        assertEquals("UTC+0", formatUtcOffset(0))
+        assertEquals("UTC-3", formatUtcOffset(-180))
+        assertEquals("UTC+5:30", formatUtcOffset(330))
+        assertEquals("UTC-9:30", formatUtcOffset(-570))
+        assertEquals("UTC+14", formatUtcOffset(840))
+    }
+
+    /** The offset is a technical label: ASCII digits even when the default locale uses other ones. */
+    @Test
+    fun utcOffsetIgnoresDefaultLocaleDigits() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG-u-nu-arab"))
+            assertEquals("UTC+5:30", formatUtcOffset(330))
+            assertEquals("UTC-9:45", formatUtcOffset(-585))
+        } finally {
+            Locale.setDefault(original)
+        }
+    }
+
+    @Test
     fun entryTimeFollowsLocale() {
         assertEquals("07.11.26, 19:22", formatEntryTime(time, Locale.GERMANY))
         val us = formatEntryTime(time, Locale.US)

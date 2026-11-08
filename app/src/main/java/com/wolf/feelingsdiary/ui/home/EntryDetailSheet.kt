@@ -40,7 +40,11 @@ fun EntryDetailSheet(
     var confirming by rememberSaveable { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(formatEntryTime(row.time, locale), style = MaterialTheme.typography.titleMedium)
+            val time = formatEntryTime(row.time, locale)
+            Text(
+                row.offsetLabel?.let { stringResource(R.string.detail_time_with_offset, time, it) } ?: time,
+                style = MaterialTheme.typography.titleMedium,
+            )
             Spacer(Modifier.height(12.dp))
             FeelingList(row.feelings)
             Spacer(Modifier.height(8.dp))

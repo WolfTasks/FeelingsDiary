@@ -107,4 +107,61 @@ class FeelingSuggesterTest {
         assertEquals(listOf(2L), suggest("", feelings).others.map { it.id })
         assertTrue(suggest("mü", feelings).others.isEmpty())
     }
+
+    @Test
+    fun alwaysIncludeShowsHiddenFeelingInRecent() {
+        val hidden = base(4, "bored", hidden = true)
+        val other = base(5, "lonely", hidden = true)
+        val used = custom(10, "a", lastUsedAt = 3)
+        val feelings = listOf(base(1, "happy"), used, hidden, other)
+        val result = FeelingSuggester.suggest("", feelings, ::label, alwaysInclude = setOf(4L))
+        assertEquals(listOf(4L, 10L), result.recent.map { it.id })
+        assertEquals(listOf(1L), result.others.map { it.id })
+        val searched = FeelingSuggester.suggest("bor", feelings, ::label, alwaysInclude = setOf(4L))
+        assertEquals(listOf(4L), searched.others.map { it.id })
+    }
+
+    @Test
+    fun quickShowsUpToEightRecentlyUsedVisibleFeelings() {
+        val used = (1L..10L).map { base(it, "k$it", lastUsedAt = it) }
+        val hidden = base(11, "hidden", lastUsedAt = 100, hidden = true)
+        val unused = base(12, "unused")
+        val result = FeelingSuggester.quick(used + hidden + unused, ::label, selected = emptyList())
+        assertEquals((10L downTo 3L).toList(), result.map { it.id })
+    }
+
+    @Test
+    fun quickWithoutHistoryUsesFirstEightOfBaseList() {
+        val customs = listOf(custom(20, "b"), custom(21, "a"))
+        val bases = (9L downTo 1L).map { base(it, "k$it") }
+        val hidden = base(0, "hidden", hidden = true)
+        val result = FeelingSuggester.quick(customs + bases + hidden, ::label, selected = emptyList())
+        assertEquals((1L..8L).toList(), result.map { it.id })
+    }
+
+    @Test
+    fun quickKeepsSelectedFeelingsVisibleInTapOrder() {
+        val recent = base(1, "recent", lastUsedAt = 5)
+        val other = base(2, "other")
+        val created = custom(3, "created")
+        val hidden = base(4, "hidden", hidden = true)
+        val result = FeelingSuggester.quick(listOf(recent, other, created, hidden), ::label, selected = listOf(4, 1, 3))
+        // Hidden 4 is not a fill-up candidate, so it follows as a selected feeling.
+        assertEquals(listOf(1L, 2L, 3L, 4L), result.map { it.id })
+    }
+
+    @Test
+    fun quickFillsUpWithBaseListOrderWithoutDuplicates() {
+        val bases = (1L..10L).map { base(it, "k$it") }
+        val used = base(5, "k5", lastUsedAt = 1)
+        val result = FeelingSuggester.quick(bases.filter { it.id != 5L } + used, ::label, selected = emptyList())
+        assertEquals(listOf(5L, 1L, 2L, 3L, 4L, 6L, 7L, 8L), result.map { it.id })
+    }
+
+    @Test
+    fun quickWithFewerThanEightVisibleShowsAll() {
+        val feelings = listOf(custom(3, "b"), base(2, "x", lastUsedAt = 9), base(1, "y"), base(4, "h", hidden = true), custom(5, "a"))
+        val result = FeelingSuggester.quick(feelings, ::label, selected = emptyList())
+        assertEquals(listOf(2L, 1L, 5L, 3L), result.map { it.id })
+    }
 }

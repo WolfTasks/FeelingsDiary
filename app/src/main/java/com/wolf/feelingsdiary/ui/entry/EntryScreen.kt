@@ -151,13 +151,17 @@ fun EntryScreen(
         }
     }
     if (showCreate) {
-        NewFeelingDialog(
-            initialName = state.query.trim(),
+        // A duplicate name selects the existing feeling instead, so there is no error to show here.
+        FeelingEditDialog(
+            initial = null,
+            nameEditable = true,
+            error = null,
             onConfirm = { name, color, valence ->
                 showCreate = false
                 actions.onCreate(name, color, valence)
             },
             onDismiss = { showCreate = false },
+            initialName = state.query.trim(),
         )
     }
 }

@@ -5,11 +5,14 @@ import com.wolf.feelingsdiary.data.DiaryRepository
 import com.wolf.feelingsdiary.domain.Entry
 import com.wolf.feelingsdiary.domain.EntryTime
 import com.wolf.feelingsdiary.domain.Feeling
+import com.wolf.feelingsdiary.reminder.ReminderNotifier
 import com.wolf.feelingsdiary.ui.FeelingLabeler
+import com.wolf.feelingsdiary.ui.LocaleSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,6 +31,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.Locale
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EntryViewModelTest {
@@ -38,8 +42,10 @@ class EntryViewModelTest {
 
     private val feelings = MutableStateFlow(listOf(happy, stressed, sad, hiddenBored))
     private val repo = mockk<DiaryRepository>()
+    private val notifier = mockk<ReminderNotifier>(relaxed = true)
     private val labels = mapOf("happy" to "Glücklich", "stressed" to "Gestresst", "sad" to "Traurig", "bored" to "Gelangweilt")
     private val labeler = FeelingLabeler { it.customName ?: labels.getValue(it.baseKey!!) }
+    private val localeSource = LocaleSource().apply { update(Locale.GERMAN) }
 
     @Before
     fun setUp() {
@@ -53,7 +59,7 @@ class EntryViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.vm(handle: SavedStateHandle = SavedStateHandle()): EntryViewModel {
-        val vm = EntryViewModel(repo, labeler, handle)
+        val vm = EntryViewModel(repo, labeler, localeSource, handle, notifier)
         backgroundScope.launch { vm.state.collect {} }
         runCurrent()
         return vm
@@ -84,6 +90,82 @@ class EntryViewModelTest {
             runCurrent()
             coVerify { repo.addEntry(0, listOf(1L)) }
             assertTrue(vm.state.value.saved)
+        }
+
+    @Test
+    fun saveCancelsReminderNotification() =
+        runTest {
+            val vm = vm()
+            vm.toggle(1)
+            vm.setPeople(0)
+            vm.save()
+            runCurrent()
+            coVerify { repo.addEntry(0, listOf(1L)) }
+            verify(exactly = 1) { notifier.cancel() }
+        }
+
+    @Test
+    fun prefillUsesLastEntryPeople() =
+        runTest {
+            coEvery { repo.lastPeople() } returns 3
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            assertEquals(3, vm.state.value.people)
+        }
+
+    @Test
+    fun prefillDefaultsToZero() =
+        runTest {
+            coEvery { repo.lastPeople() } returns null
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            assertEquals(0, vm.state.value.people)
+            vm.toggle(1)
+            runCurrent()
+            // A prefilled value counts as chosen.
+            assertTrue(vm.state.value.canSave)
+        }
+
+    @Test
+    fun prefillKeepsChosenPeople() =
+        runTest {
+            val last = CompletableDeferred<Int?>()
+            coEvery { repo.lastPeople() } coAnswers { last.await() }
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            // Chosen while the lookup is still running: the lookup must not overwrite it.
+            vm.setPeople(5)
+            last.complete(2)
+            runCurrent()
+            assertEquals(5, vm.state.value.people)
+        }
+
+    @Test
+    fun prefillSkipsLookupWhenPeopleAlreadySet() =
+        runTest {
+            // E.g. restored after process death: no lookup, the restored value stays.
+            val vm = vm(SavedStateHandle(mapOf("people" to 6)))
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            coVerify(exactly = 0) { repo.lastPeople() }
+            assertEquals(6, vm.state.value.people)
+        }
+
+    @Test
+    fun quickChipsComeFromRecentUseAndSelection() =
+        runTest {
+            feelings.value = listOf(happy.copy(lastUsedAt = 10), stressed, sad.copy(lastUsedAt = 20), hiddenBored)
+            val vm = vm()
+            vm.toggle(2)
+            runCurrent()
+            assertEquals(
+                listOf(3L, 1L, 2L),
+                vm.state.value.quick
+                    .map { it.id },
+            )
         }
 
     @Test
@@ -161,7 +243,8 @@ class EntryViewModelTest {
     @Test
     fun saveWorksWithoutStateCollector() =
         runTest {
-            val vm = EntryViewModel(repo, labeler, SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)))
+            val vm =
+                EntryViewModel(repo, labeler, localeSource, SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)), notifier)
             vm.save()
             runCurrent()
             coVerify(exactly = 1) { repo.addEntry(0, listOf(1L)) }
@@ -223,5 +306,41 @@ class EntryViewModelTest {
             val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
             runCurrent()
             assertTrue(vm.state.value.saved)
+        }
+
+    @Test
+    fun labelsFollowLocaleChange() =
+        runTest {
+            localeSource.update(Locale.ENGLISH)
+            val english = mapOf("happy" to "Happy", "stressed" to "Stressed", "sad" to "Sad", "bored" to "Bored")
+            val localized =
+                FeelingLabeler {
+                    val names = if (localeSource.locale.value.language == "de") labels else english
+                    names.getValue(it.baseKey!!)
+                }
+            val vm = EntryViewModel(repo, localized, localeSource, SavedStateHandle(), notifier)
+            backgroundScope.launch { vm.state.collect {} }
+            vm.onQueryChange("glück")
+            runCurrent()
+            assertEquals(emptyList<Feeling>(), vm.state.value.suggestions.others)
+            // No new repository emission: the locale change alone must re-match the query.
+            localeSource.update(Locale.GERMAN)
+            runCurrent()
+            assertEquals(listOf(happy), vm.state.value.suggestions.others)
+        }
+
+    @Test
+    fun editingEntryWithHiddenFeelingKeepsItSelectedAndVisible() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored.copy(feelingIds = listOf(4L, 1L), valences = listOf(-1, 2))
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            assertEquals(listOf(4L, 1L), vm.state.value.selectedIds)
+            // Hidden "bored" is offered as a chip at the top so it can be seen and deselected.
+            assertEquals(listOf(hiddenBored), vm.state.value.suggestions.recent)
+            vm.toggle(4)
+            runCurrent()
+            assertEquals(emptyList<Feeling>(), vm.state.value.suggestions.recent)
+            assertFalse(hiddenBored in vm.state.value.suggestions.others)
         }
 }

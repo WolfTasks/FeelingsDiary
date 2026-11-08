@@ -70,7 +70,7 @@ class InsetsTest {
             colors = emptyMap(),
             legend = emptyList(),
         )
-    private val noHomeActions = HomeActions({}, {}, { _, _ -> }, {}, {}, {}, {}, {})
+    private val noHomeActions = HomeActions({}, {}, { _, _ -> }, {}, {}, {}, {}, {}, {})
 
     private fun assertBottomAbove(
         text: String,

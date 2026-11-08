@@ -2,10 +2,12 @@ package com.wolf.feelingsdiary.domain
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
-enum class Aggregation { NONE, DAILY, WEEKLY }
+enum class Aggregation { NONE, DAILY, WEEKLY, MONTHLY }
 
 /** [x] is the horizontal position within the period (0..1); [entryId] is set only without aggregation. */
 data class GraphPoint(
@@ -29,6 +31,7 @@ object GraphBuilder {
     private val PEOPLE_SCALES = listOf(5, 10, 20, 50, 100, 200, 500, 1000)
     private const val MAX_OTHERS = 3
     private const val MINUTES_PER_DAY = 1440f
+    private const val MAX_WEEKLY_DAYS = 2557 // seven years
 
     fun build(
         entries: List<Entry>,
@@ -41,23 +44,9 @@ object GraphBuilder {
                 .filter { (_, local) -> local.toLocalDate() in period.start..period.endInclusive }
                 .sortedWith(compareBy({ it.first.time.epochMinute }, { it.first.id }))
         val aggregation = aggregationFor(period)
-        val periodMinutes = period.days * MINUTES_PER_DAY
         val points =
             if (aggregation == Aggregation.NONE) {
-                inPeriod
-                    .map { (entry, local) ->
-                        val minutes = ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local)
-                        GraphPoint(
-                            x = minutes / periodMinutes,
-                            valence = entry.valences.average().toFloat(),
-                            mainFeelingId = entry.feelingIds.first(),
-                            otherFeelingIds = entry.feelingIds.drop(1),
-                            people = entry.people.toFloat(),
-                            entryId = entry.id,
-                            bucketStart = local.toLocalDate(),
-                        )
-                        // inPeriod is ordered by (epochMinute, id) and sortedBy is stable: ties on x keep that order.
-                    }.sortedBy { it.x }
+                unaggregatedPoints(inPeriod, period)
             } else {
                 inPeriod
                     .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }
@@ -74,6 +63,60 @@ object GraphBuilder {
         )
     }
 
+    /**
+     * Positions by real elapsed time (epoch minutes), so DST changes and zone changes never reorder entries.
+     * [inPeriod] must be sorted by (epochMinute, id).
+     */
+    private fun unaggregatedPoints(
+        inPeriod: List<Pair<Entry, LocalDateTime>>,
+        period: GraphPeriod,
+    ): List<GraphPoint> {
+        if (inPeriod.isEmpty()) return emptyList()
+        val periodMinutes = period.days * MINUTES_PER_DAY
+        val startEpoch =
+            midnightEpochMinute(
+                period.start,
+                inPeriod
+                    .first()
+                    .first.time.utcOffsetMinutes,
+            )
+        val endEpoch =
+            midnightEpochMinute(
+                period.endInclusive.plusDays(1),
+                inPeriod
+                    .last()
+                    .first.time.utcOffsetMinutes,
+            )
+        val realSpan = endEpoch - startEpoch
+        val useRealTime = realSpan >= periodMinutes / 2
+        var previousX = 0f
+        return inPeriod.map { (entry, local) ->
+            val raw =
+                if (useRealTime) {
+                    (entry.time.epochMinute - startEpoch) / realSpan.toFloat()
+                } else {
+                    ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local) / periodMinutes
+                }
+            // Clamp to the period and keep the sequence non-decreasing in (epochMinute, id) order.
+            val x = maxOf(raw.coerceIn(0f, 1f), previousX)
+            previousX = x
+            GraphPoint(
+                x = x,
+                valence = entry.valences.average().toFloat(),
+                mainFeelingId = entry.feelingIds.first(),
+                otherFeelingIds = entry.feelingIds.drop(1),
+                people = entry.people.toFloat(),
+                entryId = entry.id,
+                bucketStart = local.toLocalDate(),
+            )
+        }
+    }
+
+    private fun midnightEpochMinute(
+        date: LocalDate,
+        offsetMinutes: Int,
+    ): Long = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) / 60 - offsetMinutes
+
     private fun aggregationFor(period: GraphPeriod): Aggregation =
         when (period.kind) {
             PeriodKind.DAY, PeriodKind.WEEK, PeriodKind.MONTH -> {
@@ -88,7 +131,8 @@ object GraphBuilder {
                 when {
                     period.days <= 31 -> Aggregation.NONE
                     period.days <= 366 -> Aggregation.DAILY
-                    else -> Aggregation.WEEKLY
+                    period.days <= MAX_WEEKLY_DAYS -> Aggregation.WEEKLY
+                    else -> Aggregation.MONTHLY
                 }
             }
         }
@@ -97,7 +141,12 @@ object GraphBuilder {
         date: LocalDate,
         aggregation: Aggregation,
         firstDayOfWeek: DayOfWeek,
-    ): LocalDate = if (aggregation == Aggregation.WEEKLY) date.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)) else date
+    ): LocalDate =
+        when (aggregation) {
+            Aggregation.WEEKLY -> date.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+            Aggregation.MONTHLY -> date.withDayOfMonth(1)
+            else -> date
+        }
 
     private fun aggregate(
         bucket: LocalDate,
@@ -119,8 +168,13 @@ object GraphBuilder {
                 .sortedByDescending { it.value }
                 .take(MAX_OTHERS)
                 .map { it.key }
-        // Weekly buckets may stick out of the period; centre them on the visible part.
-        val bucketEnd = if (aggregation == Aggregation.WEEKLY) bucket.plusDays(6) else bucket
+        // Weekly and monthly buckets may stick out of the period; centre them on the visible part.
+        val bucketEnd =
+            when (aggregation) {
+                Aggregation.WEEKLY -> bucket.plusDays(6)
+                Aggregation.MONTHLY -> bucket.with(TemporalAdjusters.lastDayOfMonth())
+                else -> bucket
+            }
         val from = maxOf(bucket, period.start)
         val to = minOf(bucketEnd, period.endInclusive)
         val startMinute = ChronoUnit.DAYS.between(period.start, from) * MINUTES_PER_DAY

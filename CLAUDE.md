@@ -5,10 +5,12 @@ Android (Kotlin, Compose, Room, Hilt), Single-Module `:app`, Paket `com.wolf.fee
 ## Pakete (`app/src/main/java/com/wolf/feelingsdiary`)
 
 - `data/db` – Room: Entities, DAOs, `AppDatabase`, `BaseFeelings` (Grundliste, Seed)
-- `data` – `DiaryRepository`
-- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`, `GraphPeriod`, `GraphBuilder`
-- `di` – Hilt-Module
-- `ui/entry`, `ui/home`, `ui/navigation`, `ui/theme` – Compose-Screens, ViewModels, Nav, Theme; `ui/home` = Verlauf (Graph, Zeitraum, Liste, Details)
+- `data` – `DiaryRepository`; `data/settings` – DataStore-Einstellungen (`SettingsRepository`)
+- `reminder` – AlarmManager-Planung (`ReminderScheduler`), Receiver (Erinnerung, Boot), Benachrichtigung (`ReminderNotifier`)
+- `backup` – `DiaryBackupAgent` (gesteuerte Android-Sicherung)
+- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`, `GraphPeriod`, `GraphBuilder`, `Settings`, `ReminderPlanner`
+- `di` – Hilt-Module, `SystemZoneClock` (Systemzone bei jedem Aufruf)
+- `ui/entry`, `ui/home`, `ui/navigation`, `ui/theme`, `ui/settings`, `ui/feelings` (Gefühle verwalten), `ui/onboarding` – Compose-Screens, ViewModels, Nav, Theme; `ui/home` = Verlauf (Graph, Zeitraum, Liste, Details)
 - Tests: `app/src/test/...` (JUnit4, MockK, Robolectric, Compose UI-Test)
 
 ## Befehle
@@ -25,7 +27,8 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 
 ## Regeln
 
-- Keine `INTERNET`-Berechtigung; `allowBackup="false"` (Phase 1); keine exakten Alarme (`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`). Wird von `ManifestPolicyTest` geprüft.
+- Berechtigungen genau `POST_NOTIFICATIONS` + `RECEIVE_BOOT_COMPLETED`, keine `INTERNET`; keine exakten Alarme (`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`). Sicherung nur über `DiaryBackupAgent` (`fullBackupOnly`), der nur bei Einstellung „Android-Sicherung“ = an (Standard aus) und nur bei Ende-zu-Ende-verschlüsseltem Transport (Cloud nur E2E) oder Gerätewechsel (D2D) an Auto Backup übergibt; Regeln (`backup_rules.xml`, `data_extraction_rules.xml`) enthalten nur Datenbank und `datastore/settings.preferences_pb`. Wird von `ManifestPolicyTest` geprüft.
+- Erinnerungen nur ungenau (`setAndAllowWhileIdle`), nie in der Nachtruhe; Graph-x nach echter Zeit (`epochMinute`), nicht nach Ortszeit.
 - Jeder UI-Text als String-Ressource: `values/strings.xml` (EN, Default) und `values-de/strings.xml`; `StringsParityTest` erzwingt Parität. Keine hartkodierten UI-Texte.
 - Personenzahl = Anzahl der ANDEREN Menschen, 0 = allein, Eingabe 0–999.
 - Valenz −2…+2, als Momentaufnahme je Gefühl pro Eintrag gespeichert.

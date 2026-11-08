@@ -1,6 +1,8 @@
 # FeelingsDiary – Phase 1: Fundament + Eingabe – Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+> **Status:** ✅ abgeschlossen – PR #1 (+ Fix-PR #3) gemergt am 2026-11-07. Alle Tasks erledigt.
 
 **Goal:** Lauffähige Android-App, in der man Einträge (Gefühle mit Mehrfachauswahl + Personenzahl) über den Eingabe-Bildschirm B erfassen kann, mit platzsparender Speicherung, DE/EN-UI, dunklem/hellem Theme und grüner CI.
 
@@ -14,12 +16,12 @@
 
 ## Phasen-Fahrplan (je Phase ein eigener Plan, je Phase eine Session)
 
-| Phase | Inhalt | Ergebnis |
-|---|---|---|
-| **1 (dieser Plan)** | Gerüst, CI, Theme, i18n, Datenmodell, Grundliste, Vorschläge, Eingabe B, eigene Gefühle, einfache Startseite | Einträge erfassen und als Liste sehen |
-| 2 | Verlauf-Graph Variante B, Filter Jahr/Monat/Woche/Tagesbereich/Tag, Blättern, Aggregation, Eintrag-Details bearbeiten/löschen | Verlauf wie im Mockup |
-| 3 | Erinnerungen (Zufallsfenster, feste Zeiten, Nachtruhe, Boot, Benachrichtigungs-Berechtigung), Einstellungen (Theme inkl. System, Sprache, Eingabe A/B inkl. Schnell-Blatt A, Gefühle verwalten, Android-Sicherung via BackupAgent), Onboarding | Vollständige App-Logik |
-| 4 | Export CSV + PNG (SAF/Teilen), Release-CI mit signierter APK auf GitHub Releases, Datenschutzerklärung (Pages), Play-Vorbereitung (AAB, Data-Safety-Text) | v1.0 |
+| Phase | Inhalt | Ergebnis | Status (Stand 2026-11-08) |
+|---|---|---|---|
+| **1 (dieser Plan)** | Gerüst, CI, Theme, i18n, Datenmodell, Grundliste, Vorschläge, Eingabe B, eigene Gefühle, einfache Startseite | Einträge erfassen und als Liste sehen | ✅ erledigt – PR #1 (+ #3), gemergt 2026-11-07 |
+| 2 | Verlauf-Graph Variante B, Filter Jahr/Monat/Woche/Tagesbereich/Tag, Blättern, Aggregation, Eintrag-Details bearbeiten/löschen | Verlauf wie im Mockup | ✅ erledigt – PR #5, gemergt 2026-11-08 |
+| 3 | Erinnerungen (Zufallsfenster, feste Zeiten, Nachtruhe, Boot, Benachrichtigungs-Berechtigung), Einstellungen (Theme inkl. System, Sprache, Eingabe A/B inkl. Schnell-Blatt A, Gefühle verwalten, Android-Sicherung via BackupAgent), Onboarding | Vollständige App-Logik | 🔄 umgesetzt, PR #6 offen (Plan `2026-11-08-feelings-diary-phase3-reminders-settings.md`) |
+| 4 | Export CSV + PNG (SAF/Teilen), Release-CI mit signierter APK auf GitHub Releases, Datenschutzerklärung (Pages), Play-Vorbereitung (AAB, Data-Safety-Text) | v1.0 | ⏳ offen |
 
 ## Global Constraints
 
@@ -60,8 +62,8 @@
 **Interfaces:**
 - Produces: `@Composable fun FeelingsDiaryTheme(darkTheme: Boolean = true, content: @Composable () -> Unit)`; `val DarkColors: ColorScheme`, `val LightColors: ColorScheme` (Werte aus Global Constraints).
 
-- [ ] **Step 1: Gerüst anlegen** – Dateien aus dem MusicPlayer kopieren und wie oben anpassen; `local.properties` kopieren (nicht committen, steht in `.gitignore`).
-- [ ] **Step 2: Failing Tests schreiben**
+- [x] **Step 1: Gerüst anlegen** – Dateien aus dem MusicPlayer kopieren und wie oben anpassen; `local.properties` kopieren (nicht committen, steht in `.gitignore`).
+- [x] **Step 2: Failing Tests schreiben**
 
 ```kotlin
 @RunWith(RobolectricTestRunner::class)
@@ -80,10 +82,10 @@ class ManifestPolicyTest {
 
 `StringsParityTest` (reines JUnit, liest `src/main/res/values/strings.xml` und `values-de/strings.xml` per `DocumentBuilderFactory` relativ zum Modulverzeichnis): `assertEquals(enKeys, deKeys)` für `<string>`- und `<plurals>`-Namen.
 
-- [ ] **Step 3: Tests laufen lassen** – `./gradlew testDebugUnitTest --tests "*ManifestPolicyTest*" --tests "*StringsParityTest*"` → zuerst FAIL (Klassen/Ressourcen fehlen), nach Gerüst PASS.
-- [ ] **Step 4: Theme implementieren** – `DarkColors`/`LightColors` mit den Werten aus Global Constraints (`background`, `surface`, `surfaceVariant`, `primary`, `onPrimary`, `onSurfaceVariant`, `onBackground`/`onSurface` = `#FFFFFF` dunkel bzw. `#0D1830` hell).
-- [ ] **Step 5: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
-- [ ] **Step 6: Commit** – `git add` der oben genannten Pfade; `git commit -m "build: scaffold FeelingsDiary app with toolchain, CI and theme"`.
+- [x] **Step 3: Tests laufen lassen** – `./gradlew testDebugUnitTest --tests "*ManifestPolicyTest*" --tests "*StringsParityTest*"` → zuerst FAIL (Klassen/Ressourcen fehlen), nach Gerüst PASS.
+- [x] **Step 4: Theme implementieren** – `DarkColors`/`LightColors` mit den Werten aus Global Constraints (`background`, `surface`, `surfaceVariant`, `primary`, `onPrimary`, `onSurfaceVariant`, `onBackground`/`onSurface` = `#FFFFFF` dunkel bzw. `#0D1830` hell).
+- [x] **Step 5: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL.
+- [x] **Step 6: Commit** – `git add` der oben genannten Pfade; `git commit -m "build: scaffold FeelingsDiary app with toolchain, CI and theme"`.
 
 ---
 
@@ -124,15 +126,15 @@ class ManifestPolicyTest {
 
   String-Ressourcen: `feeling_<key>`.
 
-- [ ] **Step 1: Failing Tests schreiben** (Robolectric, `Room.inMemoryDatabaseBuilder` mit demselben Seed-Callback):
+- [x] **Step 1: Failing Tests schreiben** (Robolectric, `Room.inMemoryDatabaseBuilder` mit demselben Seed-Callback):
   - `seedCreatesTwelveBaseFeelings` → `count() == 12`, alle `baseKey` aus der Tabelle vorhanden.
   - `insertWithFeelingsKeepsOrderAndValenceSnapshot` → Eintrag mit Gefühlen [stressed, tired] → `observeRecent(10).first()[0].feelings.sortedBy { it.position }.map { it.feelingId to it.valence } == listOf(stressedId to -1, tiredId to -1)`.
   - `deletingEntryCascadesFeelings` → nach `delete(id)` keine `entry_feelings`-Zeilen mehr.
   - `deletingUsedFeelingIsRejected` → Löschen einer referenzierten `FeelingEntity` wirft `SQLiteConstraintException`.
-- [ ] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*AppDatabaseTest*"` → FAIL.
-- [ ] **Step 3: Entities, DAOs, `AppDatabase`, `BaseFeelings`, `DatabaseModule` (Singleton, Name `feelings.db`) implementieren.**
-- [ ] **Step 4: Tests + Strings-Parität** – `./gradlew testDebugUnitTest` → PASS; `app/schemas/.../1.json` existiert.
-- [ ] **Step 5: Commit** – `git commit -m "feat(data): room model with base feeling list"`.
+- [x] **Step 2: Laufen lassen** – `./gradlew testDebugUnitTest --tests "*AppDatabaseTest*"` → FAIL.
+- [x] **Step 3: Entities, DAOs, `AppDatabase`, `BaseFeelings`, `DatabaseModule` (Singleton, Name `feelings.db`) implementieren.**
+- [x] **Step 4: Tests + Strings-Parität** – `./gradlew testDebugUnitTest` → PASS; `app/schemas/.../1.json` existiert.
+- [x] **Step 5: Commit** – `git commit -m "feat(data): room model with base feeling list"`.
 
 ---
 
@@ -152,14 +154,14 @@ class ManifestPolicyTest {
   - `class DiaryRepository @Inject constructor(feelingDao, entryDao, clock: Clock)`: `fun observeFeelings(): Flow<List<Feeling>>`, `fun observeRecentEntries(limit: Int = 50): Flow<List<Entry>>`, `suspend fun addEntry(people: Int, feelingIds: List<Long>): Long`, `suspend fun addCustomFeeling(name: String, colorArgb: Int, valence: Int): Long`
   - `addEntry`: Zeit = `EntryTime.now(clock)`; Valenz je Gefühl aus der aktuellen `FeelingEntity`; danach `touch(feelingIds, clock.millis())`. Wirft `IllegalArgumentException` bei leerer Gefühlsliste, doppelten IDs oder `people !in 0..999`.
 
-- [ ] **Step 1: Failing Tests**
+- [x] **Step 1: Failing Tests**
   - `EntryTimeTest.keepsOriginalLocalTimeAcrossZoneChange`: `EntryTime.now(Clock.fixed(Instant.parse("2026-07-01T21:30:00Z"), ZoneId.of("Europe/Berlin")))` → `localDateTime() == LocalDateTime.of(2026, 7, 1, 23, 30)`; dasselbe Objekt liefert bei Default-Zone UTC weiterhin `23:30` (Review Focus 5).
   - `EntryTimeTest.epochMinuteRoundTrip`: `epochMinute == 29_715_690` für `2026-07-01T21:30Z` (`Instant.epochSecond / 60`).
   - `DiaryRepositoryTest` (Robolectric, In-Memory-DB, fester Clock): `addEntryStoresValenceSnapshotAndTouchesFeelings` (danach Valenz des Gefühls ändern → Eintrag behält alte Valenz; `lastUsedAt == clock.millis()`), `addEntryRejectsEmptyDuplicateOrOutOfRangePeople` (3 × `assertThrows<IllegalArgumentException>`).
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** (Mapping Entity↔Domain im Repository).
-- [ ] **Step 4: Laufen lassen** → PASS.
-- [ ] **Step 5: Commit** – `git commit -m "feat(data): diary repository with time-zone-stable entry time"`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** (Mapping Entity↔Domain im Repository).
+- [x] **Step 4: Laufen lassen** → PASS.
+- [x] **Step 5: Commit** – `git commit -m "feat(data): diary repository with time-zone-stable entry time"`.
 
 ---
 
@@ -177,16 +179,16 @@ class ManifestPolicyTest {
   - Leere/Blank-Query: nur `hidden == false`; `recent` = Gefühle mit `lastUsedAt != null`, absteigend nach `lastUsedAt`, max. `recentCount`; `others` = Rest in Grundlisten-Reihenfolge (Reihenfolge von `BaseFeelings.all`, eigene danach alphabetisch); `canCreate = false`.
   - Nicht-leere Query: Vergleich nach `normalize()` = `lowercase(Locale.ROOT)` + Unicode-NFD ohne Kombinationszeichen (ö→o, ä→a, ü→u, ß bleibt); Präfix-Treffer vor Teilwort-Treffern, innerhalb nach `lastUsedAt` absteigend; Ergebnis komplett in `others`, `recent` leer; `canCreate = true`, wenn kein Label exakt (normalisiert) der Query entspricht.
 
-- [ ] **Step 1: Failing Tests**
+- [x] **Step 1: Failing Tests**
   - `emptyQueryPutsRecentFirst`: drei Gefühle mit `lastUsedAt` 3, 1, 2 → `recent.map { it.id } == listOf(a, c, b)`.
   - `matchesCaseAndUmlautInsensitive`: Query „FRÖH“ und „froh“ finden „fröhlich“; Query „happ“ mit EN-Label findet „happy“ (Review Focus 1).
   - `prefixBeforeContains`: Query „ge“ bei [„angespannt“(eigenes), „gestresst“, „gelangweilt“] → „gestresst“ und „gelangweilt“ vor „angespannt“.
   - `canCreateOnlyWithoutExactMatch`: „Gestresst“ → `false`; „genervt“ → `true`.
   - `hiddenFeelingsNeverSuggested`: ausgeblendetes Gefühl „müde“ fehlt bei leerer Query und bei Query „mü“.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren.**
-- [ ] **Step 4: Laufen lassen** → PASS.
-- [ ] **Step 5: Commit** – `git commit -m "feat(domain): feeling suggestions with recent-first and fuzzy prefix search"`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS.
+- [x] **Step 5: Commit** – `git commit -m "feat(domain): feeling suggestions with recent-first and fuzzy prefix search"`.
 
 ---
 
@@ -207,16 +209,16 @@ class ManifestPolicyTest {
   - `canSave = selectedIds.isNotEmpty() && people != null`.
   - `createFeeling`: Wenn ein (auch ausgeblendetes) Gefühl mit normalisiert gleichem Label existiert → kein Insert, dieses Gefühl wird ausgewählt (und `hidden` bleibt unverändert); sonst `repo.addCustomFeeling` und neues Gefühl ans Ende der Auswahl; `query` wird geleert.
 
-- [ ] **Step 1: Failing Tests** (MockK für `DiaryRepository` mit `MutableStateFlow` als Gefühlsquelle, `StandardTestDispatcher` + `Dispatchers.setMain`):
+- [x] **Step 1: Failing Tests** (MockK für `DiaryRepository` mit `MutableStateFlow` als Gefühlsquelle, `StandardTestDispatcher` + `Dispatchers.setMain`):
   - `toggleKeepsSelectionOrderAndPromotesNextPrimary`: toggle(a), toggle(b), toggle(c), toggle(a) → `selectedIds == listOf(b, c)` (Review Focus 2).
   - `saveRequiresFeelingAndPeople`: anfangs `canSave == false`; nach toggle(a) weiterhin false; nach `setPeople(0)` true; `save()` → `coVerify { repo.addEntry(0, listOf(a)) }` und `saved == true`.
   - `createFeelingWithExistingNameSelectsExisting`: Label „Gestresst“ existiert als Grundliste → `createFeeling("gestresst", …)` → `coVerify(exactly = 0) { repo.addCustomFeeling(any(), any(), any()) }`, `selectedIds` enthält stressed (Review Focus 3).
   - `stateSurvivesProcessDeath`: VM mit `SavedStateHandle(mapOf("selected" to longArrayOf(b, a), "people" to 3))` → `selectedIds == listOf(b, a)`, `people == 3` (Review Focus 4).
   - `setPeopleRejectsOutOfRange`: `setPeople(1000)` → `people` unverändert.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren.**
-- [ ] **Step 4: Laufen lassen** → PASS.
-- [ ] **Step 5: Commit** – `git commit -m "feat(entry): entry view model with ordered multi-select and saved state"`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Laufen lassen** → PASS.
+- [x] **Step 5: Commit** – `git commit -m "feat(entry): entry view model with ordered multi-select and saved state"`.
 
 ---
 
@@ -234,15 +236,15 @@ class ManifestPolicyTest {
 - `NewFeelingDialog`: Name (vorbelegt mit Query), Farbauswahl aus 12 festen Zusatzfarben (`#7E57C2, #26A69A, #EC407A, #8D6E63, #42A5F5, #66BB6A, #FFA726, #78909C, #D4E157, #AB47BC, #29B6F6, #FF7043`), Valenz-Slider −2…+2 (Schritte 1, Beschriftung schlecht/neutral/gut).
 - Content-Descriptions für Chips/Knöpfe als String-Ressourcen (TalkBack).
 
-- [ ] **Step 1: Failing Compose-Tests** (Robolectric + `createComposeRule`, zustandsloser `EntryScreen` mit Fake-State und aufgezeichneten Aktionen):
+- [x] **Step 1: Failing Compose-Tests** (Robolectric + `createComposeRule`, zustandsloser `EntryScreen` mit Fake-State und aufgezeichneten Aktionen):
   - `selectingChipsAndPeopleEnablesSave`: Klick auf Chip „stressed“ und „tired“, Klick auf „3“ → Aktionen `onToggle(stressed)`, `onToggle(tired)`, `onPeople(3)` in dieser Reihenfolge.
   - `saveDisabledWithoutSelection`: State mit leerer Auswahl → Knoten „Save“ `assertIsNotEnabled()`.
   - `sixPlusOpensNumberDialogAndRejectsInvalid`: Klick „6+“, Eingabe „3“ → Fehlertext sichtbar, kein `onPeople`; Eingabe „12“ + OK → `onPeople(12)`.
   - `createOfferShownOnlyWhenAllowed`: State mit `canCreate = true`, Query „genervt“ → Text „+ “genervt” as new feeling“ sichtbar; Klick öffnet Dialog mit vorbelegtem Namen.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren** (EN-Strings als Default, DE in `values-de`).
-- [ ] **Step 4: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS (inkl. `StringsParityTest`).
-- [ ] **Step 5: Commit** – `git commit -m "feat(entry): entry screen B with suggestions, people selector and custom feelings"`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren** (EN-Strings als Default, DE in `values-de`).
+- [x] **Step 4: Laufen lassen** – `./gradlew testDebugUnitTest` → PASS (inkl. `StringsParityTest`).
+- [x] **Step 5: Commit** – `git commit -m "feat(entry): entry screen B with suggestions, people selector and custom feelings"`.
 
 ---
 
@@ -258,11 +260,11 @@ class ManifestPolicyTest {
 - Produces: Routen `"home"` (Start) und `"entry"`; `HomeScreen(entries: List<HomeEntryRow>, onAdd: () -> Unit)`; `data class HomeEntryRow(val id: Long, val time: String, val feelings: List<Pair<String, Int>>, val people: Int)` (Label + Farbe; Zeit lokal formatiert über `DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)` aus `EntryTime.localDateTime()`).
 - Platzhalter-Text „Der Verlauf kommt in Phase 2“ als String-Ressource; Knopf „+ Wie fühlst du dich?“ (Mockup-Stil, `primary`) navigiert zu `"entry"`; nach Speichern zurück zu `"home"`.
 
-- [ ] **Step 1: Failing Compose-Tests**: `showsEntriesNewestFirst` (zwei Zeilen, erste = neuere Zeit), `addButtonNavigates` (`onAdd` aufgerufen), `emptyStateShowsHint`.
-- [ ] **Step 2: Laufen lassen** → FAIL.
-- [ ] **Step 3: Implementieren.**
-- [ ] **Step 4: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL; App im Emulator/Gerät starten (`./gradlew installDebug`), einen Eintrag mit zwei Gefühlen und „allein“ speichern, er erscheint oben in der Liste; Sprache auf Deutsch stellen → Texte deutsch.
-- [ ] **Step 5: Commit** – `git commit -m "feat(home): phase-1 entry list and navigation"`.
+- [x] **Step 1: Failing Compose-Tests**: `showsEntriesNewestFirst` (zwei Zeilen, erste = neuere Zeit), `addButtonNavigates` (`onAdd` aufgerufen), `emptyStateShowsHint`.
+- [x] **Step 2: Laufen lassen** → FAIL.
+- [x] **Step 3: Implementieren.**
+- [x] **Step 4: Vollbuild** – `./gradlew ktlintCheck testDebugUnitTest assembleDebug lintDebug` → BUILD SUCCESSFUL; App im Emulator/Gerät starten (`./gradlew installDebug`), einen Eintrag mit zwei Gefühlen und „allein“ speichern, er erscheint oben in der Liste; Sprache auf Deutsch stellen → Texte deutsch.
+- [x] **Step 5: Commit** – `git commit -m "feat(home): phase-1 entry list and navigation"`.
 
 ---
 
@@ -272,6 +274,6 @@ class ManifestPolicyTest {
 - Modify: `README.md` (Stand Phase 1, Build-Hinweise JDK 21/`local.properties`, Phasen-Fahrplan-Link)
 - Create: `CLAUDE.md` (Kurzreferenz: Paketstruktur, Testbefehle, JAVA_HOME-Gotcha, Regeln aus Global Constraints)
 
-- [ ] **Step 1: Doku schreiben und committen** – `git commit -m "docs: readme and claude guide for phase 1"`.
-- [ ] **Step 2: Push + PR** – Branch `feat/phase1-foundation-entry`, `gh pr create --base main` (Body endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`), `gh pr checks --watch` → CI `build` grün.
-- [ ] **Step 3: Repo-Einstellungen vorbereiten (nach Merge, Wolfgang führt aus):** Befehle analog MusicPlayer auflisten – Dependabot-Alerts/-Updates, Private Vulnerability Reporting, Ruleset (deletion, non_fast_forward, required check `build`, Admin-Bypass). Nicht selbst ausführen.
+- [x] **Step 1: Doku schreiben und committen** – `git commit -m "docs: readme and claude guide for phase 1"`.
+- [x] **Step 2: Push + PR** – Branch `feat/phase1-foundation-entry`, `gh pr create --base main` (Body endet mit `🤖 Generated with [Claude Code](https://claude.com/claude-code)`), `gh pr checks --watch` → CI `build` grün.
+- [x] **Step 3: Repo-Einstellungen vorbereiten (nach Merge, Wolfgang führt aus):** Befehle analog MusicPlayer auflisten – Dependabot-Alerts/-Updates, Private Vulnerability Reporting, Ruleset (deletion, non_fast_forward, required check `build`, Admin-Bypass). Nicht selbst ausführen.
