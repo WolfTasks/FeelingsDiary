@@ -52,4 +52,12 @@ class MainActivityNewEntryTest {
         rule.waitForIdle()
         rule.onNodeWithText(save).assertDoesNotExist()
     }
+
+    @Test
+    fun relaunchFromRecentsDoesNotReopenEntry() {
+        val replayed = Intent(newEntry).addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)
+        Robolectric.buildActivity(MainActivity::class.java, replayed).setup()
+        rule.waitForIdle()
+        rule.onNodeWithText(save).assertDoesNotExist()
+    }
 }

@@ -70,4 +70,16 @@ class ReminderReceiverTest {
         }
         assertTrue(nm.allNotifications.isEmpty())
     }
+
+    @Test
+    fun bootReceiverIgnoresOtherActions() {
+        clearStartupAlarm()
+        // Returns before goAsync(), so a direct call is safe here.
+        BootReceiver().onReceive(app, Intent(Intent.ACTION_SCREEN_ON))
+        repeat(20) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+        assertTrue(alarms.isEmpty())
+    }
 }
