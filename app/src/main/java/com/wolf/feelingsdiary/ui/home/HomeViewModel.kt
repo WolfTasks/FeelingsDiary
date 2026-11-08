@@ -40,6 +40,8 @@ data class HomeEntryRow(
     val time: LocalDateTime,
     val feelings: List<Pair<String, Int>>,
     val people: Int,
+    /** UTC offset such as "UTC+1", set when it differs from the chronologically previous entry; null = no hint. */
+    val offsetLabel: String? = null,
 )
 
 /** [colors] maps feeling id to ARGB; [legend] is (label, ARGB) in base-list order. */
@@ -89,6 +91,8 @@ class HomeViewModel
                         localeSource.locale,
                         inputMode,
                     ) { entries, feelings, _, input ->
+                        // One query per emission: only the earliest entry needs its predecessor from outside the period.
+                        val firstPrevious = entries.firstOrNull()?.let { repo.previousOffsetMinutes(it.time.epochMinute, it.id) }
                         val byId = feelings.associateBy { it.id }
                         val graph = GraphBuilder.build(entries, p, firstDayOfWeek())
                         val used = feelings.filter { it.id in graph.feelingIds }
@@ -97,12 +101,17 @@ class HomeViewModel
                             graph = graph,
                             // The repository orders ascending; the list shows newest first.
                             rows =
-                                entries.asReversed().map { e ->
+                                entries.withIndex().reversed().map { (i, e) ->
+                                    val previous = if (i == 0) firstPrevious else entries[i - 1].time.utcOffsetMinutes
                                     HomeEntryRow(
                                         id = e.id,
                                         time = e.time.localDateTime(),
                                         feelings = e.feelingIds.mapNotNull { byId[it] }.map { labeler.label(it) to it.colorArgb },
                                         people = e.people,
+                                        offsetLabel =
+                                            previous
+                                                ?.takeIf { it != e.time.utcOffsetMinutes }
+                                                ?.let { formatUtcOffset(e.time.utcOffsetMinutes) },
                                     )
                                 },
                             colors = used.associate { it.id to it.colorArgb },

@@ -103,6 +103,20 @@ class DiaryRepositoryTest {
         }
 
     @Test
+    fun previousOffsetFindsChronologicalPredecessor() =
+        runBlocking {
+            val happy = idOf("happy")
+            // Same minute twice (id tiebreak), then a later one; inserted out of time order.
+            val a = repoAt("2026-07-01T10:00:00Z", "Europe/Berlin").addEntry(0, listOf(happy)) // +120
+            val b = repoAt("2026-07-01T10:00:00Z", "Europe/London").addEntry(0, listOf(happy)) // +60
+            val c = repoAt("2026-07-01T11:00:00Z", "Asia/Kolkata").addEntry(0, listOf(happy)) // +330
+            val minute = (Instant.parse("2026-07-01T10:00:00Z").epochSecond / 60).toInt()
+            assertNull(repo.previousOffsetMinutes(minute, a))
+            assertEquals(120, repo.previousOffsetMinutes(minute, b))
+            assertEquals(60, repo.previousOffsetMinutes(minute + 60, c))
+        }
+
+    @Test
     fun addCustomFeelingIsObservable() =
         runBlocking {
             val id = repo.addCustomFeeling("Wehmut", 0xFF123456.toInt(), -1)

@@ -42,6 +42,15 @@ interface EntryDao {
     @Query("SELECT people FROM entries ORDER BY epochMinute DESC, id DESC LIMIT 1")
     suspend fun latestPeople(): Int?
 
+    @Query(
+        "SELECT utcOffsetMinutes FROM entries WHERE epochMinute < :epochMinute OR (epochMinute = :epochMinute AND id < :id) " +
+            "ORDER BY epochMinute DESC, id DESC LIMIT 1",
+    )
+    suspend fun previousOffsetMinutes(
+        epochMinute: Int,
+        id: Long,
+    ): Int?
+
     @Query("UPDATE entries SET people = :people WHERE id = :id")
     suspend fun updatePeople(
         id: Long,

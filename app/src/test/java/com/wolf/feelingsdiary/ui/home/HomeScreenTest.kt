@@ -212,6 +212,21 @@ class HomeScreenTest {
     }
 
     @Test
+    fun detailsShowOffsetOnlyWhenLabelled() {
+        show(state(listOf(twoRows[0].copy(offsetLabel = "UTC+1"), twoRows[1])))
+        rule.onNodeWithText(formatEntryTime(time.plusHours(1), Locale.US), substring = true).performClick()
+        rule.onNodeWithText("(UTC+1)", substring = true).assertExists()
+    }
+
+    @Test
+    fun detailsWithoutLabelHaveNoParenthesis() {
+        show(state(twoRows))
+        rule.onNodeWithText("tired", substring = true).performClick()
+        rule.onNodeWithText("Edit").assertExists()
+        rule.onNodeWithText("(UTC", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun sheetClosesWhenEntryDisappears() {
         val current = mutableStateOf(state(twoRows))
         rule.setContent { FeelingsDiaryTheme { HomeScreen(current.value, actions) } }

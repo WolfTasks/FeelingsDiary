@@ -65,6 +65,12 @@ class DiaryRepository
         /** People of the latest entry by time; null without entries. */
         suspend fun lastPeople(): Int? = entryDao.latestPeople()
 
+        /** UTC offset of the entry chronologically before (epochMinute, id), over the whole database; null if none. */
+        suspend fun previousOffsetMinutes(
+            epochMinute: Int,
+            id: Long,
+        ): Int? = entryDao.previousOffsetMinutes(epochMinute, id)
+
         suspend fun getEntry(id: Long): Entry? = entryDao.getById(id)?.toDomain()
 
         /** Replaces people and feelings; time and stored valences of already-present feelings are kept. */

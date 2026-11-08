@@ -59,6 +59,7 @@
     <string name="period_next_cd">Nächster Zeitraum</string>
     <string name="history_empty">Keine Einträge in diesem Zeitraum</string>
     <string name="detail_edit">Bearbeiten</string>
+    <string name="detail_time_with_offset">%1$s (%2$s)</string>
     <string name="detail_delete">Löschen</string>
     <string name="delete_title">Eintrag löschen?</string>
     <string name="delete_message">Das lässt sich nicht rückgängig machen.</string>

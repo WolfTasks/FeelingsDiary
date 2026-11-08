@@ -59,6 +59,7 @@
     <string name="period_next_cd">Next period</string>
     <string name="history_empty">No entries in this period</string>
     <string name="detail_edit">Edit</string>
+    <string name="detail_time_with_offset">%1$s (%2$s)</string>
     <string name="detail_delete">Delete</string>
     <string name="delete_title">Delete this entry?</string>
     <string name="delete_message">This cannot be undone.</string>

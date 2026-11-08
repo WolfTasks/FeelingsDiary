@@ -62,6 +62,7 @@ class HomeViewModelTest {
         every { repo.observeFeelings() } returns MutableStateFlow(listOf(happy))
         every { repo.observeEntriesBetween(any(), any()) } returns entries
         coEvery { repo.deleteEntry(any()) } returns Unit
+        coEvery { repo.previousOffsetMinutes(any(), any()) } returns null
     }
 
     @After
@@ -197,6 +198,44 @@ class HomeViewModelTest {
             assertEquals(listOf("happy" to 0x111111), row.feelings)
             assertEquals(mapOf(1L to 0x111111), vm.state.value.colors)
             assertEquals(listOf("happy" to 0x111111), vm.state.value.legend)
+        }
+
+    private val baseMinute = (Instant.parse("2026-11-04T12:00:00Z").epochSecond / 60).toInt()
+
+    private fun entry(
+        id: Long,
+        minuteOffset: Int,
+        utcOffset: Int,
+    ) = Entry(id, EntryTime(baseMinute + minuteOffset, utcOffset), 0, listOf(1), listOf(2))
+
+    @Test
+    fun offsetLabelOnlyWhenOffsetChanged() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            entries.value = listOf(entry(1, 0, 120), entry(2, 10, 60), entry(3, 20, 60))
+            val byId =
+                vm.state.value.rows
+                    .associateBy { it.id }
+            assertEquals(null, byId.getValue(1).offsetLabel)
+            assertEquals("UTC+1", byId.getValue(2).offsetLabel)
+            assertEquals(null, byId.getValue(3).offsetLabel)
+            coVerify(exactly = 1) { repo.previousOffsetMinutes(baseMinute, 1) }
+        }
+
+    @Test
+    fun firstRowOfPeriodComparesWithEntryBeforePeriod() =
+        runTest {
+            coEvery { repo.previousOffsetMinutes(baseMinute, 9) } returns 120
+            val vm = vm()
+            observe(vm)
+            entries.value = listOf(entry(9, 0, 60))
+            assertEquals(
+                "UTC+1",
+                vm.state.value.rows
+                    .single()
+                    .offsetLabel,
+            )
         }
 
     @Test
