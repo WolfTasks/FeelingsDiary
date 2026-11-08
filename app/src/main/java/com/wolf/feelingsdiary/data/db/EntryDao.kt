@@ -39,6 +39,9 @@ interface EntryDao {
     @Query("SELECT * FROM entries WHERE id = :id")
     suspend fun getById(id: Long): EntryWithFeelings?
 
+    @Query("SELECT people FROM entries ORDER BY epochMinute DESC, id DESC LIMIT 1")
+    suspend fun latestPeople(): Int?
+
     @Query("UPDATE entries SET people = :people WHERE id = :id")
     suspend fun updatePeople(
         id: Long,

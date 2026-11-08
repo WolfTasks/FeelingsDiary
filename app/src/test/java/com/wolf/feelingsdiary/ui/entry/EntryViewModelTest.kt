@@ -105,6 +105,59 @@ class EntryViewModelTest {
         }
 
     @Test
+    fun prefillUsesLastEntryPeople() =
+        runTest {
+            coEvery { repo.lastPeople() } returns 3
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            assertEquals(3, vm.state.value.people)
+        }
+
+    @Test
+    fun prefillDefaultsToZero() =
+        runTest {
+            coEvery { repo.lastPeople() } returns null
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            assertEquals(0, vm.state.value.people)
+            vm.toggle(1)
+            runCurrent()
+            // A prefilled value counts as chosen.
+            assertTrue(vm.state.value.canSave)
+        }
+
+    @Test
+    fun prefillKeepsChosenPeople() =
+        runTest {
+            val last = CompletableDeferred<Int?>()
+            coEvery { repo.lastPeople() } coAnswers { last.await() }
+            val vm = vm()
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            // Chosen while the lookup is still running: the lookup must not overwrite it.
+            vm.setPeople(5)
+            last.complete(2)
+            runCurrent()
+            assertEquals(5, vm.state.value.people)
+        }
+
+    @Test
+    fun quickChipsComeFromRecentUseAndSelection() =
+        runTest {
+            feelings.value = listOf(happy.copy(lastUsedAt = 10), stressed, sad.copy(lastUsedAt = 20), hiddenBored)
+            val vm = vm()
+            vm.toggle(2)
+            runCurrent()
+            assertEquals(
+                listOf(3L, 1L, 2L),
+                vm.state.value.quick
+                    .map { it.id },
+            )
+        }
+
+    @Test
     fun createFeelingWithExistingNameSelectsExisting() =
         runTest {
             val vm = vm()

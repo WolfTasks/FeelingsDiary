@@ -120,4 +120,32 @@ class FeelingSuggesterTest {
         val searched = FeelingSuggester.suggest("bor", feelings, ::label, alwaysInclude = setOf(4L))
         assertEquals(listOf(4L), searched.others.map { it.id })
     }
+
+    @Test
+    fun quickShowsUpToEightRecentlyUsedVisibleFeelings() {
+        val used = (1L..10L).map { base(it, "k$it", lastUsedAt = it) }
+        val hidden = base(11, "hidden", lastUsedAt = 100, hidden = true)
+        val unused = base(12, "unused")
+        val result = FeelingSuggester.quick(used + hidden + unused, ::label, selected = emptyList())
+        assertEquals((10L downTo 3L).toList(), result.map { it.id })
+    }
+
+    @Test
+    fun quickWithoutHistoryUsesFirstEightOfBaseList() {
+        val customs = listOf(custom(20, "b"), custom(21, "a"))
+        val bases = (9L downTo 1L).map { base(it, "k$it") }
+        val hidden = base(0, "hidden", hidden = true)
+        val result = FeelingSuggester.quick(customs + bases + hidden, ::label, selected = emptyList())
+        assertEquals((1L..8L).toList(), result.map { it.id })
+    }
+
+    @Test
+    fun quickKeepsSelectedFeelingsVisibleInTapOrder() {
+        val recent = base(1, "recent", lastUsedAt = 5)
+        val other = base(2, "other")
+        val created = custom(3, "created")
+        val hidden = base(4, "hidden", hidden = true)
+        val result = FeelingSuggester.quick(listOf(recent, other, created, hidden), ::label, selected = listOf(4, 1, 3))
+        assertEquals(listOf(1L, 4L, 3L), result.map { it.id })
+    }
 }

@@ -54,6 +54,24 @@ object FeelingSuggester {
         }
     }
 
+    /**
+     * Chips of the quick sheet: up to [count] visible feelings by last use; without any history the
+     * first [count] in base-list order. [selected] feelings missing from that list follow in tap order.
+     */
+    fun quick(
+        feelings: List<Feeling>,
+        label: (Feeling) -> String,
+        selected: List<Long>,
+        count: Int = 8,
+    ): List<Feeling> {
+        val visible = feelings.filter { !it.hidden }
+        val recent = visible.filter { it.lastUsedAt != null }.sortedByDescending { it.lastUsedAt }
+        val shown = (recent.ifEmpty { baseListOrder(visible, label) }).take(count)
+        val shownIds = shown.map { it.id }.toSet()
+        val byId = feelings.associateBy { it.id }
+        return shown + selected.filter { it !in shownIds }.mapNotNull { byId[it] }
+    }
+
     /** Base feelings by ascending id, then custom feelings alphabetically by label. */
     fun baseListOrder(
         feelings: List<Feeling>,

@@ -62,6 +62,9 @@ class DiaryRepository
             }
         }
 
+        /** People of the latest entry by time; null without entries. */
+        suspend fun lastPeople(): Int? = entryDao.latestPeople()
+
         suspend fun getEntry(id: Long): Entry? = entryDao.getById(id)?.toDomain()
 
         /** Replaces people and feelings; time and stored valences of already-present feelings are kept. */

@@ -63,6 +63,7 @@ class EntryViewModel
                     canSave = ids.isNotEmpty() && people != null,
                     saved = saved,
                     editingTime = editTime?.let(LocalDateTime::parse),
+                    quick = FeelingSuggester.quick(feelings, labeler::label, ids),
                 )
             }.stateIn(
                 viewModelScope,
@@ -97,6 +98,16 @@ class EntryViewModel
 
         fun setPeople(n: Int) {
             if (n in PEOPLE_RANGE) savedState[KEY_PEOPLE] = n
+        }
+
+        /** Quick sheet: starts with the people of the last entry (0 without entries) unless already chosen. */
+        fun prefillPeopleFromLastEntry() {
+            if (peopleFlow.value != null) return
+            viewModelScope.launch {
+                val last = repo.lastPeople() ?: 0
+                // Checked again: the user may have chosen a value while the lookup ran.
+                if (peopleFlow.value == null) savedState[KEY_PEOPLE] = last
+            }
         }
 
         fun createFeeling(

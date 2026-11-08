@@ -1,5 +1,6 @@
 package com.wolf.feelingsdiary.ui.entry
 
+import com.wolf.feelingsdiary.domain.Feeling
 import com.wolf.feelingsdiary.domain.Suggestions
 import java.time.LocalDateTime
 
@@ -14,4 +15,6 @@ data class EntryUiState(
     val saved: Boolean,
     /** Local time of the entry being edited; null for a new entry. */
     val editingTime: LocalDateTime? = null,
+    /** Chips of the quick sheet: recently used feelings, then selected ones not among them. */
+    val quick: List<Feeling> = emptyList(),
 )

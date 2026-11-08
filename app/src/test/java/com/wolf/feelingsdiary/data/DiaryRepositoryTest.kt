@@ -92,6 +92,17 @@ class DiaryRepositoryTest {
         }
 
     @Test
+    fun lastPeopleIsNullWithoutEntriesElseLatestByTime() =
+        runBlocking {
+            val happy = idOf("happy")
+            assertNull(repo.lastPeople())
+            repoAt("2026-07-01T10:00:00Z", "Europe/Berlin").addEntry(4, listOf(happy))
+            // Inserted later but earlier in time: the latest by time wins, not the newest row.
+            repoAt("2026-06-30T10:00:00Z", "Europe/Berlin").addEntry(7, listOf(happy))
+            assertEquals(4, repo.lastPeople())
+        }
+
+    @Test
     fun addCustomFeelingIsObservable() =
         runBlocking {
             val id = repo.addCustomFeeling("Wehmut", 0xFF123456.toInt(), -1)
