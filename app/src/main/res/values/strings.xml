@@ -15,6 +15,7 @@
     <string name="feeling_angry">angry</string>
     <string name="entry_close">Close</string>
     <string name="entry_title">New entry · %1$s</string>
+    <string name="entry_title_edit">Edit entry · %1$s</string>
     <string name="entry_question">How are you feeling?</string>
     <string name="entry_search_hint">Search feelings</string>
     <string name="entry_section_suggestions">Suggestions</string>
@@ -48,9 +49,27 @@
     <string name="valence_good">good</string>
     <string name="new_feeling_valence_cd">Valence %1$d</string>
     <string name="home_add">+ How are you feeling?</string>
-    <string name="home_placeholder">The history is coming in phase 2</string>
+    <string name="history_title">My history</string>
+    <string name="period_year">Year</string>
+    <string name="period_month">Month</string>
+    <string name="period_week">Week</string>
+    <string name="period_day">Day</string>
+    <string name="period_range_cd">Pick a date range</string>
+    <string name="period_prev_cd">Previous period</string>
+    <string name="period_next_cd">Next period</string>
+    <string name="history_empty">No entries in this period</string>
+    <string name="detail_edit">Edit</string>
+    <string name="detail_delete">Delete</string>
+    <string name="delete_title">Delete this entry?</string>
+    <string name="delete_message">This cannot be undone.</string>
+    <string name="delete_confirm">Delete</string>
     <plurals name="home_people">
         <item quantity="one">%d other person</item>
         <item quantity="other">%d other people</item>
+    </plurals>
+    <string name="history_people_axis">👥 People</string>
+    <plurals name="history_graph_cd">
+        <item quantity="one">Graph, %d entry</item>
+        <item quantity="other">Graph, %d entries</item>
     </plurals>
 </resources>

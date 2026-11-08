@@ -15,6 +15,7 @@
     <string name="feeling_angry">wütend</string>
     <string name="entry_close">Schließen</string>
     <string name="entry_title">Neuer Eintrag · %1$s</string>
+    <string name="entry_title_edit">Eintrag bearbeiten · %1$s</string>
     <string name="entry_question">Wie fühlst du dich?</string>
     <string name="entry_search_hint">Gefühle suchen</string>
     <string name="entry_section_suggestions">Vorschläge</string>
@@ -48,9 +49,27 @@
     <string name="valence_good">gut</string>
     <string name="new_feeling_valence_cd">Valenz %1$d</string>
     <string name="home_add">+ Wie fühlst du dich?</string>
-    <string name="home_placeholder">Der Verlauf kommt in Phase 2</string>
+    <string name="history_title">Mein Verlauf</string>
+    <string name="period_year">Jahr</string>
+    <string name="period_month">Monat</string>
+    <string name="period_week">Woche</string>
+    <string name="period_day">Tag</string>
+    <string name="period_range_cd">Zeitraum wählen</string>
+    <string name="period_prev_cd">Voriger Zeitraum</string>
+    <string name="period_next_cd">Nächster Zeitraum</string>
+    <string name="history_empty">Keine Einträge in diesem Zeitraum</string>
+    <string name="detail_edit">Bearbeiten</string>
+    <string name="detail_delete">Löschen</string>
+    <string name="delete_title">Eintrag löschen?</string>
+    <string name="delete_message">Das lässt sich nicht rückgängig machen.</string>
+    <string name="delete_confirm">Löschen</string>
     <plurals name="home_people">
         <item quantity="one">%d weitere Person</item>
         <item quantity="other">%d weitere Personen</item>
+    </plurals>
+    <string name="history_people_axis">👥 Personen</string>
+    <plurals name="history_graph_cd">
+        <item quantity="one">Graph, %d Eintrag</item>
+        <item quantity="other">Graph, %d Einträge</item>
     </plurals>
 </resources>

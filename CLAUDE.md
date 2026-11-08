@@ -6,9 +6,9 @@ Android (Kotlin, Compose, Room, Hilt), Single-Module `:app`, Paket `com.wolf.fee
 
 - `data/db` – Room: Entities, DAOs, `AppDatabase`, `BaseFeelings` (Grundliste, Seed)
 - `data` – `DiaryRepository`
-- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`
+- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`, `GraphPeriod`, `GraphBuilder`
 - `di` – Hilt-Module
-- `ui/entry`, `ui/home`, `ui/navigation`, `ui/theme` – Compose-Screens, ViewModels, Nav, Theme
+- `ui/entry`, `ui/home`, `ui/navigation`, `ui/theme` – Compose-Screens, ViewModels, Nav, Theme; `ui/home` = Verlauf (Graph, Zeitraum, Liste, Details)
 - Tests: `app/src/test/...` (JUnit4, MockK, Robolectric, Compose UI-Test)
 
 ## Befehle
@@ -19,7 +19,8 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 ```
 
 - `ktlintCheck` ist vor jedem Commit Pflicht (Pre-Commit-Hook: `scripts/install-hooks.sh`).
-- JAVA_HOME-Gotcha: ohne JDK 21 nimmt der Daemon die IntelliJ-JBR ohne jlink und der Build scheitert. `local.properties` (`sdk.dir`) fehlt im Worktree, ggf. aus dem Hauptcheckout kopieren.
+- Hook (`scripts/pre-commit`) wählt via `scripts/select-jdk.sh` ein JDK mit `jlink` und führt `ktlintCheck testDebugUnitTest` aus; `install-hooks.sh` funktioniert auch im Worktree.
+- JAVA_HOME-Gotcha (manuelle Gradle-Läufe; der Hook wählt selbst): ohne JDK 21 nimmt der Daemon die IntelliJ-JBR ohne jlink und der Build scheitert. `local.properties` (`sdk.dir`) fehlt im Worktree, ggf. aus dem Hauptcheckout kopieren.
 - Bei Pipes `set -o pipefail`.
 
 ## Regeln

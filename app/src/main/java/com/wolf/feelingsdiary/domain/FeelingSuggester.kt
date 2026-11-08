@@ -18,7 +18,7 @@ object FeelingSuggester {
     ): Suggestions {
         val visible = feelings.filter { !it.hidden }
         val normalizedQuery = normalize(query.trim())
-        val listOrder = listOrder(visible, label)
+        val listOrder = baseListOrder(visible, label)
         return if (normalizedQuery.isEmpty()) {
             val recent =
                 visible
@@ -49,7 +49,7 @@ object FeelingSuggester {
     }
 
     /** Base feelings by ascending id, then custom feelings alphabetically by label. */
-    private fun listOrder(
+    fun baseListOrder(
         feelings: List<Feeling>,
         label: (Feeling) -> String,
     ): List<Feeling> {

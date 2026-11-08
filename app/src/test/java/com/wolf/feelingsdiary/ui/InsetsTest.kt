@@ -12,18 +12,25 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import com.wolf.feelingsdiary.domain.Aggregation
 import com.wolf.feelingsdiary.domain.Feeling
+import com.wolf.feelingsdiary.domain.GraphData
+import com.wolf.feelingsdiary.domain.GraphPeriod
+import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.domain.Suggestions
 import com.wolf.feelingsdiary.ui.entry.EntryActions
 import com.wolf.feelingsdiary.ui.entry.EntryScreen
 import com.wolf.feelingsdiary.ui.entry.EntryUiState
+import com.wolf.feelingsdiary.ui.home.HomeActions
 import com.wolf.feelingsdiary.ui.home.HomeScreen
+import com.wolf.feelingsdiary.ui.home.HomeUiState
 import com.wolf.feelingsdiary.ui.theme.FeelingsDiaryTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
 
 /** The bottom buttons must stay clear of the navigation bar and the keyboard (edge-to-edge). */
 @RunWith(RobolectricTestRunner::class)
@@ -55,6 +62,16 @@ class InsetsTest {
         .setVisible(type, true)
         .build()
 
+    private val emptyHome =
+        HomeUiState(
+            period = GraphPeriod(PeriodKind.WEEK, LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 8)),
+            graph = GraphData(emptyList(), Aggregation.NONE, 5, emptySet()),
+            rows = emptyList(),
+            colors = emptyMap(),
+            legend = emptyList(),
+        )
+    private val noHomeActions = HomeActions({}, {}, { _, _ -> }, {}, {}, {}, {}, {})
+
     private fun assertBottomAbove(
         text: String,
         reserved: Dp,
@@ -69,7 +86,7 @@ class InsetsTest {
 
     @Test
     fun homeAddButtonClearsNavigationBar() {
-        show(insets(WindowInsetsCompat.Type.navigationBars(), NAV_BAR_PX)) { HomeScreen(emptyList(), onAdd = {}) }
+        show(insets(WindowInsetsCompat.Type.navigationBars(), NAV_BAR_PX)) { HomeScreen(emptyHome, noHomeActions) }
         assertBottomAbove("+ How are you feeling?", NAV_BAR_PX.dp)
     }
 
@@ -82,9 +99,9 @@ class InsetsTest {
                     WindowInsetsCompat.Type.statusBars(),
                     Insets.of(0, STATUS_BAR_PX, 0, 0),
                 ).build()
-        show(statusBar) { HomeScreen(emptyList(), onAdd = {}) }
-        val top = rule.onNodeWithText("The history is coming in phase 2").getBoundsInRoot().top
-        assertTrue("placeholder top $top is under the status bar", top >= STATUS_BAR_PX.dp)
+        show(statusBar) { HomeScreen(emptyHome, noHomeActions) }
+        val top = rule.onNodeWithText("My history").getBoundsInRoot().top
+        assertTrue("title top $top is under the status bar", top >= STATUS_BAR_PX.dp)
     }
 
     @Test
