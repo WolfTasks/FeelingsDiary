@@ -44,13 +44,13 @@ class OnboardingViewModelTest {
         val vm = OnboardingViewModel(repo)
         assertFalse(vm.finished.value)
         vm.finish(enabled = false, count = 2)
-        val s = stored.value
-        assertEquals(false, s.reminders.enabled)
-        assertEquals(2, s.reminders.count)
-        assertTrue(s.onboardingDone)
+        val saved = stored.value
+        assertEquals(false, saved.reminders.enabled)
+        assertEquals(2, saved.reminders.count)
+        assertTrue(saved.onboardingDone)
         // Everything else is kept.
-        assertEquals(ThemeMode.LIGHT, s.theme)
-        assertEquals(ReminderMode.FIXED, s.reminders.mode)
+        assertEquals(ThemeMode.LIGHT, saved.theme)
+        assertEquals(ReminderMode.FIXED, saved.reminders.mode)
         assertTrue(vm.finished.value)
         coVerify(exactly = 1) { repo.update(any()) }
     }

@@ -58,6 +58,21 @@ class MainActivityOnboardingTest {
         assertEquals(2, stored.reminders.count)
     }
 
+    @Test
+    fun recreationKeepsTheDecidedStart() {
+        val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.onboarding_title)) }
+        // Rotation during the onboarding: still the onboarding, not Home.
+        controller.recreate()
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.onboarding_title)) }
+        rule.onNodeWithText(ctx.getString(R.string.onboarding_start)).performClick()
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.history_empty)) }
+        // Rotation after it: the restored back stack holds only Home.
+        controller.recreate()
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.history_empty)) }
+        rule.onNodeWithText(ctx.getString(R.string.onboarding_title)).assertDoesNotExist()
+    }
+
     private companion object {
         const val TIMEOUT_MS = 5_000L
     }

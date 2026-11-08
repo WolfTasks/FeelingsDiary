@@ -34,7 +34,7 @@ class OnboardingScreenTest {
     private fun show(allowed: Boolean = false) {
         rule.setContent {
             FeelingsDiaryTheme {
-                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { e, c -> starts += e to c }
+                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
             }
         }
     }
@@ -71,7 +71,7 @@ class OnboardingScreenTest {
         var allowed by mutableStateOf(false)
         rule.setContent {
             FeelingsDiaryTheme {
-                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { e, c -> starts += e to c }
+                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
             }
         }
         val allow = rule.onNodeWithText(str(R.string.onboarding_allow))
