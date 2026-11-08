@@ -2,6 +2,8 @@ package com.wolf.feelingsdiary.domain
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
@@ -42,23 +44,9 @@ object GraphBuilder {
                 .filter { (_, local) -> local.toLocalDate() in period.start..period.endInclusive }
                 .sortedWith(compareBy({ it.first.time.epochMinute }, { it.first.id }))
         val aggregation = aggregationFor(period)
-        val periodMinutes = period.days * MINUTES_PER_DAY
         val points =
             if (aggregation == Aggregation.NONE) {
-                inPeriod
-                    .map { (entry, local) ->
-                        val minutes = ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local)
-                        GraphPoint(
-                            x = minutes / periodMinutes,
-                            valence = entry.valences.average().toFloat(),
-                            mainFeelingId = entry.feelingIds.first(),
-                            otherFeelingIds = entry.feelingIds.drop(1),
-                            people = entry.people.toFloat(),
-                            entryId = entry.id,
-                            bucketStart = local.toLocalDate(),
-                        )
-                        // inPeriod is ordered by (epochMinute, id) and sortedBy is stable: ties on x keep that order.
-                    }.sortedBy { it.x }
+                unaggregatedPoints(inPeriod, period)
             } else {
                 inPeriod
                     .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }
@@ -74,6 +62,60 @@ object GraphBuilder {
             feelingIds = inPeriod.flatMap { it.first.feelingIds }.toSet(),
         )
     }
+
+    /**
+     * Positions by real elapsed time (epoch minutes), so DST changes and zone changes never reorder entries.
+     * [inPeriod] must be sorted by (epochMinute, id).
+     */
+    private fun unaggregatedPoints(
+        inPeriod: List<Pair<Entry, LocalDateTime>>,
+        period: GraphPeriod,
+    ): List<GraphPoint> {
+        if (inPeriod.isEmpty()) return emptyList()
+        val periodMinutes = period.days * MINUTES_PER_DAY
+        val startEpoch =
+            midnightEpochMinute(
+                period.start,
+                inPeriod
+                    .first()
+                    .first.time.utcOffsetMinutes,
+            )
+        val endEpoch =
+            midnightEpochMinute(
+                period.endInclusive.plusDays(1),
+                inPeriod
+                    .last()
+                    .first.time.utcOffsetMinutes,
+            )
+        val realSpan = endEpoch - startEpoch
+        val useRealTime = realSpan >= periodMinutes / 2
+        var previousX = 0f
+        return inPeriod.map { (entry, local) ->
+            val raw =
+                if (useRealTime) {
+                    (entry.time.epochMinute - startEpoch) / realSpan.toFloat()
+                } else {
+                    ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local) / periodMinutes
+                }
+            // Clamp to the period and keep the sequence non-decreasing in (epochMinute, id) order.
+            val x = maxOf(raw.coerceIn(0f, 1f), previousX)
+            previousX = x
+            GraphPoint(
+                x = x,
+                valence = entry.valences.average().toFloat(),
+                mainFeelingId = entry.feelingIds.first(),
+                otherFeelingIds = entry.feelingIds.drop(1),
+                people = entry.people.toFloat(),
+                entryId = entry.id,
+                bucketStart = local.toLocalDate(),
+            )
+        }
+    }
+
+    private fun midnightEpochMinute(
+        date: LocalDate,
+        offsetMinutes: Int,
+    ): Long = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) / 60 - offsetMinutes
 
     private fun aggregationFor(period: GraphPeriod): Aggregation =
         when (period.kind) {

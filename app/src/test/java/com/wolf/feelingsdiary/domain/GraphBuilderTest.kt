@@ -8,6 +8,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 class GraphBuilderTest {
     private val monday = DayOfWeek.MONDAY
@@ -188,11 +189,11 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun singleEntriesAreOrderedByLocalX() {
-        // Entry 1 is earlier in UTC (06:00Z) but later on the wall clock (23:00 at +17h) than entry 2 (07:00Z, 08:00 at +1h).
+    fun singleEntriesAreOrderedByRealTime() {
+        // Entry 1 is earlier in UTC (06:00Z) but later on the wall clock (23:00 at +17h) than entry 2 (07:00Z, 08:00 at +1h); real time wins.
         val entries = listOf(entry(1, "2026-11-03T23:00", 17 * 60), entry(2, "2026-11-03T08:00", 60))
         val points = GraphBuilder.build(entries, week, monday).points
-        assertEquals(listOf(2L, 1L), points.map { it.entryId })
+        assertEquals(listOf(1L, 2L), points.map { it.entryId })
         assertTrue(points[0].x < points[1].x)
     }
 
@@ -213,5 +214,67 @@ class GraphBuilderTest {
         assertEquals(5, scale(0))
         assertEquals(10, scale(7))
         assertEquals(1000, scale(999))
+    }
+
+    private fun xs(
+        entries: List<Entry>,
+        period: GraphPeriod,
+    ) = GraphBuilder.build(entries, period, monday).points
+
+    @Test
+    fun fallBackKeepsRealOrder() {
+        val day = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 10, 25), monday)
+        val first = entry(1, "2026-10-25T02:50", 120)
+        val second = entry(2, "2026-10-25T02:10", 60)
+        assertEquals(20, second.time.epochMinute - first.time.epochMinute)
+        val points = xs(listOf(second, first), day)
+        assertEquals(listOf(1L, 2L), points.map { it.entryId })
+        assertTrue(points[1].x > points[0].x)
+        assertEquals(20 / 1500f, points[1].x - points[0].x, 1e-5f)
+        assertTrue(points.all { it.x in 0f..1f })
+    }
+
+    @Test
+    fun springForwardKeepsRealOrder() {
+        val day = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 3, 29), monday)
+        val first = entry(1, "2026-03-29T01:50", 60)
+        val second = entry(2, "2026-03-29T03:10", 120)
+        assertEquals(20, second.time.epochMinute - first.time.epochMinute)
+        val points = xs(listOf(first, second), day)
+        assertEquals(listOf(1L, 2L), points.map { it.entryId })
+        assertTrue(points[1].x > points[0].x)
+        assertTrue(points.all { it.x in 0f..1f })
+    }
+
+    @Test
+    fun westwardTravelKeepsRealOrder() {
+        val first = entry(1, "2026-11-04T18:00", 60)
+        val second = entry(2, "2026-11-04T14:00", -300)
+        assertEquals(120, second.time.epochMinute - first.time.epochMinute)
+        val points = xs(listOf(second, first), week)
+        assertEquals(listOf(1L, 2L), points.map { it.entryId })
+        assertTrue(points[1].x > points[0].x)
+        assertTrue(points.all { it.x in 0f..1f })
+    }
+
+    @Test
+    fun sameOffsetPositionsUnchanged() {
+        val entries = listOf("2026-11-03T00:00", "2026-11-05T13:37", "2026-11-08T23:59").mapIndexed { i, t -> entry(i + 1L, t, 60) }
+        val points = xs(entries, week)
+        val expected =
+            entries.map {
+                ChronoUnit.MINUTES.between(week.start.atStartOfDay(), it.time.localDateTime()) / (7 * 1440f)
+            }
+        assertEquals(expected, points.map { it.x })
+    }
+
+    @Test
+    fun extremeOffsetJumpFallsBackToWallTime() {
+        val day = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 11, 4), monday)
+        val first = entry(1, "2026-11-04T00:10", 0)
+        val second = entry(2, "2026-11-04T23:50", 840)
+        assertTrue(second.time.epochMinute > first.time.epochMinute)
+        val points = xs(listOf(first, second), day)
+        assertEquals(listOf(10 / 1440f, 1430 / 1440f), points.map { it.x })
     }
 }
