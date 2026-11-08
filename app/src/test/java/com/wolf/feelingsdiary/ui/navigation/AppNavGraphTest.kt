@@ -8,6 +8,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -20,6 +22,8 @@ class AppNavGraphTest {
     val rule = createComposeRule()
 
     private lateinit var nav: NavHostController
+
+    private val requests = Channel<Unit>(Channel.UNLIMITED)
 
     private fun setGraph() {
         rule.setContent {
@@ -45,6 +49,7 @@ class AppNavGraphTest {
                         },
                     )
                 },
+                newEntryRequests = requests.receiveAsFlow(),
             )
         }
     }
@@ -68,6 +73,29 @@ class AppNavGraphTest {
         rule.waitForIdle()
         assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
         assertEquals(5L, nav.currentBackStackEntry?.arguments?.getLong("entryId"))
+    }
+
+    @Test
+    fun newEntryRequestOpensEntry() {
+        setGraph()
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
+        // Already on a new entry: a second request must not stack another one.
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
+    }
+
+    @Test
+    fun newEntryRequestWhileEditingKeepsTheEdit() {
+        setGraph()
+        rule.onNodeWithText("edit").performClick()
+        rule.waitForIdle()
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN, ENTRY_PATTERN), routes())
+        assertEquals(-1L, nav.currentBackStackEntry?.arguments?.getLong("entryId"))
     }
 
     @Test

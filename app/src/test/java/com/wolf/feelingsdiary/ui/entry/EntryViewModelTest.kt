@@ -5,11 +5,13 @@ import com.wolf.feelingsdiary.data.DiaryRepository
 import com.wolf.feelingsdiary.domain.Entry
 import com.wolf.feelingsdiary.domain.EntryTime
 import com.wolf.feelingsdiary.domain.Feeling
+import com.wolf.feelingsdiary.reminder.ReminderNotifier
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,6 +40,7 @@ class EntryViewModelTest {
 
     private val feelings = MutableStateFlow(listOf(happy, stressed, sad, hiddenBored))
     private val repo = mockk<DiaryRepository>()
+    private val notifier = mockk<ReminderNotifier>(relaxed = true)
     private val labels = mapOf("happy" to "Glücklich", "stressed" to "Gestresst", "sad" to "Traurig", "bored" to "Gelangweilt")
     private val labeler = FeelingLabeler { it.customName ?: labels.getValue(it.baseKey!!) }
 
@@ -53,7 +56,7 @@ class EntryViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.vm(handle: SavedStateHandle = SavedStateHandle()): EntryViewModel {
-        val vm = EntryViewModel(repo, labeler, handle)
+        val vm = EntryViewModel(repo, labeler, handle, notifier)
         backgroundScope.launch { vm.state.collect {} }
         runCurrent()
         return vm
@@ -84,6 +87,18 @@ class EntryViewModelTest {
             runCurrent()
             coVerify { repo.addEntry(0, listOf(1L)) }
             assertTrue(vm.state.value.saved)
+        }
+
+    @Test
+    fun saveCancelsReminderNotification() =
+        runTest {
+            val vm = vm()
+            vm.toggle(1)
+            vm.setPeople(0)
+            vm.save()
+            runCurrent()
+            coVerify { repo.addEntry(0, listOf(1L)) }
+            verify(exactly = 1) { notifier.cancel() }
         }
 
     @Test
@@ -161,7 +176,7 @@ class EntryViewModelTest {
     @Test
     fun saveWorksWithoutStateCollector() =
         runTest {
-            val vm = EntryViewModel(repo, labeler, SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)))
+            val vm = EntryViewModel(repo, labeler, SavedStateHandle(mapOf("selected" to longArrayOf(1), "people" to 0)), notifier)
             vm.save()
             runCurrent()
             coVerify(exactly = 1) { repo.addEntry(0, listOf(1L)) }

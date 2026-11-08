@@ -7,6 +7,7 @@ import com.wolf.feelingsdiary.data.DiaryRepository
 import com.wolf.feelingsdiary.domain.Feeling
 import com.wolf.feelingsdiary.domain.FeelingSuggester
 import com.wolf.feelingsdiary.domain.Suggestions
+import com.wolf.feelingsdiary.reminder.ReminderNotifier
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ class EntryViewModel
         private val repo: DiaryRepository,
         val labeler: FeelingLabeler,
         private val savedState: SavedStateHandle,
+        private val notifier: ReminderNotifier,
     ) : ViewModel() {
         private val saved = MutableStateFlow(false)
         private var saving = false
@@ -124,6 +126,8 @@ class EntryViewModel
             viewModelScope.launch {
                 try {
                     if (editId != null) repo.updateEntry(editId, people, ids) else repo.addEntry(people, ids)
+                    // The feeling is noted, so a pending reminder is done.
+                    notifier.cancel()
                     saved.value = true
                 } catch (e: IllegalArgumentException) {
                     // Entry deleted meanwhile: nothing left to update, so close like a missing entry does.
