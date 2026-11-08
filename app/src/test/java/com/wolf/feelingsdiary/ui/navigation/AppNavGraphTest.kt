@@ -3,12 +3,14 @@ package com.wolf.feelingsdiary.ui.navigation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.wolf.feelingsdiary.domain.InputMode
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import org.junit.Assert.assertEquals
@@ -25,13 +27,16 @@ class AppNavGraphTest {
     private lateinit var nav: NavHostController
 
     private val requests = Channel<Unit>(Channel.UNLIMITED)
+    private var mode = InputMode.SCREEN
+    private val sheetOpenings = mutableListOf<Unit>()
 
     private fun setGraph() {
         rule.setContent {
             nav = rememberNavController()
             AppNavGraph(
                 nav = nav,
-                home = { onAdd, onEdit, onSettings ->
+                home = { onAdd, onEdit, onSettings, sheetRequests ->
+                    LaunchedEffect(sheetRequests) { sheetRequests.collect { sheetOpenings += Unit } }
                     // Stacked texts would overlap and steal each other's taps.
                     Column {
                         Text(
@@ -88,6 +93,7 @@ class AppNavGraphTest {
                     )
                 },
                 newEntryRequests = requests.receiveAsFlow(),
+                inputMode = { mode },
             )
         }
     }
@@ -123,6 +129,43 @@ class AppNavGraphTest {
         requests.trySend(Unit)
         rule.waitForIdle()
         assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN), routes())
+    }
+
+    @Test
+    fun notificationOpensSheetInQuickMode() {
+        setGraph()
+        rule.onNodeWithText("gear").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("feelings").performClick()
+        rule.waitForIdle()
+        mode = InputMode.QUICK_SHEET
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME), routes())
+        assertEquals(1, sheetOpenings.size)
+    }
+
+    @Test
+    fun notificationOnHomeInQuickModeOpensSheet() {
+        setGraph()
+        mode = InputMode.QUICK_SHEET
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        assertEquals(listOf(ROUTE_HOME), routes())
+        assertEquals(1, sheetOpenings.size)
+    }
+
+    @Test
+    fun notificationInQuickModeWhileEditingKeepsTheEdit() {
+        setGraph()
+        rule.onNodeWithText("edit").performClick()
+        rule.waitForIdle()
+        mode = InputMode.QUICK_SHEET
+        requests.trySend(Unit)
+        rule.waitForIdle()
+        // The sheet lives on Home; leaving the edit would discard it, so the entry screen opens above.
+        assertEquals(listOf(ROUTE_HOME, ENTRY_PATTERN, ENTRY_PATTERN), routes())
+        assertEquals(0, sheetOpenings.size)
     }
 
     @Test

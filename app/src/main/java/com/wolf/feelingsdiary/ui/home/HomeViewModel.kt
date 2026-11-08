@@ -4,12 +4,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wolf.feelingsdiary.data.DiaryRepository
+import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.domain.Aggregation
 import com.wolf.feelingsdiary.domain.FeelingSuggester
 import com.wolf.feelingsdiary.domain.GraphBuilder
 import com.wolf.feelingsdiary.domain.GraphData
 import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import com.wolf.feelingsdiary.ui.LocaleSource
@@ -19,7 +21,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -46,6 +50,8 @@ data class HomeUiState(
     val colors: Map<Long, Int>,
     val legend: List<Pair<String, Int>>,
     val loading: Boolean = false,
+    /** Whether "+" opens the entry screen or the quick sheet. */
+    val inputMode: InputMode = InputMode.SCREEN,
 )
 
 private const val KEY_KIND = "kind"
@@ -64,7 +70,10 @@ class HomeViewModel
         private val localeSource: LocaleSource,
         private val savedState: SavedStateHandle,
         clock: Clock,
+        settings: SettingsRepository,
     ) : ViewModel() {
+        private val inputMode = settings.settings.map { it.input }.distinctUntilChanged()
+
         private val period =
             MutableStateFlow(
                 restorePeriod() ?: GraphPeriod.containing(PeriodKind.WEEK, LocalDate.now(clock), firstDayOfWeek()),
@@ -78,7 +87,8 @@ class HomeViewModel
                         repo.observeEntriesBetween(p.start, p.endInclusive),
                         repo.observeFeelings(),
                         localeSource.locale,
-                    ) { entries, feelings, _ ->
+                        inputMode,
+                    ) { entries, feelings, _, input ->
                         val byId = feelings.associateBy { it.id }
                         val graph = GraphBuilder.build(entries, p, firstDayOfWeek())
                         val used = feelings.filter { it.id in graph.feelingIds }
@@ -98,6 +108,7 @@ class HomeViewModel
                             colors = used.associate { it.id to it.colorArgb },
                             legend = FeelingSuggester.baseListOrder(used, labeler::label).map { labeler.label(it) to it.colorArgb },
                             loading = false,
+                            inputMode = input,
                         )
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyState(period.value))

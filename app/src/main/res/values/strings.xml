@@ -111,4 +111,12 @@
     <string name="feelings_add">Add feeling</string>
     <string name="feeling_edit_title">Edit feeling</string>
     <string name="feeling_name_exists">A feeling with this name already exists</string>
+    <string name="quick_search_cd">Search feelings</string>
+    <string name="quick_search_close_cd">Close search</string>
+    <string name="quick_people">👥 Other people</string>
+    <string name="quick_people_less_cd">One person fewer</string>
+    <string name="quick_people_more_cd">One person more</string>
+    <string name="settings_section_input">Input</string>
+    <string name="settings_input_screen">Own screen (default)</string>
+    <string name="settings_input_sheet">Quick sheet from below</string>
 </resources>

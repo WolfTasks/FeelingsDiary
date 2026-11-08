@@ -19,6 +19,7 @@ import com.wolf.feelingsdiary.ui.theme.isDark
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
@@ -49,7 +50,7 @@ class MainActivity : ComponentActivity() {
             val dark = theme.isDark()
             LaunchedEffect(dark) { applySystemBars(dark) }
             FeelingsDiaryTheme(theme) {
-                AppNavHost(requests)
+                AppNavHost(requests, inputMode = { settingsRepository.settings.first().input })
             }
         }
     }

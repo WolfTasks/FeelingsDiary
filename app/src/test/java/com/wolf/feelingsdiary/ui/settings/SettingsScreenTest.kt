@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
@@ -30,6 +31,7 @@ class SettingsScreenTest {
 
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
     private val themes = mutableListOf<ThemeMode>()
+    private val inputs = mutableListOf<InputMode>()
     private val languages = mutableListOf<String?>()
     private var backs = 0
     private var manageFeelings = 0
@@ -38,6 +40,7 @@ class SettingsScreenTest {
         SettingsActions(
             onBack = { backs++ },
             onTheme = { themes += it },
+            onInput = { inputs += it },
             onLanguage = { languages += it },
             onReminders = { reminderChanges += it },
             onRequestNotifications = {},
@@ -58,6 +61,21 @@ class SettingsScreenTest {
         rule.onNodeWithText(ctx.getString(R.string.theme_dark)).assertIsSelected()
         rule.onNodeWithText(ctx.getString(R.string.theme_light)).performScrollTo().performClick()
         assertEquals(listOf(ThemeMode.LIGHT), themes)
+    }
+
+    @Test
+    fun inputChoiceCallsAction() {
+        show()
+        rule.onNodeWithText(ctx.getString(R.string.settings_section_input)).performScrollTo().assertExists()
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_screen)).performScrollTo().assertIsSelected()
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_sheet)).performScrollTo().performClick()
+        assertEquals(listOf(InputMode.QUICK_SHEET), inputs)
+    }
+
+    @Test
+    fun quickSheetShownAsSelected() {
+        show(AppSettings(input = InputMode.QUICK_SHEET))
+        rule.onNodeWithText(ctx.getString(R.string.settings_input_sheet)).performScrollTo().assertIsSelected()
     }
 
     @Test

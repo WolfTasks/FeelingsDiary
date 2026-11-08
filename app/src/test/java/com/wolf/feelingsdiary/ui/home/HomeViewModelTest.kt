@@ -2,12 +2,15 @@ package com.wolf.feelingsdiary.ui.home
 
 import androidx.lifecycle.SavedStateHandle
 import com.wolf.feelingsdiary.data.DiaryRepository
+import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.domain.Aggregation
+import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.Entry
 import com.wolf.feelingsdiary.domain.EntryTime
 import com.wolf.feelingsdiary.domain.Feeling
 import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import com.wolf.feelingsdiary.ui.LocaleSource
@@ -47,6 +50,8 @@ class HomeViewModelTest {
     private val localeSource = LocaleSource().apply { update(Locale.ENGLISH) }
     private val clock = Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneId.of("Europe/Berlin"))
     private val entries = MutableStateFlow<List<Entry>>(emptyList())
+    private val appSettings = MutableStateFlow(AppSettings())
+    private val settingsRepo = mockk<SettingsRepository> { every { settings } returns appSettings }
     private lateinit var oldLocale: Locale
 
     @Before
@@ -65,7 +70,7 @@ class HomeViewModelTest {
         Locale.setDefault(oldLocale)
     }
 
-    private fun vm(saved: SavedStateHandle = SavedStateHandle()) = HomeViewModel(repo, labeler, localeSource, saved, clock)
+    private fun vm(saved: SavedStateHandle = SavedStateHandle()) = HomeViewModel(repo, labeler, localeSource, saved, clock, settingsRepo)
 
     private fun TestScope.observe(vm: HomeViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
@@ -83,6 +88,16 @@ class HomeViewModelTest {
             assertEquals(LocalDate.of(2026, 11, 2), vm.state.value.period.start)
             assertEquals(LocalDate.of(2026, 11, 8), vm.state.value.period.endInclusive)
             verify { repo.observeEntriesBetween(LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 8)) }
+        }
+
+    @Test
+    fun inputModeFollowsSettings() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            assertEquals(InputMode.SCREEN, vm.state.value.inputMode)
+            appSettings.value = AppSettings(input = InputMode.QUICK_SHEET)
+            assertEquals(InputMode.QUICK_SHEET, vm.state.value.inputMode)
         }
 
     @Test
@@ -196,7 +211,7 @@ class HomeViewModelTest {
     fun labelsFollowLocaleChange() =
         runTest {
             val localized = FeelingLabeler { if (localeSource.locale.value.language == "de") "Glücklich" else "Happy" }
-            val vm = HomeViewModel(repo, localized, localeSource, SavedStateHandle(), clock)
+            val vm = HomeViewModel(repo, localized, localeSource, SavedStateHandle(), clock, settingsRepo)
             observe(vm)
             val minute = (Instant.parse("2026-11-04T12:00:00Z").epochSecond / 60).toInt()
             entries.value = listOf(Entry(5, EntryTime(minute, 60), 2, listOf(1), listOf(2)))

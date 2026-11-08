@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -46,7 +47,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.GraphPoint
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
+import com.wolf.feelingsdiary.ui.entry.QuickEntryRoute
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import java.time.LocalDate
 
 data class HomeActions(
@@ -66,6 +71,7 @@ fun HomeRoute(
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
     onSettings: () -> Unit,
+    sheetRequests: Flow<Unit> = emptyFlow(),
     vm: HomeViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -81,16 +87,30 @@ fun HomeRoute(
             onDelete = vm::delete,
             onSettings = onSettings,
         )
-    HomeScreen(state, actions)
+    HomeScreen(state, actions, sheetRequests) { key, onDone -> QuickEntryRoute(key, onDone) }
 }
 
 @Composable
 fun HomeScreen(
     state: HomeUiState,
     actions: HomeActions,
+    sheetRequests: Flow<Unit> = emptyFlow(),
+    quickSheet: @Composable (key: String, onDone: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val locale = LocalConfiguration.current.locales[0]
     var openId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Each opening gets its own key and with it a fresh entry ViewModel.
+    var quickOpenings by rememberSaveable { mutableIntStateOf(0) }
+    var quickOpen by rememberSaveable { mutableStateOf(false) }
+
+    fun openQuick() {
+        // A request while the sheet is open keeps the running entry.
+        if (quickOpen) return
+        openId = null
+        quickOpenings++
+        quickOpen = true
+    }
+    LaunchedEffect(sheetRequests) { sheetRequests.collect { openQuick() } }
     val openRow = state.rows.firstOrNull { it.id == openId }
     // The entry may vanish (deleted, or another period loaded): forget its id so the sheet stays closed.
     LaunchedEffect(openRow == null) { if (openRow == null) openId = null }
@@ -150,7 +170,7 @@ fun HomeScreen(
                 }
             }
             Button(
-                onClick = actions.onAdd,
+                onClick = { if (state.inputMode == InputMode.QUICK_SHEET) openQuick() else actions.onAdd() },
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             ) {
@@ -158,6 +178,7 @@ fun HomeScreen(
             }
         }
     }
+    if (quickOpen) quickSheet("quick-$quickOpenings") { quickOpen = false }
     if (openRow != null) {
         EntryDetailSheet(
             row = openRow,

@@ -111,4 +111,12 @@
     <string name="feelings_add">Gefühl hinzufügen</string>
     <string name="feeling_edit_title">Gefühl bearbeiten</string>
     <string name="feeling_name_exists">Ein Gefühl mit diesem Namen gibt es schon</string>
+    <string name="quick_search_cd">Gefühle suchen</string>
+    <string name="quick_search_close_cd">Suche schließen</string>
+    <string name="quick_people">👥 Andere Personen</string>
+    <string name="quick_people_less_cd">Eine Person weniger</string>
+    <string name="quick_people_more_cd">Eine Person mehr</string>
+    <string name="settings_section_input">Eingabe</string>
+    <string name="settings_input_screen">Eigener Bildschirm (Standard)</string>
+    <string name="settings_input_sheet">Schnell-Blatt von unten</string>
 </resources>

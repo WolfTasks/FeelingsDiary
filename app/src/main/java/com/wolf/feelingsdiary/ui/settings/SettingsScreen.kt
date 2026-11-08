@@ -53,14 +53,16 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
 import com.wolf.feelingsdiary.reminder.canPostNotifications
 
-/** Later sections (input, feelings, privacy) add their callbacks here. */
+/** Later sections (privacy) add their callbacks here. */
 data class SettingsActions(
     val onBack: () -> Unit,
     val onTheme: (ThemeMode) -> Unit,
+    val onInput: (InputMode) -> Unit,
     val onLanguage: (String?) -> Unit,
     val onReminders: ((ReminderSettings) -> ReminderSettings) -> Unit,
     val onRequestNotifications: () -> Unit,
@@ -73,6 +75,12 @@ private val THEMES =
         ThemeMode.DARK to R.string.theme_dark,
         ThemeMode.LIGHT to R.string.theme_light,
         ThemeMode.SYSTEM to R.string.theme_system,
+    )
+
+private val INPUTS =
+    listOf(
+        InputMode.SCREEN to R.string.settings_input_screen,
+        InputMode.QUICK_SHEET to R.string.settings_input_sheet,
     )
 
 // null = follow the system language. Language names stay in their own language in every UI language.
@@ -102,6 +110,7 @@ fun SettingsRoute(
         SettingsActions(
             onBack = onBack,
             onTheme = vm::setTheme,
+            onInput = vm::setInput,
             onLanguage = { tag ->
                 language = tag
                 setAppLanguage(context, tag)
@@ -120,7 +129,7 @@ fun SettingsRoute(
 
 /**
  * Section order (spec): Reminders, Input, Manage feelings, Appearance, Language (API 33+), Privacy.
- * Input and Privacy follow in later steps and slot in at their place below.
+ * Privacy follows in a later step and slots in at its place below.
  */
 @Composable
 fun SettingsScreen(
@@ -150,7 +159,9 @@ fun SettingsScreen(
                     actions.onRequestNotifications,
                     actions.onOpenNotificationSettings,
                 )
-                // Input goes here.
+                Section(R.string.settings_section_input) {
+                    INPUTS.forEach { (mode, label) -> ChoiceRow(stringResource(label), state.input == mode) { actions.onInput(mode) } }
+                }
                 SectionTitle(R.string.settings_section_feelings)
                 NavigationRow(stringResource(R.string.feelings_title), actions.onManageFeelings)
                 Section(R.string.settings_section_appearance) {

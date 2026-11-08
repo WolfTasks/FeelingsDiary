@@ -144,6 +144,17 @@ class EntryViewModelTest {
         }
 
     @Test
+    fun prefillSkipsLookupWhenPeopleAlreadySet() =
+        runTest {
+            // E.g. restored after process death: no lookup, the restored value stays.
+            val vm = vm(SavedStateHandle(mapOf("people" to 6)))
+            vm.prefillPeopleFromLastEntry()
+            runCurrent()
+            coVerify(exactly = 0) { repo.lastPeople() }
+            assertEquals(6, vm.state.value.people)
+        }
+
+    @Test
     fun quickChipsComeFromRecentUseAndSelection() =
         runTest {
             feelings.value = listOf(happy.copy(lastUsedAt = 10), stressed, sad.copy(lastUsedAt = 20), hiddenBored)
