@@ -189,6 +189,17 @@ class ReminderSchedulerTest {
             assertTrue(alarms.isEmpty())
         }
 
+    @Test
+    fun alarmBeforeTheOnboardingShowsNothing() =
+        runTest {
+            setUp(notifier = spyk(ReminderNotifier(app)))
+            grantNotifications()
+            repo.update { it.copy(onboardingDone = false) }
+            scheduler.onAlarm()
+            verify(exactly = 0) { notifier.show() }
+            assertTrue(alarms.isEmpty())
+        }
+
     /** Robolectric runs API 36 here, so POST_NOTIFICATIONS (API 33+) is a runtime permission. */
     @Test
     fun noNotificationWithoutPermission() =
