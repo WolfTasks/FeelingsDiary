@@ -304,6 +304,20 @@ class ReminderSchedulerTest {
             assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
         }
 
+    /** Another caller (cold start, boot, settings change) must not plan the slot again that was just reminded. */
+    @Test
+    fun rescheduleAfterAnEarlyReminderDoesNotPlanTheSameSlot() =
+        runTest {
+            setUp(Clock.fixed(at(9, 59, 30).toInstant(), zone))
+            grantNotifications()
+            fixedSlots()
+            scheduler.onAlarm(at(10).toInstant().toEpochMilli())
+            assertEquals(1, notifications.size)
+            scheduler.reschedule()
+            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(1, notifications.size)
+        }
+
     @Test
     fun accuracySettingDecidesBetweenStageAndFinalAlarm() =
         runTest {

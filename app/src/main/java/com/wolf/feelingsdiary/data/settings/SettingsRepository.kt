@@ -58,6 +58,13 @@ class SettingsRepository
             return result
         }
 
+        /** The slot (epoch millis) of the reminder last shown, null if none; a wrongly typed value counts as none. */
+        suspend fun lastReminderShown(): Long? = prefs.first().typed(LAST_SHOWN)
+
+        suspend fun setLastReminderShown(epochMillis: Long) {
+            store.edit { it[LAST_SHOWN] = epochMillis }
+        }
+
         companion object {
             private val ENABLED = booleanPreferencesKey("reminder_enabled")
             private val COUNT = intPreferencesKey("reminder_count")
@@ -73,6 +80,7 @@ class SettingsRepository
             private val BACKUP = booleanPreferencesKey("backup_enabled")
             private val ONBOARDING = booleanPreferencesKey("onboarding_done")
             private val SALT = longPreferencesKey("reminder_salt")
+            private val LAST_SHOWN = longPreferencesKey("reminder_last_shown")
 
             private const val MINUTES_PER_DAY = 24 * 60
 

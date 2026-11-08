@@ -155,6 +155,23 @@ class SettingsRepositoryTest {
         }
 
     @Test
+    fun lastReminderShownIsNullThenRoundTrips() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repo = SettingsRepository(store())
+            assertNull(repo.lastReminderShown())
+            repo.setLastReminderShown(1_234_567L)
+            assertEquals(1_234_567L, repo.lastReminderShown())
+        }
+
+    @Test
+    fun wrongTypeLastReminderShownCountsAsNone() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit { it[stringPreferencesKey("reminder_last_shown")] = "x" }
+            assertNull(SettingsRepository(store).lastReminderShown())
+        }
+
+    @Test
     fun maxDelayDefaultsTo15AndRoundTrips() =
         runTest(UnconfinedTestDispatcher()) {
             val repo = SettingsRepository(store())

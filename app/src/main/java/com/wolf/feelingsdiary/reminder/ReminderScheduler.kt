@@ -35,10 +35,8 @@ class ReminderScheduler
         // App start, settings changes, boot and the alarm itself may reschedule concurrently.
         private val lock = Mutex()
 
-        suspend fun reschedule() = reschedule(notBefore = null)
-
-        /** Plans the next slot after now, and after [notBefore] if that is later (a reminder that came a bit early). */
-        private suspend fun reschedule(notBefore: Instant?) =
+        /** Plans the next slot after now, and after the slot last reminded if that is later (it came a bit early). */
+        suspend fun reschedule() =
             lock.withLock {
                 val current = settings.settings.first()
                 val reminders = current.reminders
@@ -47,7 +45,8 @@ class ReminderScheduler
                 val alarms = ctx.getSystemService(AlarmManager::class.java)
                 if (!active) notifier.cancel()
                 val now = ZonedDateTime.now(clock)
-                val after = notBefore?.takeIf { it.isAfter(now.toInstant()) }?.atZone(now.zone) ?: now
+                val lastShown = settings.lastReminderShown()?.let(Instant::ofEpochMilli)
+                val after = lastShown?.takeIf { it.isAfter(now.toInstant()) }?.atZone(now.zone) ?: now
                 val next = if (active) ReminderPlanner.next(reminders, after, settings.reminderSalt()) else null
                 if (next == null) {
                     alarms.cancel(alarmIntent(target = null))
@@ -78,8 +77,10 @@ class ReminderScheduler
                 val remind = reminders.enabled && current.onboardingDone && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)
                 if (remind) notifier.show(reminders.alarmSound)
             } finally {
-                // Never the same slot twice, should the reminder have come within the tolerance before it.
-                reschedule(notBefore = target)
+                // Never the same slot twice, should the reminder have come within the tolerance before it:
+                // remembered, so that any other caller of reschedule() skips the slot too.
+                if (target != null) settings.setLastReminderShown(target.toEpochMilli())
+                reschedule()
             }
         }
 
