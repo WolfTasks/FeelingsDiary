@@ -83,6 +83,11 @@
     <string name="reminder_switch">Reminders</string>
     <string name="reminder_alarm_sound">Alarm sound</string>
     <string name="reminder_alarm_sound_hint">Rings with the alarm tone instead of the notification sound</string>
+    <string name="reminder_accuracy">Accuracy</string>
+    <string name="reminder_accuracy_hint">At most this much later than planned</string>
+    <string name="reminder_accuracy_5">± 5 min</string>
+    <string name="reminder_accuracy_15">± 15 min</string>
+    <string name="reminder_accuracy_60">± 60 min (saves battery)</string>
     <string name="reminder_count">Reminders per day</string>
     <string name="reminder_mode_random">Random within time window</string>
     <string name="reminder_mode_fixed">Fixed times</string>

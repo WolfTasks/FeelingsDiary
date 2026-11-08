@@ -26,10 +26,13 @@ data class ReminderSettings(
     val quietStart: LocalTime = LocalTime.of(22, 0),
     val quietEnd: LocalTime = LocalTime.of(8, 0),
     val alarmSound: Boolean = false,
+    /** How much later than planned a reminder may arrive at most; one of [MAX_DELAY_OPTIONS]. */
+    val maxDelayMinutes: Int = 15,
 ) {
     init {
         require(count in 1..4) { "count must be 1..4" }
         require(windows.size == 4 && fixedTimes.size == 4) { "exactly 4 windows and 4 fixed times" }
+        require(maxDelayMinutes in MAX_DELAY_OPTIONS) { "maxDelayMinutes must be one of $MAX_DELAY_OPTIONS" }
     }
 
     companion object {
@@ -42,6 +45,9 @@ data class ReminderSettings(
             )
         val DEFAULT_TIMES: List<LocalTime> =
             listOf(LocalTime.of(10, 0), LocalTime.of(13, 0), LocalTime.of(16, 0), LocalTime.of(20, 0))
+
+        /** The selectable maximum delays of a reminder, in minutes. */
+        val MAX_DELAY_OPTIONS: List<Int> = listOf(5, 15, 60)
     }
 }
 

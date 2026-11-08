@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -26,6 +27,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.time.LocalTime
 import java.util.Locale
 
@@ -180,5 +182,25 @@ class ReminderSectionTest {
         val result = changes.single()(ReminderSettings(quietStart = LocalTime.of(1, 0), quietEnd = LocalTime.of(2, 0)))
         assertEquals(LocalTime.of(22, 0), result.quietStart)
         assertEquals(LocalTime.of(8, 0), result.quietEnd)
+    }
+
+    // Tall screen: the section is not scrollable here and the options sit at its end.
+    @Test
+    @Config(qualifiers = "w360dp-h1400dp")
+    fun accuracyShowsOptionsAndCallsChange() {
+        show(ReminderSettings())
+        rule.onNodeWithText(str(R.string.reminder_accuracy)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_accuracy_hint)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_accuracy_15)).assertIsSelected()
+        rule.onNodeWithText(str(R.string.reminder_accuracy_60)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_accuracy_5)).performClick()
+        assertEquals(5, changes.single()(ReminderSettings()).maxDelayMinutes)
+    }
+
+    @Test
+    fun accuracyDisabledWhenRemindersOff() {
+        show(ReminderSettings(enabled = false))
+        rule.onNodeWithText(str(R.string.reminder_accuracy_5)).assertIsNotEnabled()
+        rule.onNodeWithText(str(R.string.reminder_accuracy_60)).assertIsNotEnabled()
     }
 }

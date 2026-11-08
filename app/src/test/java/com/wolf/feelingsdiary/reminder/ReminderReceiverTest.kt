@@ -16,6 +16,7 @@ import com.wolf.feelingsdiary.domain.ReminderSettings
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -23,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlarmManager
 import java.time.LocalTime
 import java.time.ZonedDateTime
 
@@ -65,11 +67,21 @@ class ReminderReceiverTest {
      */
     private fun clearStartupAlarm() {
         awaitUntil {
-            alarms.singleOrNull()?.triggerAtMs ==
+            alarms.singleOrNull()?.let { targetOf(it) } ==
                 ReminderPlanner.next(reminders, ZonedDateTime.now(), 0L)?.toInstant()?.toEpochMilli()
         }
         alarms.forEach { alarmManager.cancel(it.operation!!) }
         assertTrue(alarms.isEmpty())
+    }
+
+    private fun targetOf(alarm: ShadowAlarmManager.ScheduledAlarm) = ReminderReceiver.targetOf(shadowOf(alarm.operation).savedIntent)
+
+    @Test
+    fun targetIsReadFromTheIntent() {
+        val intent = Intent(app, ReminderReceiver::class.java)
+        assertNull(ReminderReceiver.targetOf(intent))
+        intent.putExtra(ReminderScheduler.EXTRA_TARGET_EPOCH_MILLIS, 1_234L)
+        assertEquals(1_234L, ReminderReceiver.targetOf(intent))
     }
 
     @Test

@@ -67,6 +67,7 @@ class SettingsRepository
             private val QUIET_START = intPreferencesKey("quiet_start")
             private val QUIET_END = intPreferencesKey("quiet_end")
             private val ALARM_SOUND = booleanPreferencesKey("reminder_alarm_sound")
+            private val MAX_DELAY = intPreferencesKey("reminder_max_delay")
             private val THEME = stringPreferencesKey("theme")
             private val INPUT = stringPreferencesKey("input_mode")
             private val BACKUP = booleanPreferencesKey("backup_enabled")
@@ -120,6 +121,7 @@ class SettingsRepository
                         quietStart = typed(QUIET_START)?.let(::time) ?: d.quietStart,
                         quietEnd = typed(QUIET_END)?.let(::time) ?: d.quietEnd,
                         alarmSound = typed(ALARM_SOUND) ?: d.alarmSound,
+                        maxDelayMinutes = typed(MAX_DELAY)?.takeIf { it in ReminderSettings.MAX_DELAY_OPTIONS } ?: d.maxDelayMinutes,
                     ),
                 theme = enumOr(typed(THEME), ThemeMode.DARK),
                 input = enumOr(typed(INPUT), InputMode.SCREEN),
@@ -138,6 +140,7 @@ class SettingsRepository
             this[QUIET_START] = minutes(r.quietStart)
             this[QUIET_END] = minutes(r.quietEnd)
             this[ALARM_SOUND] = r.alarmSound
+            this[MAX_DELAY] = r.maxDelayMinutes
             this[THEME] = s.theme.name
             this[INPUT] = s.input.name
             this[BACKUP] = s.backupEnabled

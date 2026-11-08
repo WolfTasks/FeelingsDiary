@@ -75,7 +75,7 @@ private sealed interface Edit {
 }
 
 /**
- * Reminders section: on/off, count, mode, the active windows or fixed times, and the quiet hours.
+ * Reminders section: on/off, count, mode, the active windows or fixed times, the quiet hours and the accuracy.
  * Every change goes out as a transform of the current settings, so it never overwrites a concurrent change.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -143,9 +143,45 @@ fun ReminderSection(
             quietHint = false,
             enabled = s.enabled,
         ) { edit = Edit.QuietStart }
+
+        AccuracyGroup(s.maxDelayMinutes, s.enabled) { minutes -> onChange { it.copy(maxDelayMinutes = minutes) } }
     }
 
     edit?.let { current -> EditDialog(current, s, onChange, onStep = { edit = it }) }
+}
+
+/** Labels of the accuracy options, by maximum delay in minutes ([ReminderSettings.MAX_DELAY_OPTIONS]). */
+private val ACCURACY_LABELS =
+    mapOf(
+        5 to R.string.reminder_accuracy_5,
+        15 to R.string.reminder_accuracy_15,
+        60 to R.string.reminder_accuracy_60,
+    )
+
+/** How late a reminder may arrive at most; finer means more (silent) wake-ups. */
+@Composable
+private fun AccuracyGroup(
+    maxDelayMinutes: Int,
+    enabled: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    Text(
+        stringResource(R.string.reminder_accuracy),
+        color = rowColor(enabled),
+        modifier = Modifier.padding(top = 8.dp),
+    )
+    Text(
+        stringResource(R.string.reminder_accuracy_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = rowColor(enabled),
+    )
+    Column(Modifier.selectableGroup()) {
+        ReminderSettings.MAX_DELAY_OPTIONS.forEach { minutes ->
+            ChoiceRow(stringResource(ACCURACY_LABELS.getValue(minutes)), maxDelayMinutes == minutes, enabled) {
+                onSelect(minutes)
+            }
+        }
+    }
 }
 
 /** The label and the 1–4 buttons for the number of reminders per day. */

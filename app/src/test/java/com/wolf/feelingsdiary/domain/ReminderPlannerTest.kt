@@ -5,11 +5,14 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import kotlin.random.Random
 
 class ReminderPlannerTest {
     private val berlin = ZoneId.of("Europe/Berlin")
@@ -212,5 +215,127 @@ class ReminderPlannerTest {
         assertFalse(ReminderPlanner.isFullyQuiet(w(t(7), t(8, 1)), night))
         assertFalse(ReminderPlanner.isFullyQuiet(w(t(21), t(23)), night))
         assertFalse(ReminderPlanner.isFullyQuiet(w(t(1), t(2)), ReminderSettings(quietStart = t(5), quietEnd = t(5))))
+    }
+
+    // --- Staged scheduling (nextWake) ---
+
+    private val start = Instant.parse("2026-11-08T08:30:00Z")
+
+    private fun minutes(m: Long) = Duration.ofMinutes(m)
+
+    /** Latest delivery of an inexact alarm, as measured on the A54: trigger + min(0.75 × lead, 60 min). */
+    private fun latest(
+        setAt: Instant,
+        trigger: Instant,
+    ): Instant {
+        val lead = Duration.between(setAt, trigger).toMillis()
+        return trigger.plusMillis(minOf(lead * 3 / 4, minutes(60).toMillis()))
+    }
+
+    private class Run(
+        val stages: Int,
+        val delivered: Instant,
+    )
+
+    /**
+     * Plays the alarm chain like the scheduler does: set the alarm for nextWake, let [deliver] pick a moment in
+     * the model window, and stop at the first delivery that is no stage. Checks every alarm on the way.
+     */
+    private fun simulate(
+        target: Instant,
+        maxDelay: Int,
+        deliver: (trigger: Instant, latest: Instant) -> Instant,
+    ): Run {
+        var now = start
+        var stages = 0
+        while (true) {
+            val wake = ReminderPlanner.nextWake(target, now, maxDelay)
+            val last = latest(now, wake)
+            assertFalse("wake $wake before now $now", wake.isBefore(now))
+            if (wake == target) {
+                assertFalse(
+                    "final alarm set ${Duration.between(now, target)} ahead (max $maxDelay)",
+                    Duration.between(now, target).toMillis() * 3 > maxDelay * 4 * 60_000L,
+                )
+            } else {
+                assertTrue("stage $wake not before target $target", wake.isBefore(target))
+                assertFalse("stage may land at $last after target $target", last.isAfter(target))
+            }
+            val at = deliver(wake, last)
+            if (!ReminderPlanner.isStage(target, at)) return Run(stages, at)
+            stages++
+            assertTrue("too many stages", stages <= 50)
+            now = at
+        }
+    }
+
+    @Test
+    fun nearTargetIsSetDirectly() {
+        assertEquals(start + minutes(2), ReminderPlanner.nextWake(start + minutes(2), start, 5))
+        assertEquals(start + minutes(20), ReminderPlanner.nextWake(start + minutes(20), start, 15))
+        assertEquals(start + minutes(80), ReminderPlanner.nextWake(start + minutes(80), start, 60))
+    }
+
+    @Test
+    fun farTargetGetsAStageThatLandsBeforeIt() {
+        val target = start + minutes(5 * 60)
+        val wake = ReminderPlanner.nextWake(target, start, 15)
+        assertTrue(wake.isAfter(start))
+        assertTrue(wake.isBefore(target))
+        assertFalse(latest(start, wake).isAfter(target))
+    }
+
+    @Test
+    fun pastTargetIsSetDirectly() {
+        assertEquals(start, ReminderPlanner.nextWake(start, start + minutes(1), 15))
+    }
+
+    @Test
+    fun stageIsMoreThanAMinuteBeforeTheTarget() {
+        val target = start + minutes(10)
+        assertTrue(ReminderPlanner.isStage(target, target - minutes(2)))
+        assertFalse(ReminderPlanner.isStage(target, target - minutes(1)))
+        assertFalse(ReminderPlanner.isStage(target, target + minutes(5)))
+    }
+
+    /** Worst case for the delay: every alarm, stages included, comes at the latest moment the model allows. */
+    @Test
+    fun latestDeliveriesStayWithinTheMaxDelay() {
+        for (maxDelay in ReminderSettings.MAX_DELAY_OPTIONS) {
+            for (leadMinutes in 1L..48 * 60 step 7) {
+                val target = start + minutes(leadMinutes)
+                val run = simulate(target, maxDelay) { _, last -> last }
+                assertFalse("late for lead $leadMinutes, max $maxDelay", run.delivered.isAfter(target + minutes(maxDelay.toLong())))
+                assertFalse(run.delivered.isBefore(target - minutes(1)))
+            }
+        }
+    }
+
+    /** Worst case for the number of stages: every alarm comes at its trigger time, as early as possible. */
+    @Test
+    fun earliestDeliveriesNeedFewStages() {
+        for (maxDelay in ReminderSettings.MAX_DELAY_OPTIONS) {
+            for (leadMinutes in 1L..24 * 60) {
+                val target = start + minutes(leadMinutes)
+                val run = simulate(target, maxDelay) { trigger, _ -> trigger }
+                assertTrue("${run.stages} stages for lead $leadMinutes, max $maxDelay", run.stages <= 6)
+                assertFalse(run.delivered.isAfter(target + minutes(maxDelay.toLong())))
+            }
+        }
+    }
+
+    @Test
+    fun randomDeliveriesStayWithinTheMaxDelay() {
+        val random = Random(42)
+        repeat(5000) {
+            val maxDelay = ReminderSettings.MAX_DELAY_OPTIONS.random(random)
+            val target = start + Duration.ofSeconds(random.nextLong(1, 48 * 3600L))
+            val run =
+                simulate(target, maxDelay) { trigger, last ->
+                    trigger.plusMillis(random.nextLong(Duration.between(trigger, last).toMillis() + 1))
+                }
+            assertFalse(run.delivered.isAfter(target + minutes(maxDelay.toLong())))
+            assertTrue(run.stages <= 6)
+        }
     }
 }

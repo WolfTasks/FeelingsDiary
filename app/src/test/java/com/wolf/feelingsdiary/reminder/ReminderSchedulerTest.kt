@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.di.SystemZoneClock
+import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ReminderPlanner
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import io.mockk.every
@@ -30,6 +31,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAlarmManager
 import java.io.File
 import java.time.Clock
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.TimeZone
@@ -73,6 +75,28 @@ class ReminderSchedulerTest {
         repo.update { it.copy(onboardingDone = true) }
     }
 
+    /** The reminder slot the registered alarm stands for (its trigger may be an earlier stage). */
+    private fun alarmTarget(): Long =
+        shadowOf(alarms.single().operation)
+            .savedIntent
+            .getLongExtra(ReminderScheduler.EXTRA_TARGET_EPOCH_MILLIS, -1)
+
+    private fun wakeMs(
+        target: ZonedDateTime,
+        at: ZonedDateTime,
+        maxDelay: Int = 15,
+    ) = ReminderPlanner.nextWake(target.toInstant(), at.toInstant(), maxDelay).toEpochMilli()
+
+    // Fixed slots 10, 13, 16, 20 h: salt-free, so a test can deliver an alarm exactly at its slot.
+    private suspend fun fixedSlots(maxDelay: Int = 15) =
+        repo.update { it.copy(reminders = it.reminders.copy(mode = ReminderMode.FIXED, maxDelayMinutes = maxDelay)) }
+
+    private fun at(
+        h: Int,
+        m: Int = 0,
+        s: Int = 0,
+    ) = ZonedDateTime.of(2026, 11, 8, h, m, s, 0, zone)
+
     private fun grantNotifications() = shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
 
     @Test
@@ -83,7 +107,8 @@ class ReminderSchedulerTest {
             val expected = ReminderPlanner.next(ReminderSettings(), now, repo.reminderSalt())!!
             assertEquals(1, alarms.size)
             val alarm = alarms.single()
-            assertEquals(expected.toInstant().toEpochMilli(), alarm.triggerAtMs)
+            assertEquals(expected.toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(wakeMs(expected, now), alarm.triggerAtMs)
             assertEquals(AlarmManager.RTC_WAKEUP, alarm.getType())
             assertNotEquals(ShadowAlarmManager.WINDOW_EXACT, alarm.windowLengthMs)
         }
@@ -95,13 +120,13 @@ class ReminderSchedulerTest {
             TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
             setUp(SystemZoneClock { now.toInstant() })
             scheduler.reschedule()
-            val berlin = alarms.single().triggerAtMs
+            val berlin = alarmTarget()
             val newYork = ZoneId.of("America/New_York")
             TimeZone.setDefault(TimeZone.getTimeZone(newYork))
             scheduler.reschedule()
             val expected = ReminderPlanner.next(ReminderSettings(), now.withZoneSameInstant(newYork), repo.reminderSalt())!!
-            assertEquals(expected.toInstant().toEpochMilli(), alarms.single().triggerAtMs)
-            assertNotEquals(berlin, alarms.single().triggerAtMs)
+            assertEquals(expected.toInstant().toEpochMilli(), alarmTarget())
+            assertNotEquals(berlin, alarmTarget())
         }
 
     @Test
@@ -152,7 +177,8 @@ class ReminderSchedulerTest {
             scheduler.onAlarm()
             assertTrue(notifications.isEmpty())
             val expected = ReminderPlanner.next(ReminderSettings(), late, repo.reminderSalt())!!
-            assertEquals(expected.toInstant().toEpochMilli(), alarms.single().triggerAtMs)
+            assertEquals(expected.toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(wakeMs(expected, late), alarms.single().triggerAtMs)
         }
 
     /** Not even briefly: a reminder that was turned off is never posted. */
@@ -217,5 +243,93 @@ class ReminderSchedulerTest {
             setUp()
             notifier.show()
             assertTrue(notifications.isEmpty())
+        }
+
+    /** A stage only moves the alarm closer to the same slot: no notification, the target stays. */
+    @Test
+    fun stageAlarmShowsNothingAndKeepsTheTarget() =
+        runTest {
+            setUp(notifier = spyk(ReminderNotifier(app)))
+            grantNotifications()
+            fixedSlots()
+            scheduler.reschedule()
+            val target = at(10)
+            assertEquals(target.toInstant().toEpochMilli(), alarmTarget())
+            val stage = alarms.single().triggerAtMs
+            assertTrue(stage < target.toInstant().toEpochMilli())
+
+            // The stage arrives (at 08:30, the fixed clock): only replans for the same slot.
+            scheduler.onAlarm(target.toInstant().toEpochMilli())
+            verify(exactly = 0) { notifier.show(any()) }
+            assertTrue(notifications.isEmpty())
+            assertEquals(target.toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(wakeMs(target, now), alarms.single().triggerAtMs)
+        }
+
+    @Test
+    fun finalAlarmShowsAndPlansTheNextSlot() =
+        runTest {
+            var time = now.toInstant()
+            setUp(
+                object : Clock() {
+                    override fun getZone(): ZoneId = this@ReminderSchedulerTest.zone
+
+                    override fun withZone(zone: ZoneId): Clock = this
+
+                    override fun instant(): Instant = time
+                },
+            )
+            grantNotifications()
+            fixedSlots()
+            scheduler.reschedule()
+            val target = at(10)
+            // A late delivery of the final alarm, within the max delay.
+            time = target.plusMinutes(4).toInstant()
+            scheduler.onAlarm(target.toInstant().toEpochMilli())
+            assertEquals(1, notifications.size)
+            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+            assertEquals(wakeMs(at(16), target.plusMinutes(4)), alarms.single().triggerAtMs)
+        }
+
+    /** Within the stage tolerance the alarm counts as the reminder; the same slot must not be planned again. */
+    @Test
+    fun alarmJustBeforeItsSlotShowsAndSkipsThatSlot() =
+        runTest {
+            val early = at(9, 59, 30)
+            setUp(Clock.fixed(early.toInstant(), zone))
+            grantNotifications()
+            fixedSlots()
+            scheduler.onAlarm(at(10).toInstant().toEpochMilli())
+            assertEquals(1, notifications.size)
+            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+        }
+
+    @Test
+    fun accuracySettingDecidesBetweenStageAndFinalAlarm() =
+        runTest {
+            // 70 min before the 10:00 slot.
+            val before = at(8, 50)
+            setUp(Clock.fixed(before.toInstant(), zone))
+            fixedSlots(maxDelay = 60)
+            scheduler.reschedule()
+            assertEquals(at(10).toInstant().toEpochMilli(), alarms.single().triggerAtMs)
+            fixedSlots(maxDelay = 15)
+            scheduler.reschedule()
+            assertEquals(wakeMs(at(10), before), alarms.single().triggerAtMs)
+            assertTrue(alarms.single().triggerAtMs < at(10).toInstant().toEpochMilli())
+        }
+
+    /** The same request code is reused; FLAG_UPDATE_CURRENT must carry the new target into the alarm. */
+    @Test
+    fun replacedAlarmCarriesTheNewTarget() =
+        runTest {
+            setUp()
+            fixedSlots()
+            scheduler.reschedule()
+            assertEquals(at(10).toInstant().toEpochMilli(), alarmTarget())
+            repo.update { it.copy(reminders = it.reminders.copy(count = 1)) }
+            scheduler.reschedule()
+            assertEquals(1, alarms.size)
+            assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
         }
 }

@@ -60,6 +60,7 @@ class SettingsRepositoryTest {
                                 },
                             quietStart = LocalTime.of(23, 30),
                             quietEnd = LocalTime.of(6, 45),
+                            maxDelayMinutes = 60,
                         ),
                     theme = ThemeMode.LIGHT,
                     input = InputMode.QUICK_SHEET,
@@ -151,5 +152,52 @@ class SettingsRepositoryTest {
         runTest(UnconfinedTestDispatcher()) {
             val repo = SettingsRepository(store())
             assertEquals(repo.reminderSalt(), repo.reminderSalt())
+        }
+
+    @Test
+    fun maxDelayDefaultsTo15AndRoundTrips() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repo = SettingsRepository(store())
+            assertEquals(
+                15,
+                repo.settings
+                    .first()
+                    .reminders.maxDelayMinutes,
+            )
+            repo.update { it.copy(reminders = it.reminders.copy(maxDelayMinutes = 5)) }
+            assertEquals(
+                5,
+                repo.settings
+                    .first()
+                    .reminders.maxDelayMinutes,
+            )
+        }
+
+    @Test
+    fun invalidMaxDelayFallsBackTo15() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit { it[intPreferencesKey("reminder_max_delay")] = 7 }
+            assertEquals(
+                15,
+                SettingsRepository(store)
+                    .settings
+                    .first()
+                    .reminders.maxDelayMinutes,
+            )
+        }
+
+    @Test
+    fun wronglyTypedMaxDelayFallsBackTo15() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit { it[stringPreferencesKey("reminder_max_delay")] = "5" }
+            assertEquals(
+                15,
+                SettingsRepository(store)
+                    .settings
+                    .first()
+                    .reminders.maxDelayMinutes,
+            )
         }
 }

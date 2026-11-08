@@ -83,6 +83,11 @@
     <string name="reminder_switch">Erinnerungen</string>
     <string name="reminder_alarm_sound">Mit Alarmton</string>
     <string name="reminder_alarm_sound_hint">Klingelt mit dem Wecker-Ton statt mit dem Benachrichtigungston</string>
+    <string name="reminder_accuracy">Genauigkeit</string>
+    <string name="reminder_accuracy_hint">Höchstens so viel später als geplant</string>
+    <string name="reminder_accuracy_5">± 5 Min.</string>
+    <string name="reminder_accuracy_15">± 15 Min.</string>
+    <string name="reminder_accuracy_60">± 60 Min. (spart Akku)</string>
     <string name="reminder_count">Erinnerungen pro Tag</string>
     <string name="reminder_mode_random">Zufällig im Zeitfenster</string>
     <string name="reminder_mode_fixed">Feste Uhrzeiten</string>
