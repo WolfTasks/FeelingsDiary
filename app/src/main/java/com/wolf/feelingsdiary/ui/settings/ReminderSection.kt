@@ -22,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,8 +90,7 @@ fun ReminderSection(
     val locale = LocalConfiguration.current.locales[0]
     val fmt = { time: LocalTime -> formatTime(time, locale) }
     var edit by remember { mutableStateOf<Edit?>(null) }
-    // The system dialog is offered once; later taps lead to the app's notification settings.
-    var permissionAsked by rememberSaveable { mutableStateOf(false) }
+    val allow = rememberAskOnce(onRequestPermission, onOpenSystemSettings)
 
     Column {
         if (s.enabled && !notificationsAllowed) {
@@ -102,34 +100,12 @@ fun ReminderSection(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = {
-                    if (permissionAsked) {
-                        onOpenSystemSettings()
-                    } else {
-                        permissionAsked = true
-                        onRequestPermission()
-                    }
-                }) { Text(stringResource(R.string.reminder_allow)) }
+                TextButton(onClick = allow) { Text(stringResource(R.string.reminder_allow)) }
             }
         }
         SwitchRow(stringResource(R.string.reminder_switch), s.enabled) { on -> onChange { it.copy(enabled = on) } }
 
-        Text(
-            stringResource(R.string.reminder_count),
-            color = rowColor(s.enabled),
-            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-        )
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            (1..4).forEach { perDay ->
-                SegmentedButton(
-                    selected = s.count == perDay,
-                    onClick = { onChange { it.copy(count = perDay) } },
-                    shape = SegmentedButtonDefaults.itemShape(index = perDay - 1, count = 4),
-                    enabled = s.enabled,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) { Text(perDay.toString()) }
-            }
-        }
+        ReminderCountRow(s.count, s.enabled) { perDay -> onChange { it.copy(count = perDay) } }
 
         Column(Modifier.selectableGroup().padding(top = 8.dp)) {
             ChoiceRow(stringResource(R.string.reminder_mode_random), s.mode == ReminderMode.RANDOM, s.enabled) {
@@ -164,6 +140,32 @@ fun ReminderSection(
     }
 
     edit?.let { current -> EditDialog(current, s, onChange, onStep = { edit = it }) }
+}
+
+/** The label and the 1–4 buttons for the number of reminders per day. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ReminderCountRow(
+    count: Int,
+    enabled: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    Text(
+        stringResource(R.string.reminder_count),
+        color = rowColor(enabled),
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+    )
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        (1..4).forEach { perDay ->
+            SegmentedButton(
+                selected = count == perDay,
+                onClick = { onSelect(perDay) },
+                shape = SegmentedButtonDefaults.itemShape(index = perDay - 1, count = 4),
+                enabled = enabled,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) { Text(perDay.toString()) }
+        }
+    }
 }
 
 @Composable

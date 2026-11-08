@@ -1,14 +1,5 @@
 package com.wolf.feelingsdiary.ui.settings
 
-import android.Manifest
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,14 +42,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
-import com.wolf.feelingsdiary.reminder.canPostNotifications
 
 data class SettingsActions(
     val onBack: () -> Unit,
@@ -98,16 +87,7 @@ fun SettingsRoute(
     val context = LocalContext.current
     // Not part of AppSettings: the system stores the per-app language. A change recreates the activity.
     var language by remember { mutableStateOf(appLanguage(context)) }
-    // Re-read on every resume: the user may have changed it in the system settings meanwhile.
-    var notificationsAllowed by remember { mutableStateOf(canPostNotifications(context)) }
-    LifecycleResumeEffect(Unit) {
-        notificationsAllowed = canPostNotifications(context)
-        onPauseOrDispose {}
-    }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-            notificationsAllowed = canPostNotifications(context)
-        }
+    val permission = rememberNotificationPermission()
     val actions =
         SettingsActions(
             onBack = onBack,
@@ -118,16 +98,12 @@ fun SettingsRoute(
                 setAppLanguage(context, tag)
             },
             onReminders = vm::updateReminders,
-            onRequestNotifications = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-            onOpenNotificationSettings = { openNotificationSettings(context) },
+            onRequestNotifications = permission.request,
+            onOpenNotificationSettings = permission.openSettings,
             onManageFeelings = onManageFeelings,
             onBackup = vm::setBackup,
         )
-    SettingsScreen(state, actions, language, notificationsAllowed)
+    SettingsScreen(state, actions, language, permission.allowed)
 }
 
 /**
@@ -269,17 +245,3 @@ private fun NavigationRow(
 }
 
 internal const val DISABLED_TEXT_ALPHA = 0.38f
-
-private fun openNotificationSettings(context: Context) {
-    val intent =
-        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-    try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        // Some devices lack this screen; fall back to the app's details page.
-        context.startActivity(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-        )
-    }
-}
