@@ -27,14 +27,22 @@ class OnboardingScreenTest {
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
     private val starts = mutableListOf<Pair<Boolean, Int>>()
     private var permissionRequests = 0
+
+    // The pending "after the answer" of the last permission request.
+    private var answer: (() -> Unit)? = null
     private var settingsOpened = 0
 
     private fun str(id: Int) = ctx.getString(id)
 
+    private fun request(onAnswer: () -> Unit) {
+        permissionRequests++
+        answer = onAnswer
+    }
+
     private fun show(allowed: Boolean = false) {
         rule.setContent {
             FeelingsDiaryTheme {
-                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
+                OnboardingScreen(allowed, ::request, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
             }
         }
     }
@@ -49,7 +57,7 @@ class OnboardingScreenTest {
 
     @Test
     fun startWithDefaultsStoresThreeReminders() {
-        show()
+        show(allowed = true)
         rule.onNodeWithText(str(R.string.onboarding_start)).performClick()
         assertEquals(listOf(true to 3), starts)
     }
@@ -71,7 +79,7 @@ class OnboardingScreenTest {
         var allowed by mutableStateOf(false)
         rule.setContent {
             FeelingsDiaryTheme {
-                OnboardingScreen(allowed, { permissionRequests++ }, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
+                OnboardingScreen(allowed, ::request, { settingsOpened++ }) { enabled, count -> starts += enabled to count }
             }
         }
         val allow = rule.onNodeWithText(str(R.string.onboarding_allow))
@@ -83,6 +91,53 @@ class OnboardingScreenTest {
         assertEquals(1, settingsOpened)
         allowed = true
         rule.onNodeWithText(str(R.string.onboarding_allow)).assertDoesNotExist()
+    }
+
+    /** Reminders on without permission: "Let's start" asks once and starts whatever the answer. */
+    @Test
+    @Config(sdk = [33])
+    fun startAsksForPermissionThenStarts() {
+        show(allowed = false)
+        val start = rule.onNodeWithText(str(R.string.onboarding_start))
+        start.performClick()
+        assertEquals(1, permissionRequests)
+        assertEquals(emptyList<Pair<Boolean, Int>>(), starts)
+        answer!!()
+        assertEquals(listOf(true to 3), starts)
+        // Asked once: a further tap starts at once.
+        start.performClick()
+        assertEquals(1, permissionRequests)
+        assertEquals(listOf(true to 3, true to 3), starts)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun startDoesNotAskAgainAfterAllow() {
+        show(allowed = false)
+        rule.onNodeWithText(str(R.string.onboarding_allow)).performScrollTo().performClick()
+        assertEquals(1, permissionRequests)
+        rule.onNodeWithText(str(R.string.onboarding_start)).performClick()
+        assertEquals(1, permissionRequests)
+        assertEquals(listOf(true to 3), starts)
+    }
+
+    @Test
+    @Config(sdk = [33])
+    fun startWithoutRemindersDoesNotAsk() {
+        show(allowed = false)
+        rule.onNodeWithText(str(R.string.reminder_switch)).performScrollTo().performClick()
+        rule.onNodeWithText(str(R.string.onboarding_start)).performClick()
+        assertEquals(0, permissionRequests)
+        assertEquals(listOf(false to 3), starts)
+    }
+
+    @Test
+    @Config(sdk = [32])
+    fun startNeedsNoPermissionBelowApi33() {
+        show(allowed = false)
+        rule.onNodeWithText(str(R.string.onboarding_start)).performClick()
+        assertEquals(0, permissionRequests)
+        assertEquals(listOf(true to 3), starts)
     }
 
     @Test

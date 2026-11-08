@@ -1,6 +1,9 @@
 package com.wolf.feelingsdiary.ui.navigation
 
+import android.Manifest
+import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -21,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** The onboarding end to end: real activity, ViewModel and settings store. */
@@ -42,10 +46,13 @@ class MainActivityOnboardingTest {
     @After
     fun done() = runBlocking { settings.update { it.copy(onboardingDone = true) } }
 
+    private fun grantNotifications() = shadowOf(ctx as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
     private fun shows(text: String) = rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
 
     @Test
     fun firstStartShowsOnboardingAndLetsStartLeadsHome() {
+        grantNotifications()
         Robolectric.buildActivity(MainActivity::class.java).setup()
         rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.onboarding_title)) }
         rule.onNodeWithText("2").performClick()
@@ -60,6 +67,7 @@ class MainActivityOnboardingTest {
 
     @Test
     fun recreationKeepsTheDecidedStart() {
+        grantNotifications()
         val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
         rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.onboarding_title)) }
         // Rotation during the onboarding: still the onboarding, not Home.
@@ -71,6 +79,22 @@ class MainActivityOnboardingTest {
         controller.recreate()
         rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.history_empty)) }
         rule.onNodeWithText(ctx.getString(R.string.onboarding_title)).assertDoesNotExist()
+    }
+
+    /** Reminders on, permission missing: "Let's start" shows the system dialog once, then leads Home even on a denial. */
+    @Test
+    fun letsStartAsksForPermissionThenLeadsHome() {
+        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.onboarding_title)) }
+        rule.onNodeWithText(ctx.getString(R.string.onboarding_start)).performClick()
+        rule.waitForIdle()
+        val request = shadowOf(activity).lastRequestedPermission
+        assertEquals(listOf(Manifest.permission.POST_NOTIFICATIONS), request.requestedPermissions.toList())
+        // Still the onboarding while the dialog is open.
+        assertTrue(shows(ctx.getString(R.string.onboarding_title)))
+        activity.onRequestPermissionsResult(request.requestCode, request.requestedPermissions, intArrayOf(PackageManager.PERMISSION_DENIED))
+        rule.waitUntil(TIMEOUT_MS) { shows(ctx.getString(R.string.history_empty)) }
+        assertTrue(runBlocking { settings.settings.first() }.onboardingDone)
     }
 
     private companion object {

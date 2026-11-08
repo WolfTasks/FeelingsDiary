@@ -10,9 +10,11 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -29,12 +31,14 @@ internal class NotificationPermission(
 /**
  * The notification permission state of a screen. It is re-read on every resume (the user may have
  * changed it in the system settings meanwhile) and after the system dialog. [NotificationPermission.request]
- * shows the system dialog on API 33+ and does nothing below, where no permission is needed.
+ * shows the system dialog on API 33+ and does nothing below, where no permission is needed; [onAnswer]
+ * runs once the user answered the dialog.
  */
 @Composable
-internal fun rememberNotificationPermission(): NotificationPermission {
+internal fun rememberNotificationPermission(onAnswer: () -> Unit = {}): NotificationPermission {
     val context = LocalContext.current
     var allowed by remember { mutableStateOf(canPostNotifications(context)) }
+    val currentOnAnswer by rememberUpdatedState(onAnswer)
     LifecycleResumeEffect(Unit) {
         allowed = canPostNotifications(context)
         onPauseOrDispose {}
@@ -42,6 +46,7 @@ internal fun rememberNotificationPermission(): NotificationPermission {
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             allowed = canPostNotifications(context)
+            currentOnAnswer()
         }
     return NotificationPermission(
         allowed = allowed,
@@ -56,14 +61,16 @@ internal fun rememberNotificationPermission(): NotificationPermission {
 
 /**
  * The action of an "allow" button: the system dialog is offered once; later taps lead to the app's
- * notification settings, so a denial never turns into a loop of dialogs.
+ * notification settings, so a denial never turns into a loop of dialogs. [askedState] may be shared
+ * with other places that offer the dialog.
  */
 @Composable
 internal fun rememberAskOnce(
     onRequestPermission: () -> Unit,
     onOpenSystemSettings: () -> Unit,
+    askedState: MutableState<Boolean> = rememberSaveable { mutableStateOf(false) },
 ): () -> Unit {
-    var asked by rememberSaveable { mutableStateOf(false) }
+    var asked by askedState
     return {
         if (asked) {
             onOpenSystemSettings()

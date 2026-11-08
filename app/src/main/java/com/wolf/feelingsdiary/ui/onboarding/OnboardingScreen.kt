@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,27 +46,50 @@ fun OnboardingRoute(
     val finished by vm.finished.collectAsStateWithLifecycle()
     val currentOnDone by rememberUpdatedState(onDone)
     LaunchedEffect(finished) { if (finished) currentOnDone() }
-    val permission = rememberNotificationPermission()
-    OnboardingScreen(permission.allowed, permission.request, permission.openSettings, vm::finish)
+    // What to do once the system dialog is answered; not saved, a recreation meanwhile just needs another tap.
+    var afterAnswer by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val permission =
+        rememberNotificationPermission(onAnswer = {
+            afterAnswer?.invoke()
+            afterAnswer = null
+        })
+    val request = { onAnswer: () -> Unit ->
+        afterAnswer = onAnswer
+        permission.request()
+    }
+    OnboardingScreen(permission.allowed, request, permission.openSettings, vm::finish)
 }
 
 /**
  * First-start welcome: purpose, privacy, and the reminder choice (on/off and count; the rest stays at its
- * defaults and can be changed in the settings). Nothing is stored before [onStart].
+ * defaults and can be changed in the settings). Nothing is stored before [onStart]. With reminders on and
+ * notifications not allowed (API 33+), the first start asks for the permission and starts after the answer.
  */
 @Composable
 fun OnboardingScreen(
     notificationsAllowed: Boolean,
-    onRequestPermission: () -> Unit,
+    onRequestPermission: (onAnswer: () -> Unit) -> Unit,
     onOpenSystemSettings: () -> Unit,
     onStart: (enabled: Boolean, count: Int) -> Unit,
 ) {
     val defaults = ReminderSettings()
     var enabled by rememberSaveable { mutableStateOf(defaults.enabled) }
     var count by rememberSaveable { mutableIntStateOf(defaults.count) }
-    val allow = rememberAskOnce(onRequestPermission, onOpenSystemSettings)
+    // Shared by the allow button and "Let's start", so the system dialog is offered at most once.
+    val asked = rememberSaveable { mutableStateOf(false) }
+    val allow = rememberAskOnce({ onRequestPermission {} }, onOpenSystemSettings, asked)
     // Below Android 13 notifications need no permission, so there is nothing to allow.
     val showAllow = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationsAllowed
+    // Reminders chosen but not allowed yet: ask once, then start whatever the answer.
+    val start = {
+        if (enabled && showAllow && !asked.value) {
+            asked.value = true
+            val chosen = enabled to count
+            onRequestPermission { onStart(chosen.first, chosen.second) }
+        } else {
+            onStart(enabled, count)
+        }
+    }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
@@ -95,7 +119,7 @@ fun OnboardingScreen(
                 )
             }
             Button(
-                onClick = { onStart(enabled, count) },
+                onClick = start,
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).heightIn(min = 48.dp),
             ) { Text(stringResource(R.string.onboarding_start)) }
         }
