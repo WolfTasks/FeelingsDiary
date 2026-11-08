@@ -102,6 +102,9 @@
     <string name="reminder_pick_start">%1$s: start</string>
     <string name="reminder_pick_end">%1$s: end</string>
     <string name="reminder_notifications_off">Notifications are off</string>
+    <string name="reminder_battery_title">Reminders may be delayed</string>
+    <string name="reminder_battery_text">Set Feelings Diary\'s battery usage to “Unrestricted” so reminders arrive on time.</string>
+    <string name="reminder_battery_open">Open battery settings</string>
     <string name="reminder_allow">Allow</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_section_language">Language</string>

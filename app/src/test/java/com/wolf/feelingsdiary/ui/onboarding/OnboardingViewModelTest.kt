@@ -5,6 +5,7 @@ import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.reminder.BatteryOptimization
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -28,6 +29,7 @@ class OnboardingViewModelTest {
     private val stored =
         MutableStateFlow(AppSettings(theme = ThemeMode.LIGHT, reminders = ReminderSettings(mode = ReminderMode.FIXED)))
     private val repo = mockk<SettingsRepository>()
+    private val battery = mockk<BatteryOptimization>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -41,7 +43,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun finishStoresChoicesAndDoneInOneWrite() {
-        val vm = OnboardingViewModel(repo)
+        val vm = OnboardingViewModel(repo, battery)
         assertFalse(vm.finished.value)
         vm.finish(enabled = false, count = 2)
         val saved = stored.value
@@ -57,7 +59,7 @@ class OnboardingViewModelTest {
 
     @Test
     fun secondFinishIsIgnored() {
-        val vm = OnboardingViewModel(repo)
+        val vm = OnboardingViewModel(repo, battery)
         vm.finish(enabled = true, count = 4)
         vm.finish(enabled = true, count = 1)
         assertEquals(4, stored.value.reminders.count)

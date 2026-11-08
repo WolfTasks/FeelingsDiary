@@ -3,6 +3,7 @@ package com.wolf.feelingsdiary.ui.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
+import com.wolf.feelingsdiary.reminder.BatteryOptimization
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,7 @@ class OnboardingViewModel
     @Inject
     constructor(
         private val repo: SettingsRepository,
+        val batteryOptimization: BatteryOptimization,
     ) : ViewModel() {
         private var finishing = false
         private val _finished = MutableStateFlow(false)

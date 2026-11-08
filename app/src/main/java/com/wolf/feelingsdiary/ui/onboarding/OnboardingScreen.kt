@@ -33,9 +33,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.ReminderSettings
+import com.wolf.feelingsdiary.ui.settings.BatteryHint
 import com.wolf.feelingsdiary.ui.settings.ReminderCountRow
 import com.wolf.feelingsdiary.ui.settings.SwitchRow
 import com.wolf.feelingsdiary.ui.settings.rememberAskOnce
+import com.wolf.feelingsdiary.ui.settings.rememberBatteryState
 import com.wolf.feelingsdiary.ui.settings.rememberNotificationPermission
 
 @Composable
@@ -57,7 +59,15 @@ fun OnboardingRoute(
         afterAnswer = onAnswer
         permission.request()
     }
-    OnboardingScreen(permission.allowed, request, permission.openSettings, vm::finish)
+    val battery = rememberBatteryState(vm.batteryOptimization)
+    OnboardingScreen(
+        permission.allowed,
+        request,
+        permission.openSettings,
+        battery.restricted,
+        battery.openSettings,
+        vm::finish,
+    )
 }
 
 /**
@@ -70,6 +80,8 @@ fun OnboardingScreen(
     notificationsAllowed: Boolean,
     onRequestPermission: (onAnswer: () -> Unit) -> Unit,
     onOpenSystemSettings: () -> Unit,
+    batteryRestricted: Boolean = false,
+    onOpenBatterySettings: () -> Unit = {},
     onStart: (enabled: Boolean, count: Int) -> Unit,
 ) {
     val defaults = ReminderSettings()
@@ -112,6 +124,7 @@ fun OnboardingScreen(
                         Text(stringResource(R.string.onboarding_allow))
                     }
                 }
+                if (enabled && batteryRestricted) BatteryHint(onOpenBatterySettings)
                 Text(
                     stringResource(R.string.onboarding_settings_hint),
                     style = MaterialTheme.typography.bodySmall,

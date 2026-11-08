@@ -102,6 +102,9 @@
     <string name="reminder_pick_start">%1$s: Beginn</string>
     <string name="reminder_pick_end">%1$s: Ende</string>
     <string name="reminder_notifications_off">Benachrichtigungen sind aus</string>
+    <string name="reminder_battery_title">Erinnerungen können sich verspäten</string>
+    <string name="reminder_battery_text">Stell den Akku für Gefühls-Tagebuch auf „Nicht eingeschränkt“, damit Erinnerungen pünktlich kommen.</string>
+    <string name="reminder_battery_open">Akku-Einstellungen öffnen</string>
     <string name="reminder_allow">Erlauben</string>
     <string name="settings_section_appearance">Darstellung</string>
     <string name="settings_section_language">Sprache</string>

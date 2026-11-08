@@ -31,6 +31,7 @@ class OnboardingScreenTest {
     // The pending "after the answer" of the last permission request.
     private var answer: (() -> Unit)? = null
     private var settingsOpened = 0
+    private var batterySettingsOpened = 0
 
     private fun str(id: Int) = ctx.getString(id)
 
@@ -53,6 +54,41 @@ class OnboardingScreenTest {
         rule.onNodeWithText(str(R.string.onboarding_title)).assertExists()
         rule.onNodeWithText(str(R.string.onboarding_text)).assertExists()
         rule.onNodeWithText(str(R.string.onboarding_settings_hint)).performScrollTo().assertExists()
+    }
+
+    private fun showBattery(restricted: Boolean) {
+        rule.setContent {
+            FeelingsDiaryTheme {
+                OnboardingScreen(
+                    true,
+                    ::request,
+                    { settingsOpened++ },
+                    batteryRestricted = restricted,
+                    onOpenBatterySettings = { batterySettingsOpened++ },
+                ) { enabled, count -> starts += enabled to count }
+            }
+        }
+    }
+
+    @Test
+    fun batteryHintShownWhenRestrictedAndOpensSettings() {
+        showBattery(restricted = true)
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).performScrollTo().assertExists()
+        rule.onNodeWithText(str(R.string.reminder_battery_open)).performScrollTo().performClick()
+        assertEquals(1, batterySettingsOpened)
+    }
+
+    @Test
+    fun batteryHintHiddenWhenUnrestricted() {
+        showBattery(restricted = false)
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).assertDoesNotExist()
+    }
+
+    @Test
+    fun batteryHintHiddenWhenRemindersSwitchedOff() {
+        showBattery(restricted = true)
+        rule.onNodeWithText(str(R.string.reminder_switch)).performScrollTo().performClick()
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).assertDoesNotExist()
     }
 
     @Test

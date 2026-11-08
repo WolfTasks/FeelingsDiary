@@ -86,6 +86,8 @@ fun ReminderSection(
     onChange: ((ReminderSettings) -> ReminderSettings) -> Unit,
     onRequestPermission: () -> Unit,
     onOpenSystemSettings: () -> Unit,
+    batteryRestricted: Boolean = false,
+    onOpenBatterySettings: () -> Unit = {},
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val fmt = { time: LocalTime -> formatTime(time, locale) }
@@ -104,6 +106,7 @@ fun ReminderSection(
             }
         }
         SwitchRow(stringResource(R.string.reminder_switch), s.enabled) { on -> onChange { it.copy(enabled = on) } }
+        if (s.enabled && batteryRestricted) BatteryHint(onOpenBatterySettings)
         SwitchRow(
             stringResource(R.string.reminder_alarm_sound),
             s.alarmSound,

@@ -40,6 +40,7 @@ class ReminderSectionTest {
     private val changes = mutableListOf<(ReminderSettings) -> ReminderSettings>()
     private var permissionRequests = 0
     private var settingsOpened = 0
+    private var batterySettingsOpened = 0
 
     private fun str(id: Int) = ctx.getString(id)
 
@@ -140,6 +141,47 @@ class ReminderSectionTest {
         allowed = true
         rule.onNodeWithText(str(R.string.reminder_notifications_off)).assertDoesNotExist()
         rule.onNodeWithText(str(R.string.reminder_allow)).assertDoesNotExist()
+    }
+
+    private fun showBattery(
+        s: ReminderSettings,
+        restricted: Boolean,
+    ) {
+        rule.setContent {
+            FeelingsDiaryTheme {
+                ReminderSection(
+                    s,
+                    true,
+                    { changes += it },
+                    { permissionRequests++ },
+                    { settingsOpened++ },
+                    batteryRestricted = restricted,
+                    onOpenBatterySettings = { batterySettingsOpened++ },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun batteryHintShownWhenRemindersOnAndRestricted() {
+        showBattery(ReminderSettings(), restricted = true)
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_battery_text)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_battery_open)).performClick()
+        assertEquals(1, batterySettingsOpened)
+    }
+
+    @Test
+    fun batteryHintHiddenWhenUnrestrictedOrRemindersOff() {
+        showBattery(ReminderSettings(), restricted = false)
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.reminder_battery_open)).assertDoesNotExist()
+    }
+
+    @Test
+    fun batteryHintHiddenWhenRemindersOff() {
+        showBattery(ReminderSettings(enabled = false), restricted = true)
+        rule.onNodeWithText(str(R.string.reminder_battery_title)).assertDoesNotExist()
     }
 
     @Test

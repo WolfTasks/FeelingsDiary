@@ -8,6 +8,7 @@ import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.reminder.BatteryOptimization
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ class SettingsViewModel
     constructor(
         private val repo: SettingsRepository,
         private val backup: BackupNotifier,
+        val batteryOptimization: BatteryOptimization,
     ) : ViewModel() {
         // Starts from the last known settings, so a recreated screen does not show the defaults first.
         val state: StateFlow<AppSettings> =

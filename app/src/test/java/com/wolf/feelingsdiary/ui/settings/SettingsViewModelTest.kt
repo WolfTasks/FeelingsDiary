@@ -6,6 +6,7 @@ import com.wolf.feelingsdiary.domain.AppSettings
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.ReminderMode
 import com.wolf.feelingsdiary.domain.ThemeMode
+import com.wolf.feelingsdiary.reminder.BatteryOptimization
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -31,6 +32,7 @@ class SettingsViewModelTest {
     private val stored = MutableStateFlow(AppSettings())
     private val repo = mockk<SettingsRepository>()
     private val backup = mockk<BackupNotifier>(relaxed = true)
+    private val battery = mockk<BatteryOptimization>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -48,16 +50,16 @@ class SettingsViewModelTest {
     fun stateStartsFromLastKnownSettings() {
         val known = AppSettings(theme = ThemeMode.LIGHT, input = InputMode.QUICK_SHEET)
         every { repo.lastKnown } returns known
-        assertEquals(known, SettingsViewModel(repo, backup).state.value)
+        assertEquals(known, SettingsViewModel(repo, backup, battery).state.value)
     }
 
     @Test
-    fun stateStartsFromDefaultsWithoutKnownSettings() = assertEquals(AppSettings(), SettingsViewModel(repo, backup).state.value)
+    fun stateStartsFromDefaultsWithoutKnownSettings() = assertEquals(AppSettings(), SettingsViewModel(repo, backup, battery).state.value)
 
     @Test
     fun setThemePersists() =
         runTest {
-            val vm = SettingsViewModel(repo, backup)
+            val vm = SettingsViewModel(repo, backup, battery)
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
             vm.setTheme(ThemeMode.LIGHT)
             assertEquals(ThemeMode.LIGHT, stored.value.theme)
@@ -67,7 +69,7 @@ class SettingsViewModelTest {
     @Test
     fun otherSettersPersist() =
         runTest {
-            val vm = SettingsViewModel(repo, backup)
+            val vm = SettingsViewModel(repo, backup, battery)
             vm.setInput(InputMode.QUICK_SHEET)
             vm.setBackup(true)
             vm.updateReminders { it.copy(count = 2) }
@@ -84,7 +86,7 @@ class SettingsViewModelTest {
     @Test
     fun successiveReminderUpdatesBothPersist() =
         runTest {
-            val vm = SettingsViewModel(repo, backup)
+            val vm = SettingsViewModel(repo, backup, battery)
             vm.updateReminders { it.copy(mode = ReminderMode.FIXED) }
             vm.updateReminders { it.copy(quietStart = LocalTime.of(23, 0)) }
             assertEquals(ReminderMode.FIXED, stored.value.reminders.mode)
@@ -96,7 +98,7 @@ class SettingsViewModelTest {
         runTest {
             val persistedWhenNotified = mutableListOf<Boolean>()
             every { backup.dataChanged() } answers { persistedWhenNotified += stored.value.backupEnabled }
-            SettingsViewModel(repo, backup).setBackup(true)
+            SettingsViewModel(repo, backup, battery).setBackup(true)
             assertEquals(listOf(true), persistedWhenNotified)
         }
 
@@ -104,7 +106,7 @@ class SettingsViewModelTest {
     fun disablingBackupDoesNotNotifyAndroid() =
         runTest {
             stored.value = AppSettings(backupEnabled = true)
-            SettingsViewModel(repo, backup).setBackup(false)
+            SettingsViewModel(repo, backup, battery).setBackup(false)
             assertFalse(stored.value.backupEnabled)
             verify(exactly = 0) { backup.dataChanged() }
         }

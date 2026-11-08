@@ -58,6 +58,7 @@ data class SettingsActions(
     val onReminders: ((ReminderSettings) -> ReminderSettings) -> Unit,
     val onRequestNotifications: () -> Unit,
     val onOpenNotificationSettings: () -> Unit,
+    val onOpenBatterySettings: () -> Unit = {},
     val onManageFeelings: () -> Unit,
     val onBackup: (Boolean) -> Unit,
 )
@@ -89,6 +90,7 @@ fun SettingsRoute(
     // Not part of AppSettings: the system stores the per-app language. A change recreates the activity.
     var language by remember { mutableStateOf(appLanguage(context)) }
     val permission = rememberNotificationPermission()
+    val battery = rememberBatteryState(vm.batteryOptimization)
     val actions =
         SettingsActions(
             onBack = onBack,
@@ -101,10 +103,11 @@ fun SettingsRoute(
             onReminders = vm::updateReminders,
             onRequestNotifications = permission.request,
             onOpenNotificationSettings = permission.openSettings,
+            onOpenBatterySettings = battery.openSettings,
             onManageFeelings = onManageFeelings,
             onBackup = vm::setBackup,
         )
-    SettingsScreen(state, actions, language, permission.allowed)
+    SettingsScreen(state, actions, language, permission.allowed, batteryRestricted = battery.restricted)
 }
 
 /**
@@ -116,6 +119,7 @@ fun SettingsScreen(
     actions: SettingsActions,
     language: String?,
     notificationsAllowed: Boolean = true,
+    batteryRestricted: Boolean = false,
     showLanguage: Boolean = supportsAppLanguage,
     showBackup: Boolean = supportsBackup,
 ) {
@@ -138,6 +142,8 @@ fun SettingsScreen(
                     actions.onReminders,
                     actions.onRequestNotifications,
                     actions.onOpenNotificationSettings,
+                    batteryRestricted,
+                    actions.onOpenBatterySettings,
                 )
                 Section(R.string.settings_section_input) {
                     INPUTS.forEach { (mode, label) -> ChoiceRow(stringResource(label), state.input == mode) { actions.onInput(mode) } }
