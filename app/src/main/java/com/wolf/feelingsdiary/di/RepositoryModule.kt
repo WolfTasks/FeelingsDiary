@@ -15,8 +15,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
+    /** Zone resolved per call, so time-zone changes reach long-lived singletons (scheduler, repository). */
     @Provides
-    fun provideClock(): Clock = Clock.systemDefaultZone()
+    fun provideClock(): Clock = SystemZoneClock()
 
     /** A failed background job (e.g. one reschedule) is logged instead of crashing the app or its siblings. */
     @Provides

@@ -8,10 +8,12 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
 import com.wolf.feelingsdiary.MainActivity
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
+import com.wolf.feelingsdiary.di.SystemZoneClock
 import com.wolf.feelingsdiary.domain.ReminderPlanner
 import com.wolf.feelingsdiary.domain.ReminderSettings
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -27,6 +29,7 @@ import java.io.File
 import java.time.Clock
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.TimeZone
 
 /**
  * Plain [Application] instead of the Hilt app: the app-start rescheduling would otherwise race
@@ -49,7 +52,12 @@ class ReminderSchedulerTest {
     private lateinit var notifier: ReminderNotifier
     private lateinit var scheduler: ReminderScheduler
 
-    private fun TestScope.setUp() {
+    private val originalZone = TimeZone.getDefault()
+
+    @After
+    fun restoreZone() = TimeZone.setDefault(originalZone)
+
+    private fun TestScope.setUp(clock: Clock = this@ReminderSchedulerTest.clock) {
         repo = SettingsRepository(PreferenceDataStoreFactory.create(scope = backgroundScope) { File(tmp.root, "s.preferences_pb") })
         notifier = ReminderNotifier(app)
         scheduler = ReminderScheduler(app, repo, clock, notifier)
@@ -68,6 +76,22 @@ class ReminderSchedulerTest {
             assertEquals(expected.toInstant().toEpochMilli(), alarm.triggerAtMs)
             assertEquals(AlarmManager.RTC_WAKEUP, alarm.getType())
             assertNotEquals(ShadowAlarmManager.WINDOW_EXACT, alarm.windowLengthMs)
+        }
+
+    /** BootReceiver reschedules on TIMEZONE_CHANGED: the long-lived scheduler must plan in the new zone. */
+    @Test
+    fun rescheduleFollowsTimeZoneChange() =
+        runTest {
+            TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
+            setUp(SystemZoneClock { now.toInstant() })
+            scheduler.reschedule()
+            val berlin = alarms.single().triggerAtMs
+            val newYork = ZoneId.of("America/New_York")
+            TimeZone.setDefault(TimeZone.getTimeZone(newYork))
+            scheduler.reschedule()
+            val expected = ReminderPlanner.next(ReminderSettings(), now.withZoneSameInstant(newYork), repo.reminderSalt())!!
+            assertEquals(expected.toInstant().toEpochMilli(), alarms.single().triggerAtMs)
+            assertNotEquals(berlin, alarms.single().triggerAtMs)
         }
 
     @Test
