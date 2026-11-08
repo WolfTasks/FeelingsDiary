@@ -52,9 +52,9 @@ private val WINDOW_NAMES =
     )
 
 fun formatTime(
-    t: LocalTime,
+    time: LocalTime,
     locale: Locale,
-): String = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(t)
+): String = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(time)
 
 /** Which time the open dialog edits; a window takes two steps, start then end. */
 private sealed interface Edit {
@@ -92,7 +92,7 @@ fun ReminderSection(
     onOpenSystemSettings: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0]
-    val fmt = { t: LocalTime -> formatTime(t, locale) }
+    val fmt = { time: LocalTime -> formatTime(time, locale) }
     var edit by remember { mutableStateOf<Edit?>(null) }
     // The system dialog is offered once; later taps lead to the app's notification settings.
     var permissionAsked by rememberSaveable { mutableStateOf(false) }
@@ -133,14 +133,14 @@ fun ReminderSection(
             modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            (1..4).forEach { n ->
+            (1..4).forEach { perDay ->
                 SegmentedButton(
-                    selected = s.count == n,
-                    onClick = { onChange { it.copy(count = n) } },
-                    shape = SegmentedButtonDefaults.itemShape(index = n - 1, count = 4),
+                    selected = s.count == perDay,
+                    onClick = { onChange { it.copy(count = perDay) } },
+                    shape = SegmentedButtonDefaults.itemShape(index = perDay - 1, count = 4),
                     enabled = s.enabled,
                     modifier = Modifier.heightIn(min = 48.dp),
-                ) { Text(n.toString()) }
+                ) { Text(perDay.toString()) }
             }
         }
 
@@ -164,8 +164,8 @@ fun ReminderSection(
                     s.enabled,
                 ) { edit = Edit.WindowStart(i) }
             } else {
-                val t = s.fixedTimes[i]
-                TimeRow(name, fmt(t), ReminderPlanner.isQuiet(t, s), s.enabled) { edit = Edit.Fixed(i) }
+                val time = s.fixedTimes[i]
+                TimeRow(name, fmt(time), ReminderPlanner.isQuiet(time, s), s.enabled) { edit = Edit.Fixed(i) }
             }
         }
         TimeRow(
@@ -207,7 +207,7 @@ private fun EditDialog(
                     validate = { end -> endError.takeIf { end <= current.start } },
                     onConfirm = { end ->
                         val window = TimeWindow(current.start, end)
-                        onChange { r -> r.copy(windows = r.windows.replaced(current.index, window)) }
+                        onChange { settings -> settings.copy(windows = settings.windows.replaced(current.index, window)) }
                         close()
                     },
                     onDismiss = close,
@@ -218,8 +218,8 @@ private fun EditDialog(
                 TimeDialog(
                     title = stringResource(WINDOW_NAMES[current.index]),
                     initial = s.fixedTimes[current.index],
-                    onConfirm = { t ->
-                        onChange { r -> r.copy(fixedTimes = r.fixedTimes.replaced(current.index, t)) }
+                    onConfirm = { time ->
+                        onChange { settings -> settings.copy(fixedTimes = settings.fixedTimes.replaced(current.index, time)) }
                         close()
                     },
                     onDismiss = close,
