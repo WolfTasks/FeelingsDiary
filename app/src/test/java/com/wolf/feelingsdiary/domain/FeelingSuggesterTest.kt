@@ -107,4 +107,17 @@ class FeelingSuggesterTest {
         assertEquals(listOf(2L), suggest("", feelings).others.map { it.id })
         assertTrue(suggest("mü", feelings).others.isEmpty())
     }
+
+    @Test
+    fun alwaysIncludeShowsHiddenFeelingInRecent() {
+        val hidden = base(4, "bored", hidden = true)
+        val other = base(5, "lonely", hidden = true)
+        val used = custom(10, "a", lastUsedAt = 3)
+        val feelings = listOf(base(1, "happy"), used, hidden, other)
+        val result = FeelingSuggester.suggest("", feelings, ::label, alwaysInclude = setOf(4L))
+        assertEquals(listOf(4L, 10L), result.recent.map { it.id })
+        assertEquals(listOf(1L), result.others.map { it.id })
+        val searched = FeelingSuggester.suggest("bor", feelings, ::label, alwaysInclude = setOf(4L))
+        assertEquals(listOf(4L), searched.others.map { it.id })
+    }
 }

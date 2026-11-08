@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wolf.feelingsdiary.data.DiaryRepository
 import com.wolf.feelingsdiary.domain.Feeling
+import com.wolf.feelingsdiary.domain.FeelingNames
 import com.wolf.feelingsdiary.domain.FeelingSuggester
 import com.wolf.feelingsdiary.domain.Suggestions
 import com.wolf.feelingsdiary.reminder.ReminderNotifier
@@ -55,7 +56,8 @@ class EntryViewModel
                 val ids = selected.toList()
                 EntryUiState(
                     query = query,
-                    suggestions = FeelingSuggester.suggest(query, feelings, labeler::label),
+                    // Selected feelings stay visible even when hidden meanwhile (editing an old entry).
+                    suggestions = FeelingSuggester.suggest(query, feelings, labeler::label, alwaysInclude = ids.toSet()),
                     selectedIds = ids,
                     people = people,
                     canSave = ids.isNotEmpty() && people != null,
@@ -105,13 +107,8 @@ class EntryViewModel
             val trimmed = name.trim()
             if (trimmed.isEmpty()) return
             viewModelScope.launch {
-                val wanted = FeelingSuggester.normalize(trimmed)
                 // Includes hidden feelings: they are un-hidden only via settings, never by re-creating.
-                val existing =
-                    repo
-                        .observeFeelings()
-                        .first()
-                        .firstOrNull { FeelingSuggester.normalize(labeler.label(it)) == wanted }
+                val existing = FeelingNames.findDuplicate(trimmed, repo.observeFeelings().first(), labeler::label)
                 val id = existing?.id ?: repo.addCustomFeeling(trimmed, colorArgb, valence)
                 val current = selection.value.toList()
                 if (id !in current) select(current + id)

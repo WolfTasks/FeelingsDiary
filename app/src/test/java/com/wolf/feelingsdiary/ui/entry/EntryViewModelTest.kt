@@ -264,4 +264,19 @@ class EntryViewModelTest {
             runCurrent()
             assertEquals(listOf(happy), vm.state.value.suggestions.others)
         }
+
+    @Test
+    fun editingEntryWithHiddenFeelingKeepsItSelectedAndVisible() =
+        runTest {
+            coEvery { repo.getEntry(5) } returns stored.copy(feelingIds = listOf(4L, 1L), valences = listOf(-1, 2))
+            val vm = vm(SavedStateHandle(mapOf("entryId" to 5L)))
+            runCurrent()
+            assertEquals(listOf(4L, 1L), vm.state.value.selectedIds)
+            // Hidden "bored" is offered as a chip at the top so it can be seen and deselected.
+            assertEquals(listOf(hiddenBored), vm.state.value.suggestions.recent)
+            vm.toggle(4)
+            runCurrent()
+            assertEquals(emptyList<Feeling>(), vm.state.value.suggestions.recent)
+            assertFalse(hiddenBored in vm.state.value.suggestions.others)
+        }
 }

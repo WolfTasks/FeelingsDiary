@@ -100,6 +100,29 @@ class DiaryRepository
                 FeelingEntity(baseKey = null, customName = name, colorArgb = colorArgb, valence = valence),
             )
 
+        /**
+         * Changes a feeling's colour and current valence; entries keep their stored valences.
+         * [name] renames a custom feeling (null keeps it); base feelings cannot be renamed.
+         */
+        suspend fun updateFeeling(
+            id: Long,
+            name: String?,
+            colorArgb: Int,
+            valence: Int,
+        ) {
+            require(valence in VALENCE_RANGE) { "valence must be in -2..2" }
+            val feeling = requireNotNull(feelingDao.getByIds(listOf(id)).singleOrNull()) { "unknown feeling id" }
+            if (feeling.baseKey != null) require(name == null) { "base feelings cannot be renamed" }
+            val trimmed = name?.trim()
+            require(trimmed == null || trimmed.isNotEmpty()) { "name must not be blank" }
+            feelingDao.update(id, trimmed, colorArgb, valence)
+        }
+
+        suspend fun setHidden(
+            id: Long,
+            hidden: Boolean,
+        ) = feelingDao.setHidden(id, hidden)
+
         private fun FeelingEntity.toDomain() = Feeling(id, baseKey, customName, colorArgb, valence, hidden, lastUsedAt)
 
         private fun EntryWithFeelings.toDomain(): Entry {
@@ -111,5 +134,9 @@ class DiaryRepository
                 feelingIds = sorted.map { it.feelingId },
                 valences = sorted.map { it.valence },
             )
+        }
+
+        private companion object {
+            val VALENCE_RANGE = -2..2
         }
     }

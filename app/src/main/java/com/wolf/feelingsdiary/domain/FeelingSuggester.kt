@@ -10,21 +10,27 @@ data class Suggestions(
 )
 
 object FeelingSuggester {
+    /**
+     * [alwaysInclude]: ids shown even when hidden (e.g. selected in the entry being edited); with an
+     * empty query, such hidden feelings head the recent section.
+     */
     fun suggest(
         query: String,
         feelings: List<Feeling>,
         label: (Feeling) -> String,
         recentCount: Int = 5,
+        alwaysInclude: Set<Long> = emptySet(),
     ): Suggestions {
-        val visible = feelings.filter { !it.hidden }
+        val visible = feelings.filter { !it.hidden || it.id in alwaysInclude }
         val normalizedQuery = normalize(query.trim())
         val listOrder = baseListOrder(visible, label)
         return if (normalizedQuery.isEmpty()) {
             val recent =
-                visible
-                    .filter { it.lastUsedAt != null }
-                    .sortedByDescending { it.lastUsedAt }
-                    .take(recentCount)
+                listOrder.filter { it.hidden } +
+                    visible
+                        .filter { !it.hidden && it.lastUsedAt != null }
+                        .sortedByDescending { it.lastUsedAt }
+                        .take(recentCount)
             val recentIds = recent.map { it.id }.toSet()
             Suggestions(recent, listOrder.filter { it.id !in recentIds }, canCreate = false)
         } else {
