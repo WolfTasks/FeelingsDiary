@@ -89,9 +89,9 @@ fun QuickEntrySheet(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            for (f in feelings) {
-                val index = state.selectedIds.indexOf(f.id)
-                FeelingChip(label(f), Color(f.colorArgb), index >= 0, index == 0) { actions.onToggle(f.id) }
+            for (feeling in feelings) {
+                val index = state.selectedIds.indexOf(feeling.id)
+                FeelingChip(label(feeling), Color(feeling.colorArgb), index >= 0, index == 0) { actions.onToggle(feeling.id) }
             }
         }
     }
