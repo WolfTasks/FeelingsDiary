@@ -44,6 +44,7 @@ data class HomeUiState(
     val rows: List<HomeEntryRow>,
     val colors: Map<Long, Int>,
     val legend: List<Pair<String, Int>>,
+    val loading: Boolean = false,
 )
 
 private const val KEY_KIND = "kind"
@@ -89,6 +90,7 @@ class HomeViewModel
                                 },
                             colors = used.associate { it.id to it.colorArgb },
                             legend = FeelingSuggester.baseListOrder(used, labeler::label).map { labeler.label(it) to it.colorArgb },
+                            loading = false,
                         )
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyState(period.value))
@@ -105,11 +107,12 @@ class HomeViewModel
 
         fun shift(steps: Int) = setPeriod(period.value.shift(steps, firstDayOfWeek()))
 
-        /** Jumps from an aggregated point to the day (daily buckets) or week (weekly buckets) it stands for. */
+        /** Jumps from an aggregated point to the day (daily), week (weekly) or month (monthly buckets) it stands for. */
         fun openBucket(point: GraphPoint) {
             when (state.value.graph.aggregation) {
                 Aggregation.DAILY -> setPeriod(GraphPeriod.containing(PeriodKind.DAY, point.bucketStart, firstDayOfWeek()))
                 Aggregation.WEEKLY -> setPeriod(GraphPeriod.containing(PeriodKind.WEEK, point.bucketStart, firstDayOfWeek()))
+                Aggregation.MONTHLY -> setPeriod(GraphPeriod.containing(PeriodKind.MONTH, point.bucketStart, firstDayOfWeek()))
                 Aggregation.NONE -> Unit
             }
         }
@@ -138,5 +141,12 @@ class HomeViewModel
         private fun firstDayOfWeek(): DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
 
         private fun emptyState(p: GraphPeriod) =
-            HomeUiState(p, GraphData(emptyList(), Aggregation.NONE, DEFAULT_PEOPLE_SCALE, emptySet()), emptyList(), emptyMap(), emptyList())
+            HomeUiState(
+                p,
+                GraphData(emptyList(), Aggregation.NONE, DEFAULT_PEOPLE_SCALE, emptySet()),
+                emptyList(),
+                emptyMap(),
+                emptyList(),
+                loading = true,
+            )
     }

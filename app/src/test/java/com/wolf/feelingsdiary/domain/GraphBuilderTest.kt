@@ -157,6 +157,37 @@ class GraphBuilderTest {
     }
 
     @Test
+    fun rangeOverSevenYearsUsesMonthlyMeans() {
+        val range = GraphPeriod.range(LocalDate.of(2020, 1, 1), LocalDate.of(2027, 12, 31))
+        assertEquals(2922, range.days)
+        val entries =
+            listOf(
+                entry(1, "2020-01-05T08:00", 60, feelings = listOf(a to 2)),
+                entry(2, "2020-01-20T08:00", 60, feelings = listOf(a to 0)),
+                entry(3, "2027-12-31T08:00", 60, feelings = listOf(a to -2)),
+            )
+        val data = GraphBuilder.build(entries, range, monday)
+        assertEquals(Aggregation.MONTHLY, data.aggregation)
+        assertTrue(data.points.size <= 96)
+        assertEquals(2, data.points.size)
+        assertEquals(LocalDate.of(2020, 1, 1), data.points[0].bucketStart)
+        assertEquals(1f, data.points[0].valence, 0f)
+        assertEquals(LocalDate.of(2027, 12, 1), data.points[1].bucketStart)
+        assertEquals(-2f, data.points[1].valence, 0f)
+        assertTrue(data.points.all { it.x in 0f..1f })
+    }
+
+    @Test
+    fun rangeOfExactlySevenYearsStaysWeekly() {
+        val start = LocalDate.of(2020, 1, 1)
+        val range = GraphPeriod.range(start, start.plusDays(2556))
+        assertEquals(2557, range.days)
+        assertEquals(Aggregation.WEEKLY, GraphBuilder.build(emptyList(), range, monday).aggregation)
+        val longer = GraphPeriod.range(start, start.plusDays(2557))
+        assertEquals(Aggregation.MONTHLY, GraphBuilder.build(emptyList(), longer, monday).aggregation)
+    }
+
+    @Test
     fun singleEntriesAreOrderedByLocalX() {
         // Entry 1 is earlier in UTC (06:00Z) but later on the wall clock (23:00 at +17h) than entry 2 (07:00Z, 08:00 at +1h).
         val entries = listOf(entry(1, "2026-11-03T23:00", 17 * 60), entry(2, "2026-11-03T08:00", 60))

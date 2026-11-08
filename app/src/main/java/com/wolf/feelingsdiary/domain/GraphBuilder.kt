@@ -5,7 +5,7 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
-enum class Aggregation { NONE, DAILY, WEEKLY }
+enum class Aggregation { NONE, DAILY, WEEKLY, MONTHLY }
 
 /** [x] is the horizontal position within the period (0..1); [entryId] is set only without aggregation. */
 data class GraphPoint(
@@ -29,6 +29,7 @@ object GraphBuilder {
     private val PEOPLE_SCALES = listOf(5, 10, 20, 50, 100, 200, 500, 1000)
     private const val MAX_OTHERS = 3
     private const val MINUTES_PER_DAY = 1440f
+    private const val MAX_WEEKLY_DAYS = 2557 // seven years
 
     fun build(
         entries: List<Entry>,
@@ -88,7 +89,8 @@ object GraphBuilder {
                 when {
                     period.days <= 31 -> Aggregation.NONE
                     period.days <= 366 -> Aggregation.DAILY
-                    else -> Aggregation.WEEKLY
+                    period.days <= MAX_WEEKLY_DAYS -> Aggregation.WEEKLY
+                    else -> Aggregation.MONTHLY
                 }
             }
         }
@@ -97,7 +99,12 @@ object GraphBuilder {
         date: LocalDate,
         aggregation: Aggregation,
         firstDayOfWeek: DayOfWeek,
-    ): LocalDate = if (aggregation == Aggregation.WEEKLY) date.with(TemporalAdjusters.previousOrSame(firstDayOfWeek)) else date
+    ): LocalDate =
+        when (aggregation) {
+            Aggregation.WEEKLY -> date.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
+            Aggregation.MONTHLY -> date.withDayOfMonth(1)
+            else -> date
+        }
 
     private fun aggregate(
         bucket: LocalDate,
@@ -119,8 +126,13 @@ object GraphBuilder {
                 .sortedByDescending { it.value }
                 .take(MAX_OTHERS)
                 .map { it.key }
-        // Weekly buckets may stick out of the period; centre them on the visible part.
-        val bucketEnd = if (aggregation == Aggregation.WEEKLY) bucket.plusDays(6) else bucket
+        // Weekly and monthly buckets may stick out of the period; centre them on the visible part.
+        val bucketEnd =
+            when (aggregation) {
+                Aggregation.WEEKLY -> bucket.plusDays(6)
+                Aggregation.MONTHLY -> bucket.with(TemporalAdjusters.lastDayOfMonth())
+                else -> bucket
+            }
         val from = maxOf(bucket, period.start)
         val to = minOf(bucketEnd, period.endInclusive)
         val startMinute = ChronoUnit.DAYS.between(period.start, from) * MINUTES_PER_DAY

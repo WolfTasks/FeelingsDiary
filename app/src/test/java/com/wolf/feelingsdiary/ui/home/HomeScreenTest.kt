@@ -111,6 +111,12 @@ class HomeScreenTest {
     }
 
     @Test
+    fun loadingStateShowsNoEmptyHint() {
+        show(state(emptyList()).copy(loading = true))
+        rule.onNodeWithText("No entries in this period").assertDoesNotExist()
+    }
+
+    @Test
     fun emptyPeriodShowsHint() {
         show(state(emptyList()))
         rule.onNodeWithText("No entries in this period").assertExists()

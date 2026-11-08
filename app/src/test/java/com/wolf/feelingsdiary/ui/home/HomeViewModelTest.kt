@@ -17,6 +17,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -26,6 +27,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Clock
@@ -129,6 +132,29 @@ class HomeViewModelTest {
             assertEquals(Aggregation.WEEKLY, vm.state.value.graph.aggregation)
             vm.openBucket(point(null, LocalDate.of(2025, 3, 3)))
             assertEquals(GraphPeriod(PeriodKind.WEEK, LocalDate.of(2025, 3, 3), LocalDate.of(2025, 3, 9)), vm.state.value.period)
+        }
+
+    @Test
+    fun initialStateIsLoading() =
+        runTest {
+            val source = MutableSharedFlow<List<Entry>>()
+            every { repo.observeEntriesBetween(any(), any()) } returns source
+            val vm = vm()
+            observe(vm)
+            assertTrue(vm.state.value.loading)
+            source.emit(emptyList())
+            assertFalse(vm.state.value.loading)
+        }
+
+    @Test
+    fun openBucketOfMonthlyPointShowsMonth() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            vm.selectRange(LocalDate.of(2018, 1, 1), LocalDate.of(2026, 1, 1))
+            assertEquals(Aggregation.MONTHLY, vm.state.value.graph.aggregation)
+            vm.openBucket(point(null, LocalDate.of(2025, 3, 1)))
+            assertEquals(GraphPeriod(PeriodKind.MONTH, LocalDate.of(2025, 3, 1), LocalDate.of(2025, 3, 31)), vm.state.value.period)
         }
 
     @Test

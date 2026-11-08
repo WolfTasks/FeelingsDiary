@@ -124,7 +124,7 @@ fun HomeScreen(
                     )
                 }
                 item { GraphLegend(state.legend.map { (label, argb) -> label to Color(argb) }) }
-                if (state.rows.isEmpty()) {
+                if (state.rows.isEmpty() && !state.loading) {
                     item {
                         Text(
                             stringResource(R.string.history_empty),
