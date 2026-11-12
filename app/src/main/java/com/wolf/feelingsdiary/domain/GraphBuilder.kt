@@ -41,8 +41,8 @@ object GraphBuilder {
         var weight = 1.0
         var sum = 0.0
         var weights = 0.0
-        for (v in valences) {
-            sum += v * weight
+        for (valence in valences) {
+            sum += valence * weight
             weights += weight
             weight /= 2
         }

@@ -59,18 +59,18 @@ class MigrationTest {
     )
 
     private fun SupportSQLiteDatabase.feelings(): List<Row> =
-        query("SELECT id, baseKey, customName, colorArgb, valence, hidden, lastUsedAt FROM feelings ORDER BY id").use { c: Cursor ->
+        query("SELECT id, baseKey, customName, colorArgb, valence, hidden, lastUsedAt FROM feelings ORDER BY id").use { cursor: Cursor ->
             buildList {
-                while (c.moveToNext()) {
+                while (cursor.moveToNext()) {
                     add(
                         Row(
-                            c.getLong(0),
-                            c.getString(1),
-                            c.getString(2),
-                            c.getInt(3),
-                            c.getInt(4),
-                            c.getInt(5),
-                            if (c.isNull(6)) null else c.getLong(6),
+                            cursor.getLong(0),
+                            cursor.getString(1),
+                            cursor.getString(2),
+                            cursor.getInt(3),
+                            cursor.getInt(4),
+                            cursor.getInt(5),
+                            if (cursor.isNull(6)) null else cursor.getLong(6),
                         ),
                     )
                 }
@@ -121,11 +121,11 @@ class MigrationTest {
         val inserted = byId.values.filter { it.id > 17 }.map { it.baseKey }
         assertEquals(BaseFeelings.all.map { it.key }.filter { it !in v1Keys + listOf("frustrated", "annoyed", "overwhelmed") }, inserted)
 
-        db.query("SELECT feelingId, valence FROM entry_feelings WHERE entryId = 1 ORDER BY position").use { c ->
-            c.moveToNext()
-            assertEquals(13L to -2, c.getLong(0) to c.getInt(1))
-            c.moveToNext()
-            assertEquals(14L to -1, c.getLong(0) to c.getInt(1))
+        db.query("SELECT feelingId, valence FROM entry_feelings WHERE entryId = 1 ORDER BY position").use { cursor ->
+            cursor.moveToNext()
+            assertEquals(13L to -2, cursor.getLong(0) to cursor.getInt(1))
+            cursor.moveToNext()
+            assertEquals(14L to -1, cursor.getLong(0) to cursor.getInt(1))
         }
         assertNull(byId.values.firstOrNull { it.baseKey != null && it.customName != null })
     }
