@@ -71,7 +71,7 @@ class HomeViewModel
         private val labeler: FeelingLabeler,
         private val localeSource: LocaleSource,
         private val savedState: SavedStateHandle,
-        clock: Clock,
+        private val clock: Clock,
         settings: SettingsRepository,
     ) : ViewModel() {
         private val inputMode = settings.settings.map { it.input }.distinctUntilChanged()
@@ -124,7 +124,11 @@ class HomeViewModel
 
         fun selectKind(kind: PeriodKind) {
             if (kind == PeriodKind.RANGE) return
-            setPeriod(GraphPeriod.containing(kind, period.value.start, firstDayOfWeek()))
+            // Prefer today when it is visible, so e.g. switching the current week to "day" shows today.
+            val current = period.value
+            val today = LocalDate.now(clock)
+            val anchor = if (today in current.start..current.endInclusive) today else current.start
+            setPeriod(GraphPeriod.containing(kind, anchor, firstDayOfWeek()))
         }
 
         fun selectRange(

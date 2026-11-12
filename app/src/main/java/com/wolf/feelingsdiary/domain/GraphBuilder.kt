@@ -33,6 +33,22 @@ object GraphBuilder {
     private const val MINUTES_PER_DAY = 1440f
     private const val MAX_WEEKLY_DAYS = 2557 // seven years
 
+    /**
+     * Height of one entry: the main (first) feeling counts fully, each further feeling half as much
+     * as the one before (weights 1, 1/2, 1/4, ...).
+     */
+    fun weightedValence(valences: List<Int>): Float {
+        var weight = 1.0
+        var sum = 0.0
+        var weights = 0.0
+        for (valence in valences) {
+            sum += valence * weight
+            weights += weight
+            weight /= 2
+        }
+        return (sum / weights).toFloat()
+    }
+
     fun build(
         entries: List<Entry>,
         period: GraphPeriod,
@@ -102,7 +118,7 @@ object GraphBuilder {
             previousX = x
             GraphPoint(
                 x = x,
-                valence = entry.valences.average().toFloat(),
+                valence = weightedValence(entry.valences),
                 mainFeelingId = entry.feelingIds.first(),
                 otherFeelingIds = entry.feelingIds.drop(1),
                 people = entry.people.toFloat(),
@@ -181,7 +197,7 @@ object GraphBuilder {
         val endMinute = (ChronoUnit.DAYS.between(period.start, to) + 1) * MINUTES_PER_DAY
         return GraphPoint(
             x = ((startMinute + endMinute) / 2f) / (period.days * MINUTES_PER_DAY),
-            valence = members.map { it.valences.average() }.average().toFloat(),
+            valence = members.map { weightedValence(it.valences) }.average().toFloat(),
             mainFeelingId = main,
             otherFeelingIds = others,
             people = members.map { it.people }.average().toFloat(),

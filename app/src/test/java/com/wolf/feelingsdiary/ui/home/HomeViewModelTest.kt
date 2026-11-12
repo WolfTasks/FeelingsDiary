@@ -36,6 +36,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -118,6 +119,26 @@ class HomeViewModelTest {
             observe(vm)
             vm.selectKind(PeriodKind.MONTH)
             assertEquals(GraphPeriod(PeriodKind.MONTH, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30)), vm.state.value.period)
+        }
+
+    @Test
+    fun selectDayFromCurrentWeekShowsToday() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            vm.selectKind(PeriodKind.DAY)
+            assertEquals(GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 11, 7), DayOfWeek.MONDAY), vm.state.value.period)
+        }
+
+    @Test
+    fun selectDayFromPastWeekShowsItsFirstDay() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            vm.shift(-1)
+            vm.selectKind(PeriodKind.DAY)
+            assertEquals(LocalDate.of(2026, 10, 26), vm.state.value.period.start)
+            assertEquals(PeriodKind.DAY, vm.state.value.period.kind)
         }
 
     @Test

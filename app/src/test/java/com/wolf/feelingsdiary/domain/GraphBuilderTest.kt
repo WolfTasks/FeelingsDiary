@@ -34,10 +34,11 @@ class GraphBuilderTest {
     private val week = GraphPeriod.containing(PeriodKind.WEEK, LocalDate.of(2026, 11, 3), monday)
 
     @Test
-    fun entryHeightIsMeanOfStoredValences() {
+    fun entryHeightWeightsLaterFeelingsLess() {
         val data = GraphBuilder.build(listOf(entry(1, "2026-11-03T08:00", 60, feelings = listOf(a to 2, b to -1))), week, monday)
         val point = data.points.single()
-        assertEquals(0.5f, point.valence, 0f)
+        // (2 * 1 + -1 * 0.5) / 1.5
+        assertEquals(1f, point.valence, 1e-6f)
         assertEquals(a, point.mainFeelingId)
         assertEquals(listOf(b), point.otherFeelingIds)
         assertEquals(1L, point.entryId)
@@ -134,6 +135,14 @@ class GraphBuilderTest {
     }
 
     @Test
+    fun weightedValenceHalvesEachFurtherFeeling() {
+        assertEquals(-1f, GraphBuilder.weightedValence(listOf(-1)), 0f)
+        assertEquals(0f, GraphBuilder.weightedValence(listOf(-1, 2)), 1e-6f)
+        // (2 + 2 * 0.5 - 1 * 0.25) / 1.75
+        assertEquals(11f / 7f, GraphBuilder.weightedValence(listOf(2, 2, -1)), 1e-6f)
+    }
+
+    @Test
     fun aggregateAveragesAndLimitsOthers() {
         val year = GraphPeriod.containing(PeriodKind.YEAR, LocalDate.of(2026, 6, 1), monday)
         val entries =
@@ -142,7 +151,8 @@ class GraphBuilderTest {
                 entry(2, "2026-02-01T09:00", 60, people = 4, feelings = listOf(a to -2)),
             )
         val point = GraphBuilder.build(entries, year, monday).points.single()
-        assertEquals(-0.8f, point.valence, 1e-6f)
+        // entry 1: 2 / (1 + 1/2 + 1/4 + 1/8 + 1/16) = 32/31; mean with entry 2 (-2)
+        assertEquals((32f / 31f - 2f) / 2f, point.valence, 1e-6f)
         assertEquals(3f, point.people, 0f)
         assertEquals(a, point.mainFeelingId)
         assertEquals(3, point.otherFeelingIds.size)

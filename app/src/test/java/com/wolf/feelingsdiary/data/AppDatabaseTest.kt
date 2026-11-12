@@ -42,9 +42,9 @@ class AppDatabaseTest {
             .id
 
     @Test
-    fun seedCreatesTwelveBaseFeelings() =
+    fun seedCreatesAllBaseFeelings() =
         runBlocking {
-            assertEquals(12, db.feelingDao().count())
+            assertEquals(24, db.feelingDao().count())
             val keys = db.feelingDao().getAll().map { it.baseKey }
             assertEquals(BaseFeelings.all.map { it.key }, keys)
             assertEquals(
@@ -61,6 +61,18 @@ class AppDatabaseTest {
                     "lonely",
                     "sad",
                     "angry",
+                    "proud",
+                    "excited",
+                    "content",
+                    "motivated",
+                    "hopeful",
+                    "curious",
+                    "thoughtful",
+                    "disappointed",
+                    "frustrated",
+                    "annoyed",
+                    "overwhelmed",
+                    "exhausted",
                 ),
                 keys,
             )
