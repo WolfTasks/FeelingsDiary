@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.wolf.feelingsdiary.data.db.AppDatabase
 import com.wolf.feelingsdiary.data.db.EntryDao
 import com.wolf.feelingsdiary.data.db.FeelingDao
+import com.wolf.feelingsdiary.data.db.Migrations
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,6 +24,7 @@ object DatabaseModule {
         Room
             .databaseBuilder(context, AppDatabase::class.java, "feelings.db")
             .addCallback(AppDatabase.seedCallback())
+            .addMigrations(*Migrations.ALL)
             .build()
 
     @Provides

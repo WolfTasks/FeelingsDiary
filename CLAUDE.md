@@ -32,7 +32,8 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 - Jeder UI-Text als String-Ressource: `values/strings.xml` (EN, Default) und `values-de/strings.xml`; `StringsParityTest` erzwingt Parität. Keine hartkodierten UI-Texte.
 - Personenzahl = Anzahl der ANDEREN Menschen, 0 = allein, Eingabe 0–999.
 - Valenz −2…+2, als Momentaufnahme je Gefühl pro Eintrag gespeichert.
-- Hauptgefühl = zuerst gewähltes Gefühl (Position 0).
+- Hauptgefühl = zuerst gewähltes Gefühl (Position 0). Punkthöhe im Graphen = gewichtete Valenz (1, ½, ¼ … nach Position).
+- Neue Grundgefühle nur hinten an `BaseFeelings.all` anhängen und per Room-Migration (`Migrations`) für Bestandsinstallationen nachziehen.
 - Grundliste-Reihenfolge: Basisgefühle nach id, danach eigene alphabetisch nach Label.
 
 ## Git
