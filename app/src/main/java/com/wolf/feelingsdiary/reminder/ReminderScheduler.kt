@@ -22,7 +22,8 @@ import javax.inject.Singleton
  * Keeps exactly one inexact alarm for the next reminder (no exact-alarm permission needed).
  * Each alarm plans the following one, so only the next slot is ever registered. An inexact alarm may arrive up to
  * 75 % of its lead time late (at most an hour), so a far slot is approached in stages that only plan again
- * ([ReminderPlanner.nextWake]); the alarm carries its slot in [EXTRA_TARGET_EPOCH_MILLIS].
+ * ([ReminderPlanner.nextWake]); the alarm carries its slot in [EXTRA_TARGET_EPOCH_MILLIS] and, in [EXTRA_WAKE],
+ * whether that slot is the silent wake-up reminder (planned in the same chain, outside the quiet-hours rule).
  */
 @Singleton
 class ReminderScheduler
@@ -53,14 +54,14 @@ class ReminderScheduler
                     lastShown
                         ?.takeIf { it.isAfter(nowInstant) && it <= nowInstant.plus(LAST_SHOWN_TOLERANCE) }
                         ?.atZone(now.zone) ?: now
-                val next = if (active) ReminderPlanner.next(reminders, after, settings.reminderSalt()) else null
+                val next = if (active) ReminderPlanner.nextReminder(reminders, after, settings.reminderSalt()) else null
                 if (next == null) {
-                    alarms.cancel(alarmIntent(target = null))
+                    alarms.cancel(alarmIntent(target = null, wake = false))
                 } else {
-                    val target = next.toInstant()
-                    val wake = ReminderPlanner.nextWake(target, now.toInstant(), reminders.maxDelayMinutes)
+                    val target = next.time.toInstant()
+                    val trigger = ReminderPlanner.nextWake(target, now.toInstant(), reminders.maxDelayMinutes)
                     // Inexact but Doze-proof; the same request code replaces any earlier alarm and its target.
-                    alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, wake.toEpochMilli(), alarmIntent(target))
+                    alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger.toEpochMilli(), alarmIntent(target, next.wake))
                 }
             }
 
@@ -69,9 +70,14 @@ class ReminderScheduler
          * before the slot) only plans again: the slot is still ahead, so it is planned once more, from closer by.
          * Otherwise remind now, then plan the slot after this one. The inexact alarm may arrive late, inside the
          * quiet hours, or after reminders were turned off; then it only plans (or cancels). The chain never breaks.
-         * Without a slot (an alarm set by an older version) it reminds right away.
+         * Exception: the wake-up reminder ([wake]) also shows inside the quiet hours, always silently (its own
+         * channel, regardless of the alarm-sound setting). Without a slot (an alarm set by an older version) it
+         * reminds right away.
          */
-        suspend fun onAlarm(targetEpochMillis: Long? = null) {
+        suspend fun onAlarm(
+            targetEpochMillis: Long? = null,
+            wake: Boolean = false,
+        ) {
             val target = targetEpochMillis?.let(Instant::ofEpochMilli)
             if (target != null && ReminderPlanner.isStage(target, clock.instant())) {
                 reschedule()
@@ -80,8 +86,11 @@ class ReminderScheduler
             try {
                 val current = settings.settings.first()
                 val reminders = current.reminders
-                val remind = reminders.enabled && current.onboardingDone && !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders)
-                if (remind) notifier.show(reminders.alarmSound)
+                val remind =
+                    reminders.enabled &&
+                        current.onboardingDone &&
+                        (wake || !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders))
+                if (remind) notifier.show(reminders.alarmSound, silent = wake)
             } finally {
                 // Never the same slot twice, should the reminder have come within the tolerance before it:
                 // remembered, so that any other caller of reschedule() skips the slot too.
@@ -94,19 +103,25 @@ class ReminderScheduler
             }
         }
 
-        // Extras do not count for PendingIntent identity; FLAG_UPDATE_CURRENT swaps in the new target.
-        private fun alarmIntent(target: Instant?): PendingIntent =
+        // Extras do not count for PendingIntent identity; FLAG_UPDATE_CURRENT swaps in the new target and wake flag.
+        // The flag is put every time, so a slot replacing a wake-up alarm never inherits it.
+        private fun alarmIntent(
+            target: Instant?,
+            wake: Boolean,
+        ): PendingIntent =
             PendingIntent.getBroadcast(
                 ctx,
                 REQUEST_ALARM,
                 Intent(ctx, ReminderReceiver::class.java).apply {
                     target?.let { putExtra(EXTRA_TARGET_EPOCH_MILLIS, it.toEpochMilli()) }
+                    putExtra(EXTRA_WAKE, wake)
                 },
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
 
         companion object {
             const val EXTRA_TARGET_EPOCH_MILLIS = "target_epoch_millis"
+            const val EXTRA_WAKE = "wake"
             private const val REQUEST_ALARM = 1
             private val LAST_SHOWN_TOLERANCE = Duration.ofMinutes(2)
         }

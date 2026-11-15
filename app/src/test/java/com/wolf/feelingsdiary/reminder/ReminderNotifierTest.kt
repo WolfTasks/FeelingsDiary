@@ -10,7 +10,6 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -86,6 +85,6 @@ class ReminderNotifierTest {
     fun nonSilentDoesNotCreateWakeChannel() {
         notifier.show()
         assertNull(manager.getNotificationChannel("reminders_wake"))
-        assertTrue(posted().channelId == "reminders")
+        assertEquals("reminders", posted().channelId)
     }
 }

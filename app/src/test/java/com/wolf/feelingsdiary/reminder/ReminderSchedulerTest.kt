@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -33,6 +34,7 @@ import org.robolectric.shadows.ShadowAlarmManager
 import java.io.File
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.TimeZone
@@ -81,6 +83,15 @@ class ReminderSchedulerTest {
         shadowOf(alarms.single().operation)
             .savedIntent
             .getLongExtra(ReminderScheduler.EXTRA_TARGET_EPOCH_MILLIS, -1)
+
+    /** Whether the registered alarm stands for the wake-up reminder; a missing extra fails the test. */
+    private fun alarmIsWake(): Boolean {
+        val intent = shadowOf(alarms.single().operation).savedIntent
+        assertTrue(intent.hasExtra(ReminderScheduler.EXTRA_WAKE))
+        return intent.getBooleanExtra(ReminderScheduler.EXTRA_WAKE, false)
+    }
+
+    private fun ms(t: ZonedDateTime) = t.toInstant().toEpochMilli()
 
     private fun wakeMs(
         target: ZonedDateTime,
@@ -261,7 +272,7 @@ class ReminderSchedulerTest {
 
             // The stage arrives (at 08:30, the fixed clock): only replans for the same slot.
             scheduler.onAlarm(target.toInstant().toEpochMilli())
-            verify(exactly = 0) { notifier.show(any()) }
+            verify(exactly = 0) { notifier.show(any(), any()) }
             assertTrue(notifications.isEmpty())
             assertEquals(target.toInstant().toEpochMilli(), alarmTarget())
             assertEquals(wakeMs(target, now), alarms.single().triggerAtMs)
@@ -369,5 +380,81 @@ class ReminderSchedulerTest {
             scheduler.reschedule()
             assertEquals(1, alarms.size)
             assertEquals(at(16).toInstant().toEpochMilli(), alarmTarget())
+        }
+
+    @Test
+    fun wakeAlarmCarriesWakeExtra() =
+        runTest {
+            setUp(Clock.fixed(at(6).toInstant(), zone))
+            scheduler.reschedule()
+            assertEquals(ms(at(7)), alarmTarget())
+            assertTrue(alarmIsWake())
+        }
+
+    /** FLAG_UPDATE_CURRENT keeps old extras unless overwritten: a slot replacing the wake-up must clear the flag. */
+    @Test
+    fun replacedAlarmClearsTheWakeFlag() =
+        runTest {
+            setUp(Clock.fixed(at(6).toInstant(), zone))
+            fixedSlots()
+            scheduler.reschedule()
+            assertTrue(alarmIsWake())
+            repo.update { it.copy(reminders = it.reminders.copy(wakeEnabled = false)) }
+            scheduler.reschedule()
+            assertEquals(ms(at(10)), alarmTarget())
+            assertFalse(alarmIsWake())
+        }
+
+    /** The wake-up reminder is the exception to the quiet hours (22–08): a late one still shows, silently. */
+    @Test
+    fun lateWakeAlarmInQuietHoursStillShowsSilently() =
+        runTest {
+            val late = at(7, 50)
+            setUp(Clock.fixed(late.toInstant(), zone))
+            grantNotifications()
+            scheduler.onAlarm(ms(at(7)), wake = true)
+            assertEquals(1, notifications.size)
+            assertEquals(ReminderNotifier.WAKE_CHANNEL_ID, notifications.single().channelId)
+            val expected = ReminderPlanner.nextReminder(ReminderSettings(), late, repo.reminderSalt())!!
+            assertFalse(expected.wake)
+            assertEquals(ms(expected.time), alarmTarget())
+            assertFalse(alarmIsWake())
+        }
+
+    @Test
+    fun wakeOnSlotMinuteShowsOneSilentNotification() =
+        runTest {
+            setUp(Clock.fixed(at(10).toInstant(), zone))
+            grantNotifications()
+            fixedSlots()
+            repo.update { it.copy(reminders = it.reminders.copy(wakeTime = LocalTime.of(10, 0))) }
+            scheduler.onAlarm(ms(at(10)), wake = true)
+            assertEquals(1, notifications.size)
+            assertEquals(ReminderNotifier.WAKE_CHANNEL_ID, notifications.single().channelId)
+            assertEquals(ms(at(13)), alarmTarget())
+            assertFalse(alarmIsWake())
+        }
+
+    @Test
+    fun wakeIgnoresAlarmSoundSetting() =
+        runTest {
+            setUp(Clock.fixed(at(7).toInstant(), zone))
+            grantNotifications()
+            repo.update { it.copy(reminders = it.reminders.copy(alarmSound = true)) }
+            scheduler.onAlarm(ms(at(7)), wake = true)
+            assertEquals(1, notifications.size)
+            assertEquals(ReminderNotifier.WAKE_CHANNEL_ID, notifications.single().channelId)
+        }
+
+    /** A wake alarm arriving early is a stage like any other: nothing shows, the wake-up stays planned. */
+    @Test
+    fun wakeStageShowsNothingAndKeepsTheWakeFlag() =
+        runTest {
+            setUp(Clock.fixed(at(6).toInstant(), zone))
+            grantNotifications()
+            scheduler.onAlarm(ms(at(7)), wake = true)
+            assertTrue(notifications.isEmpty())
+            assertEquals(ms(at(7)), alarmTarget())
+            assertTrue(alarmIsWake())
         }
 }

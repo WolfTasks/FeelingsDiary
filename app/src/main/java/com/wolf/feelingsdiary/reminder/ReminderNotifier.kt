@@ -18,7 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** The one reminder notification; a tap opens a new entry. [show] picks the default or the alarm-tone channel. */
+/** The one reminder notification; a tap opens a new entry. [show] picks the default, the alarm-tone or the silent wake-up channel. */
 @Singleton
 class ReminderNotifier
     @Inject
