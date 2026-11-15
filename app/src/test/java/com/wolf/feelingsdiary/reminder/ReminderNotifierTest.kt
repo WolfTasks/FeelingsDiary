@@ -79,6 +79,9 @@ class ReminderNotifierTest {
         assertEquals(0, n.defaults and (Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE))
         assertNull(n.sound)
         assertNull(n.vibrate)
+        // setSilent(true) would group the notification as "silent" and suppress the heads-up popup.
+        assertNull(n.group)
+        assertEquals(Notification.GROUP_ALERT_ALL, n.groupAlertBehavior)
     }
 
     @Test

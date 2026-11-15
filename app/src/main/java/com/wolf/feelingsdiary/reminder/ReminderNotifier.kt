@@ -27,7 +27,10 @@ class ReminderNotifier
     ) {
         private val manager get() = ctx.getSystemService(NotificationManager::class.java)
 
-        /** [silent] (heads-up popup without sound or vibration) takes precedence over [alarmSound]. */
+        /**
+         * [silent] (heads-up popup without sound or vibration) takes precedence over [alarmSound]. Silence comes
+         * from the channel alone: setSilent(true) would group the notification and suppress the heads-up popup.
+         */
         fun show(
             alarmSound: Boolean = false,
             silent: Boolean = false,
@@ -55,7 +58,6 @@ class ReminderNotifier
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
-                    .setSilent(silent)
                     .build()
             manager.notify(NOTIFICATION_ID, notification)
         }

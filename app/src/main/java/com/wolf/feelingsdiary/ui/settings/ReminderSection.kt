@@ -77,7 +77,7 @@ private sealed interface Edit {
 }
 
 /**
- * Reminders section: on/off, count, mode, the active windows or fixed times, the quiet hours and the accuracy.
+ * Reminders section: on/off, alarm-sound switch, day-start switch with wake-up time, count, mode, the active windows or fixed times, the quiet hours and the accuracy.
  * Every change goes out as a transform of the current settings, so it never overwrites a concurrent change.
  */
 @OptIn(ExperimentalMaterial3Api::class)

@@ -193,6 +193,19 @@ class ReminderSchedulerTest {
             assertEquals(wakeMs(expected, late), alarms.single().triggerAtMs)
         }
 
+    /** A stale wake flag (the wake-up reminder was turned off meanwhile) behaves like a normal slot: quiet hours apply. */
+    @Test
+    fun staleWakeFlagAfterDisablingFollowsQuietHours() =
+        runTest {
+            val early = ZonedDateTime.of(2026, 11, 8, 7, 0, 0, 0, zone)
+            setUp(Clock.fixed(early.toInstant(), zone))
+            grantNotifications()
+            repo.update { it.copy(reminders = it.reminders.copy(wakeEnabled = false)) }
+            scheduler.onAlarm(ms(early), wake = true)
+            assertTrue(notifications.isEmpty())
+            assertEquals(1, alarms.size)
+        }
+
     /** Not even briefly: a reminder that was turned off is never posted. */
     @Test
     fun alarmWhileDisabledShowsNothing() =

@@ -16,8 +16,10 @@ private const val DAY_MINUTES = 1440
 private const val SPAN_HOURS_SHORT = 6
 private const val SPAN_HOURS_MEDIUM = 12
 private const val SPAN_HOURS_LONG = 18
+private const val SPAN_HOURS_FULL = 24
 private const val GRID_MEDIUM = 2
 private const val GRID_LONG = 3
+private const val GRID_LATE = 4
 private const val GRID_FULL = 6
 
 /** Hour grid for the axis of a day that spans [spanHours] hours. */
@@ -26,6 +28,7 @@ private fun dayGridHours(spanHours: Int) =
         spanHours <= SPAN_HOURS_SHORT -> 1
         spanHours <= SPAN_HOURS_MEDIUM -> GRID_MEDIUM
         spanHours <= SPAN_HOURS_LONG -> GRID_LONG
+        spanHours < SPAN_HOURS_FULL -> GRID_LATE
         else -> GRID_FULL
     }
 

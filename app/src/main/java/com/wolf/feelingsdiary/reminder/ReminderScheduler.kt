@@ -86,11 +86,12 @@ class ReminderScheduler
             try {
                 val current = settings.settings.first()
                 val reminders = current.reminders
+                val isWake = wake && reminders.wakeEnabled
                 val remind =
                     reminders.enabled &&
                         current.onboardingDone &&
-                        (wake || !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders))
-                if (remind) notifier.show(reminders.alarmSound, silent = wake)
+                        (isWake || !ReminderPlanner.isQuiet(LocalTime.now(clock), reminders))
+                if (remind) notifier.show(reminders.alarmSound, silent = isWake)
             } finally {
                 // Never the same slot twice, should the reminder have come within the tolerance before it:
                 // remembered, so that any other caller of reschedule() skips the slot too.
