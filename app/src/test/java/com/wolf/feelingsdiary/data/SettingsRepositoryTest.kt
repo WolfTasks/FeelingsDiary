@@ -217,4 +217,49 @@ class SettingsRepositoryTest {
                     .reminders.maxDelayMinutes,
             )
         }
+
+    @Test
+    fun wakeDefaultsWhenAbsent() =
+        runTest(UnconfinedTestDispatcher()) {
+            val r = SettingsRepository(store()).settings.first().reminders
+            assertEquals(true, r.wakeEnabled)
+            assertEquals(LocalTime.of(7, 0), r.wakeTime)
+        }
+
+    @Test
+    fun wakeRoundTrips() =
+        runTest(UnconfinedTestDispatcher()) {
+            val repo = SettingsRepository(store())
+            repo.update { it.copy(reminders = it.reminders.copy(wakeEnabled = false, wakeTime = LocalTime.of(6, 15))) }
+            val r = repo.settings.first().reminders
+            assertEquals(false, r.wakeEnabled)
+            assertEquals(LocalTime.of(6, 15), r.wakeTime)
+        }
+
+    @Test
+    fun wrongTypedWakeFallsBack() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit {
+                it[stringPreferencesKey("reminder_wake_time")] = "x"
+                it[stringPreferencesKey("reminder_wake_enabled")] = "no"
+            }
+            val r = SettingsRepository(store).settings.first().reminders
+            assertEquals(LocalTime.of(7, 0), r.wakeTime)
+            assertEquals(true, r.wakeEnabled)
+        }
+
+    @Test
+    fun outOfRangeWakeTimeFallsBack() =
+        runTest(UnconfinedTestDispatcher()) {
+            val store = store()
+            store.edit { it[intPreferencesKey("reminder_wake_time")] = 1440 }
+            assertEquals(
+                LocalTime.of(7, 0),
+                SettingsRepository(store)
+                    .settings
+                    .first()
+                    .reminders.wakeTime,
+            )
+        }
 }

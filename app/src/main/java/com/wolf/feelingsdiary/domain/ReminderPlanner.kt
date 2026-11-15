@@ -7,6 +7,12 @@ import java.time.LocalTime
 import java.time.ZonedDateTime
 import kotlin.random.Random
 
+/** A reminder planned for [time]; [wake] marks the wake-up reminder. */
+data class PlannedReminder(
+    val time: ZonedDateTime,
+    val wake: Boolean,
+)
+
 object ReminderPlanner {
     private const val SEARCH_DAYS = 2L
 
@@ -50,16 +56,28 @@ object ReminderPlanner {
         s: ReminderSettings,
         after: ZonedDateTime,
         salt: Long,
-    ): ZonedDateTime? {
+    ): ZonedDateTime? = nextReminder(s, after, salt)?.time
+
+    /** The next reminder after [after], marked as the wake-up one when it is at the wake time (also if a slot is there too). */
+    fun nextReminder(
+        s: ReminderSettings,
+        after: ZonedDateTime,
+        salt: Long,
+    ): PlannedReminder? {
         if (!s.enabled) return null
         val zone = after.zone
+        val wakeTime = s.wakeTime.withSecond(0).withNano(0)
         for (offset in 0..SEARCH_DAYS) {
             val date = after.toLocalDate().plusDays(offset)
             // A slot in a spring-forward gap moves behind later slots, so all of the day are compared.
-            slotsFor(date, s, salt)
-                .map { ZonedDateTime.of(date, it, zone) }
-                .filter { it.isAfter(after) }
-                .minOrNull()
+            val slots = slotsFor(date, s, salt).map { PlannedReminder(ZonedDateTime.of(date, it, zone), wake = false) }
+            // The wake time is not filtered by quiet hours; on a slot's minute it replaces the slot.
+            val wake =
+                if (s.wakeEnabled) listOf(PlannedReminder(ZonedDateTime.of(date, wakeTime, zone), wake = true)) else emptyList()
+            (slots + wake)
+                .filter { it.time.isAfter(after) }
+                .sortedWith(compareBy<PlannedReminder> { it.time }.thenByDescending { it.wake })
+                .firstOrNull()
                 ?.let { return it }
         }
         return null

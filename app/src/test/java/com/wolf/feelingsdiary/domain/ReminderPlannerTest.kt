@@ -137,7 +137,7 @@ class ReminderPlannerTest {
 
     @Test
     fun nextRollsOverToTomorrow() {
-        val s = ReminderSettings(count = 4, mode = ReminderMode.FIXED)
+        val s = ReminderSettings(count = 4, mode = ReminderMode.FIXED, wakeEnabled = false)
         val after = ZonedDateTime.of(day, t(21), berlin)
         assertEquals(ZonedDateTime.of(day.plusDays(1), t(10), berlin), ReminderPlanner.next(s, after, 1L))
     }
@@ -155,7 +155,14 @@ class ReminderPlannerTest {
     ) = generateSequence(ReminderPlanner.next(s, start, 1L)) { ReminderPlanner.next(s, it, 1L) }.take(n).toList()
 
     private fun fixedNoQuiet(vararg times: LocalTime) =
-        ReminderSettings(count = 4, mode = ReminderMode.FIXED, fixedTimes = times.toList(), quietStart = t(0), quietEnd = t(0))
+        ReminderSettings(
+            count = 4,
+            mode = ReminderMode.FIXED,
+            fixedTimes = times.toList(),
+            quietStart = t(0),
+            quietEnd = t(0),
+            wakeEnabled = false,
+        )
 
     /** 29.03.2026, 02:00 CET jumps to 03:00 CEST: a slot in the gap moves to 03:59 and must not hide 03:10. */
     @Test
@@ -189,7 +196,7 @@ class ReminderPlannerTest {
 
     @Test
     fun allWindowsInQuietGivesNull() {
-        val s = ReminderSettings(quietStart = t(0, 1), quietEnd = t(0, 0))
+        val s = ReminderSettings(quietStart = t(0, 1), quietEnd = t(0, 0), wakeEnabled = false)
         assertNull(ReminderPlanner.next(s, ZonedDateTime.of(day, t(8), berlin), 1L))
     }
 
@@ -337,5 +344,39 @@ class ReminderPlannerTest {
             assertFalse(run.delivered.isAfter(target + minutes(maxDelay.toLong())))
             assertTrue(run.stages <= 6)
         }
+    }
+
+    @Test
+    fun wakeTimeIsPlannedEvenInQuietHours() {
+        val s = ReminderSettings(mode = ReminderMode.FIXED)
+        assertEquals(
+            PlannedReminder(ZonedDateTime.of(day, t(7), berlin), wake = true),
+            ReminderPlanner.nextReminder(s, ZonedDateTime.of(day, t(6), berlin), 1L),
+        )
+        assertEquals(
+            PlannedReminder(ZonedDateTime.of(day, t(10), berlin), wake = false),
+            ReminderPlanner.nextReminder(s, ZonedDateTime.of(day, t(7), berlin), 1L),
+        )
+    }
+
+    @Test
+    fun wakeOnSlotMinuteIsOneWakeReminder() {
+        val s = ReminderSettings(mode = ReminderMode.FIXED, wakeTime = t(10))
+        assertEquals(
+            PlannedReminder(ZonedDateTime.of(day, t(10), berlin), wake = true),
+            ReminderPlanner.nextReminder(s, ZonedDateTime.of(day, t(9), berlin), 1L),
+        )
+        assertEquals(t(13), ReminderPlanner.next(s, ZonedDateTime.of(day, t(10), berlin), 1L)!!.toLocalTime())
+    }
+
+    @Test
+    fun wakeDisabledPlansLikeBefore() {
+        val s = ReminderSettings(mode = ReminderMode.FIXED, wakeEnabled = false)
+        assertEquals(ZonedDateTime.of(day, t(10), berlin), ReminderPlanner.next(s, ZonedDateTime.of(day, t(6), berlin), 1L))
+    }
+
+    @Test
+    fun masterSwitchOffPlansNoWake() {
+        assertNull(ReminderPlanner.nextReminder(ReminderSettings(enabled = false), ZonedDateTime.of(day, t(6), berlin), 1L))
     }
 }
