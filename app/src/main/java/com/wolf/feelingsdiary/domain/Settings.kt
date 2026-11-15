@@ -28,6 +28,9 @@ data class ReminderSettings(
     val alarmSound: Boolean = false,
     /** How much later than planned a reminder may arrive at most; one of [MAX_DELAY_OPTIONS]. */
     val maxDelayMinutes: Int = 15,
+    /** A reminder at [wakeTime] for the start of the day; independent of slots, mode, count and quiet hours. */
+    val wakeEnabled: Boolean = true,
+    val wakeTime: LocalTime = LocalTime.of(7, 0),
 ) {
     init {
         require(count in 1..4) { "count must be 1..4" }

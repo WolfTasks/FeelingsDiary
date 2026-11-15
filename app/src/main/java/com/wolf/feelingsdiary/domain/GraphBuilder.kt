@@ -25,6 +25,8 @@ data class GraphData(
     val aggregation: Aggregation,
     val peopleScaleMax: Int,
     val feelingIds: Set<Long>,
+    /** Minute of the local day where a day view's x-axis starts; points' x is relative to [dayStartMinute, 1440). */
+    val dayStartMinute: Int = 0,
 )
 
 object GraphBuilder {
@@ -60,9 +62,10 @@ object GraphBuilder {
                 .filter { (_, local) -> local.toLocalDate() in period.start..period.endInclusive }
                 .sortedWith(compareBy({ it.first.time.epochMinute }, { it.first.id }))
         val aggregation = aggregationFor(period)
+        val dayStartMinute = dayStartMinute(inPeriod, period)
         val points =
             if (aggregation == Aggregation.NONE) {
-                unaggregatedPoints(inPeriod, period)
+                unaggregatedPoints(inPeriod, period, dayStartMinute)
             } else {
                 inPeriod
                     .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }
@@ -76,8 +79,15 @@ object GraphBuilder {
             aggregation = aggregation,
             peopleScaleMax = PEOPLE_SCALES.firstOrNull { it >= maxPeople } ?: PEOPLE_SCALES.last(),
             feelingIds = inPeriod.flatMap { it.first.feelingIds }.toSet(),
+            dayStartMinute = dayStartMinute,
         )
     }
+
+    /** The day view starts at the full hour of its first entry (by real time); other periods at 0. */
+    private fun dayStartMinute(
+        inPeriod: List<Pair<Entry, LocalDateTime>>,
+        period: GraphPeriod,
+    ): Int = if (period.kind == PeriodKind.DAY) (inPeriod.firstOrNull()?.second?.hour ?: 0) * 60 else 0
 
     /**
      * Positions by real elapsed time (epoch minutes), so DST changes and zone changes never reorder entries.
@@ -86,16 +96,17 @@ object GraphBuilder {
     private fun unaggregatedPoints(
         inPeriod: List<Pair<Entry, LocalDateTime>>,
         period: GraphPeriod,
+        dayStartMinute: Int,
     ): List<GraphPoint> {
         if (inPeriod.isEmpty()) return emptyList()
-        val periodMinutes = period.days * MINUTES_PER_DAY
+        val periodMinutes = period.days * MINUTES_PER_DAY - dayStartMinute
         val startEpoch =
             midnightEpochMinute(
                 period.start,
                 inPeriod
                     .first()
                     .first.time.utcOffsetMinutes,
-            )
+            ) + dayStartMinute
         val endEpoch =
             midnightEpochMinute(
                 period.endInclusive.plusDays(1),
@@ -111,7 +122,7 @@ object GraphBuilder {
                 if (useRealTime) {
                     (entry.time.epochMinute - startEpoch) / realSpan.toFloat()
                 } else {
-                    ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local) / periodMinutes
+                    (ChronoUnit.MINUTES.between(period.start.atStartOfDay(), local) - dayStartMinute) / periodMinutes
                 }
             // Clamp to the period and keep the sequence non-decreasing in (epochMinute, id) order.
             val x = maxOf(raw.coerceIn(0f, 1f), previousX)

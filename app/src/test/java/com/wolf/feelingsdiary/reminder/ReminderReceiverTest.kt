@@ -14,6 +14,7 @@ import com.wolf.feelingsdiary.domain.ReminderSettings
 import com.wolf.feelingsdiary.testutil.resetSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -77,6 +78,16 @@ class ReminderReceiverTest {
         assertNull(ReminderReceiver.targetOf(intent))
         intent.putExtra(ReminderScheduler.EXTRA_TARGET_EPOCH_MILLIS, 1_234L)
         assertEquals(1_234L, ReminderReceiver.targetOf(intent))
+    }
+
+    @Test
+    fun wakeIsReadFromTheIntent() {
+        val intent = Intent(app, ReminderReceiver::class.java)
+        assertFalse(ReminderReceiver.wakeOf(intent))
+        intent.putExtra(ReminderScheduler.EXTRA_WAKE, true)
+        assertTrue(ReminderReceiver.wakeOf(intent))
+        intent.putExtra(ReminderScheduler.EXTRA_WAKE, false)
+        assertFalse(ReminderReceiver.wakeOf(intent))
     }
 
     @Test

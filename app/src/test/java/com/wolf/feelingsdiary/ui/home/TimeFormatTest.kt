@@ -87,6 +87,53 @@ class TimeFormatTest {
     }
 
     @Test
+    fun dayLabelsFollowStartHour() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        val labels = xAxisLabels(day, Locale.GERMANY, dayStartMinute = 8 * 60)
+        assertEquals(listOf("09:00", "12:00", "15:00", "18:00", "21:00"), labels.map { it.text })
+        assertEquals(1f / 16, labels.first().x, 1e-4f)
+    }
+
+    @Test
+    fun earlyStartUsesFourHourGrid() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        assertEquals(
+            listOf("04:00", "08:00", "12:00", "16:00", "20:00"),
+            xAxisLabels(day, Locale.GERMANY, 2 * 60).map { it.text },
+        )
+    }
+
+    @Test
+    fun elevenHourSpanUsesTwoHourGrid() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        assertEquals(
+            listOf("14:00", "16:00", "18:00", "20:00", "22:00"),
+            xAxisLabels(day, Locale.GERMANY, 13 * 60).map { it.text },
+        )
+    }
+
+    @Test
+    fun sixHourSpanUsesHourlyGrid() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        assertEquals(
+            listOf("18:00", "19:00", "20:00", "21:00", "22:00", "23:00"),
+            xAxisLabels(day, Locale.GERMANY, 18 * 60).map { it.text },
+        )
+    }
+
+    @Test
+    fun fullDayKeepsSixHourGrid() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        assertEquals(listOf("00:00", "06:00", "12:00", "18:00"), xAxisLabels(day, Locale.GERMANY, 0).map { it.text })
+    }
+
+    @Test
+    fun lateDayHasOneLabel() {
+        val day = GraphPeriod(PeriodKind.DAY, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 7))
+        assertEquals(listOf("23:00"), xAxisLabels(day, Locale.GERMANY, 23 * 60).map { it.text })
+    }
+
+    @Test
     fun rangeAxisIsLocalized() {
         val range = GraphPeriod.range(LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 21))
         assertEquals("7.11.", xAxisLabels(range, Locale.GERMANY).first().text)

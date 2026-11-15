@@ -8,6 +8,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -63,5 +64,30 @@ class ReminderNotifierTest {
         assertEquals(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), channel.sound)
         assertEquals(AudioAttributes.USAGE_ALARM, channel.audioAttributes.usage)
         assertEquals(AudioAttributes.CONTENT_TYPE_SONIFICATION, channel.audioAttributes.contentType)
+    }
+
+    @Test
+    fun silentUsesWakeChannelWithoutSoundOrVibration() {
+        notifier.show(alarmSound = true, silent = true)
+        assertEquals("reminders_wake", posted().channelId)
+        val channel = manager.getNotificationChannel("reminders_wake")
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
+        assertNull(channel.sound)
+        assertFalse(channel.shouldVibrate())
+        assertNull(manager.getNotificationChannel("reminders_alarm"))
+        val n = posted()
+        assertEquals(0, n.defaults and (Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE))
+        assertNull(n.sound)
+        assertNull(n.vibrate)
+        // setSilent(true) would group the notification as "silent" and suppress the heads-up popup.
+        assertNull(n.group)
+        assertEquals(Notification.GROUP_ALERT_ALL, n.groupAlertBehavior)
+    }
+
+    @Test
+    fun nonSilentDoesNotCreateWakeChannel() {
+        notifier.show()
+        assertNull(manager.getNotificationChannel("reminders_wake"))
+        assertEquals("reminders", posted().channelId)
     }
 }

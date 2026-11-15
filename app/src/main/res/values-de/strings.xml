@@ -87,6 +87,7 @@
     </plurals>
     <string name="reminder_channel_name">Erinnerungen</string>
     <string name="reminder_channel_alarm_name">Erinnerungen mit Alarmton</string>
+    <string name="reminder_channel_wake_name">Tagesbeginn (lautlos)</string>
     <string name="reminder_text">Tippen, um es festzuhalten</string>
     <string name="settings_title">Einstellungen</string>
     <string name="settings_open_cd">Einstellungen</string>
@@ -95,6 +96,9 @@
     <string name="reminder_switch">Erinnerungen</string>
     <string name="reminder_alarm_sound">Mit Alarmton</string>
     <string name="reminder_alarm_sound_hint">Klingelt mit dem Wecker-Ton statt mit dem Benachrichtigungston</string>
+    <string name="reminder_wake">Tagesbeginn</string>
+    <string name="reminder_wake_hint">Lautloses Popup zur Aufwachzeit, auch in der Nachtruhe</string>
+    <string name="reminder_wake_time">Aufwachzeit</string>
     <string name="reminder_accuracy">Genauigkeit</string>
     <string name="reminder_accuracy_hint">Höchstens so viel später als geplant</string>
     <string name="reminder_accuracy_5">Bis 5 Min. später</string>

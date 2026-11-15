@@ -151,7 +151,7 @@ fun HomeScreen(
                     HistoryGraph(
                         data = state.graph,
                         colorOf = colorOf,
-                        xLabels = xAxisLabels(state.period, locale),
+                        xLabels = xAxisLabels(state.period, locale, state.graph.dayStartMinute),
                         onPointTap = { point -> point.entryId?.let(::open) ?: actions.onPoint(point) },
                     )
                 }

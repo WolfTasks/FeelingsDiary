@@ -21,7 +21,8 @@ class ReminderReceiver : BroadcastReceiver() {
         intent: Intent,
     ) {
         val target = targetOf(intent)
-        runAsync(scope) { scheduler.onAlarm(target) }
+        val wake = wakeOf(intent)
+        runAsync(scope) { scheduler.onAlarm(target, wake) }
     }
 
     companion object {
@@ -32,5 +33,8 @@ class ReminderReceiver : BroadcastReceiver() {
             } else {
                 null
             }
+
+        /** Whether the alarm stands for the wake-up reminder; false for an alarm without the flag. */
+        fun wakeOf(intent: Intent): Boolean = intent.getBooleanExtra(ReminderScheduler.EXTRA_WAKE, false)
     }
 }

@@ -208,6 +208,39 @@ class ReminderSectionTest {
     }
 
     @Test
+    @Config(qualifiers = "en-rUS")
+    fun wakeSwitchTogglesSetting() {
+        show(ReminderSettings())
+        rule.onNodeWithText(str(R.string.reminder_wake)).performClick()
+        assertEquals(false, changes.single()(ReminderSettings()).wakeEnabled)
+        rule.onNodeWithText(str(R.string.reminder_wake_hint)).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-w360dp-h1400dp")
+    fun wakeTimeRowShowsTimeAndOpensPicker() {
+        show(ReminderSettings())
+        rule.onNodeWithText(str(R.string.reminder_wake_time)).assertExists()
+        rule.onNodeWithText(formatTime(LocalTime.of(7, 0), Locale.US)).assertExists()
+        rule.onNodeWithText(str(R.string.reminder_wake_time)).performClick()
+        rule.onNodeWithText(str(R.string.dialog_ok)).performClick()
+        assertEquals(LocalTime.of(7, 0), changes.single()(ReminderSettings(wakeTime = LocalTime.of(5, 0))).wakeTime)
+    }
+
+    @Test
+    fun wakeRowsDisabledWhenRemindersOff() {
+        show(ReminderSettings(enabled = false))
+        rule.onNodeWithText(str(R.string.reminder_wake)).assertIsNotEnabled()
+        rule.onNodeWithText(str(R.string.reminder_wake_time)).assertIsNotEnabled()
+    }
+
+    @Test
+    fun wakeTimeDisabledWhenWakeOff() {
+        show(ReminderSettings(wakeEnabled = false))
+        rule.onNodeWithText(str(R.string.reminder_wake_time)).assertIsNotEnabled()
+    }
+
+    @Test
     fun switchOffDisablesRows() {
         show(ReminderSettings(enabled = false, count = 2))
         rule.onNodeWithText(str(R.string.reminder_window_morning)).assertIsNotEnabled()
@@ -224,7 +257,9 @@ class ReminderSectionTest {
         assertEquals(false, changes.single()(ReminderSettings()).enabled)
     }
 
+    // Tall screen: the new wake rows push the quiet hours row out of a short, non-scrollable section.
     @Test
+    @Config(qualifiers = "w360dp-h1400dp")
     fun quietHoursMayWrapMidnight() {
         show(ReminderSettings())
         rule.onNodeWithText(str(R.string.reminder_quiet_hours)).performClick()

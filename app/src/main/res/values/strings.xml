@@ -87,6 +87,7 @@
     </plurals>
     <string name="reminder_channel_name">Reminders</string>
     <string name="reminder_channel_alarm_name">Reminders with alarm sound</string>
+    <string name="reminder_channel_wake_name">Day start (silent)</string>
     <string name="reminder_text">Tap to note it down</string>
     <string name="settings_title">Settings</string>
     <string name="settings_open_cd">Settings</string>
@@ -95,6 +96,9 @@
     <string name="reminder_switch">Reminders</string>
     <string name="reminder_alarm_sound">Alarm sound</string>
     <string name="reminder_alarm_sound_hint">Rings with the alarm tone instead of the notification sound</string>
+    <string name="reminder_wake">Day start</string>
+    <string name="reminder_wake_hint">Silent popup at wake-up time, also during quiet hours</string>
+    <string name="reminder_wake_time">Wake-up time</string>
     <string name="reminder_accuracy">Accuracy</string>
     <string name="reminder_accuracy_hint">At most this much later than planned</string>
     <string name="reminder_accuracy_5">Up to 5 min late</string>
