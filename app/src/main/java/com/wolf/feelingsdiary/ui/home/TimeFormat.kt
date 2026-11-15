@@ -12,7 +12,23 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-private val DAY_LABEL_HOURS = listOf(0, 6, 12, 18)
+private const val DAY_MINUTES = 1440
+private const val SPAN_HOURS_SHORT = 6
+private const val SPAN_HOURS_MEDIUM = 12
+private const val SPAN_HOURS_LONG = 18
+private const val GRID_MEDIUM = 2
+private const val GRID_LONG = 3
+private const val GRID_FULL = 6
+
+/** Hour grid for the axis of a day that spans [spanHours] hours. */
+private fun dayGridHours(spanHours: Int) =
+    when {
+        spanHours <= SPAN_HOURS_SHORT -> 1
+        spanHours <= SPAN_HOURS_MEDIUM -> GRID_MEDIUM
+        spanHours <= SPAN_HOURS_LONG -> GRID_LONG
+        else -> GRID_FULL
+    }
+
 private val MONTH_LABEL_DAYS = listOf(1, 8, 15, 22, 29)
 private const val RANGE_LABEL_COUNT = 5
 
@@ -48,6 +64,7 @@ fun formatPeriod(
 fun xAxisLabels(
     p: GraphPeriod,
     locale: Locale,
+    dayStartMinute: Int = 0,
 ): List<AxisLabel> {
     val days = p.days.toFloat()
 
@@ -55,7 +72,11 @@ fun xAxisLabels(
     return when (p.kind) {
         PeriodKind.DAY -> {
             val f = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
-            DAY_LABEL_HOURS.map { AxisLabel(it / 24f, LocalTime.of(it, 0).format(f)) }
+            val grid = dayGridHours((DAY_MINUTES - dayStartMinute) / MINUTES_PER_HOUR)
+            val span = (DAY_MINUTES - dayStartMinute).toFloat()
+            (0 until 24)
+                .filter { it * MINUTES_PER_HOUR >= dayStartMinute && it % grid == 0 }
+                .map { AxisLabel((it * MINUTES_PER_HOUR - dayStartMinute) / span, LocalTime.of(it, 0).format(f)) }
         }
 
         PeriodKind.WEEK -> {
