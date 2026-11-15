@@ -240,7 +240,7 @@ class GraphBuilderTest {
         val points = xs(listOf(second, first), day)
         assertEquals(listOf(1L, 2L), points.map { it.entryId })
         assertTrue(points[1].x > points[0].x)
-        assertEquals(20 / 1500f, points[1].x - points[0].x, 1e-5f)
+        assertEquals(20 / 1380f, points[1].x - points[0].x, 1e-5f)
         assertTrue(points.all { it.x in 0f..1f })
     }
 
@@ -276,6 +276,34 @@ class GraphBuilderTest {
                 ChronoUnit.MINUTES.between(week.start.atStartOfDay(), it.time.localDateTime()) / (7 * 1440f)
             }
         assertEquals(expected, points.map { it.x })
+    }
+
+    private val dayNov4 = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 11, 4), monday)
+
+    @Test
+    fun dayStartsAtFullHourOfFirstEntry() {
+        val data =
+            GraphBuilder.build(
+                listOf(entry(1, "2026-11-04T08:30", 60), entry(2, "2026-11-04T16:00", 60)),
+                dayNov4,
+                monday,
+            )
+        assertEquals(8 * 60, data.dayStartMinute)
+        assertEquals(30f / (16 * 60), data.points[0].x, 1e-4f)
+        assertEquals((8 * 60f) / (16 * 60), data.points[1].x, 1e-4f)
+    }
+
+    @Test
+    fun lateFirstEntryGivesOneHourDay() {
+        val data = GraphBuilder.build(listOf(entry(1, "2026-11-04T23:40", 60)), dayNov4, monday)
+        assertEquals(23 * 60, data.dayStartMinute)
+        assertEquals(40f / 60, data.points.single().x, 1e-4f)
+    }
+
+    @Test
+    fun emptyDayAndOtherPeriodsStartAtMidnight() {
+        assertEquals(0, GraphBuilder.build(emptyList(), dayNov4, monday).dayStartMinute)
+        assertEquals(0, GraphBuilder.build(listOf(entry(1, "2026-11-04T08:30", 60)), week, monday).dayStartMinute)
     }
 
     @Test
