@@ -69,6 +69,8 @@ private sealed interface Edit {
 
     data object QuietStart : Edit
 
+    data object Wake : Edit
+
     data class QuietEnd(
         val start: LocalTime,
     ) : Edit
@@ -113,6 +115,18 @@ fun ReminderSection(
             enabled = s.enabled,
             hint = stringResource(R.string.reminder_alarm_sound_hint),
         ) { on -> onChange { it.copy(alarmSound = on) } }
+        SwitchRow(
+            stringResource(R.string.reminder_wake),
+            s.wakeEnabled,
+            enabled = s.enabled,
+            hint = stringResource(R.string.reminder_wake_hint),
+        ) { on -> onChange { it.copy(wakeEnabled = on) } }
+        TimeRow(
+            stringResource(R.string.reminder_wake_time),
+            fmt(s.wakeTime),
+            quietHint = false,
+            enabled = s.enabled && s.wakeEnabled,
+        ) { edit = Edit.Wake }
 
         ReminderCountRow(s.count, s.enabled) { perDay -> onChange { it.copy(count = perDay) } }
 
@@ -266,6 +280,18 @@ private fun EditDialog(
                     title = stringResource(R.string.reminder_pick_start, stringResource(R.string.reminder_quiet_hours)),
                     initial = s.quietStart,
                     onConfirm = { onStep(Edit.QuietEnd(it)) },
+                    onDismiss = close,
+                )
+            }
+
+            Edit.Wake -> {
+                TimeDialog(
+                    title = stringResource(R.string.reminder_wake_time),
+                    initial = s.wakeTime,
+                    onConfirm = { time ->
+                        onChange { it.copy(wakeTime = time) }
+                        close()
+                    },
                     onDismiss = close,
                 )
             }
