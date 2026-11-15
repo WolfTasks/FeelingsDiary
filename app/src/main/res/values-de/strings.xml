@@ -87,6 +87,7 @@
     </plurals>
     <string name="reminder_channel_name">Erinnerungen</string>
     <string name="reminder_channel_alarm_name">Erinnerungen mit Alarmton</string>
+    <string name="reminder_channel_wake_name">Tagesbeginn (lautlos)</string>
     <string name="reminder_text">Tippen, um es festzuhalten</string>
     <string name="settings_title">Einstellungen</string>
     <string name="settings_open_cd">Einstellungen</string>

@@ -27,11 +27,20 @@ class ReminderNotifier
     ) {
         private val manager get() = ctx.getSystemService(NotificationManager::class.java)
 
-        fun show(alarmSound: Boolean = false) {
+        /** [silent] (heads-up popup without sound or vibration) takes precedence over [alarmSound]. */
+        fun show(
+            alarmSound: Boolean = false,
+            silent: Boolean = false,
+        ) {
             if (!canPostNotifications(ctx)) return
-            val channelId = if (alarmSound) ALARM_CHANNEL_ID else CHANNEL_ID
+            val (channelId, channel) =
+                when {
+                    silent -> WAKE_CHANNEL_ID to wakeChannel()
+                    alarmSound -> ALARM_CHANNEL_ID to alarmChannel()
+                    else -> CHANNEL_ID to defaultChannel()
+                }
             // Idempotent: re-creating an existing channel only updates its name.
-            manager.createNotificationChannel(if (alarmSound) alarmChannel() else defaultChannel())
+            manager.createNotificationChannel(channel)
             val open =
                 Intent(ctx, MainActivity::class.java)
                     .setAction(MainActivity.ACTION_NEW_ENTRY)
@@ -46,6 +55,7 @@ class ReminderNotifier
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
+                    .setSilent(silent)
                     .build()
             manager.notify(NOTIFICATION_ID, notification)
         }
@@ -67,11 +77,20 @@ class ReminderNotifier
                     setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM), attributes)
                 }
 
+        /** Heads-up popup without sound or vibration, so the day-start reminder never wakes anyone. */
+        private fun wakeChannel() =
+            NotificationChannel(WAKE_CHANNEL_ID, ctx.getString(R.string.reminder_channel_wake_name), NotificationManager.IMPORTANCE_HIGH)
+                .apply {
+                    setSound(null, null)
+                    enableVibration(false)
+                }
+
         fun cancel() = manager.cancel(NOTIFICATION_ID)
 
         companion object {
             const val CHANNEL_ID = "reminders"
             const val ALARM_CHANNEL_ID = "reminders_alarm"
+            const val WAKE_CHANNEL_ID = "reminders_wake"
             const val NOTIFICATION_ID = 1
             private const val REQUEST_OPEN = 1
             private const val PENDING_FLAGS = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
