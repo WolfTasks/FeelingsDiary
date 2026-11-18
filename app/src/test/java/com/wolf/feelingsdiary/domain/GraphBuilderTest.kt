@@ -37,8 +37,8 @@ class GraphBuilderTest {
     fun entryHeightWeightsLaterFeelingsLess() {
         val data = GraphBuilder.build(listOf(entry(1, "2026-11-03T08:00", 60, feelings = listOf(a to 2, b to -1))), week, monday)
         val point = data.points.single()
-        // (2 * 1 + -1 * 0.5) / 1.5
-        assertEquals(1f, point.valence, 1e-6f)
+        // 2 * 1 + -1 * 0.5
+        assertEquals(1.5f, point.valence, 1e-6f)
         assertEquals(a, point.mainFeelingId)
         assertEquals(listOf(b), point.otherFeelingIds)
         assertEquals(1L, point.entryId)
@@ -138,8 +138,22 @@ class GraphBuilderTest {
     fun weightedValenceHalvesEachFurtherFeeling() {
         assertEquals(-1f, GraphBuilder.weightedValence(listOf(-1)), 0f)
         assertEquals(0f, GraphBuilder.weightedValence(listOf(-1, 2)), 1e-6f)
-        // (2 + 2 * 0.5 - 1 * 0.25) / 1.75
-        assertEquals(11f / 7f, GraphBuilder.weightedValence(listOf(2, 2, -1)), 1e-6f)
+        // 2 + 2 * 0.5 - 1 * 0.25
+        assertEquals(2.75f, GraphBuilder.weightedValence(listOf(2, 2, -1)), 1e-6f)
+    }
+
+    @Test
+    fun weightedValenceAddsUpFurtherNegativeFeelings() {
+        assertEquals(-1.5f, GraphBuilder.weightedValence(listOf(-1, -1)), 1e-6f)
+        assertEquals(-1.75f, GraphBuilder.weightedValence(listOf(-1, -1, -1)), 1e-6f)
+        assertEquals(-3f, GraphBuilder.weightedValence(listOf(-2, -1, -2)), 1e-6f)
+    }
+
+    @Test
+    fun weightedValenceStaysWithinAxis() {
+        val v = GraphBuilder.weightedValence(List(10) { -2 })
+        assertTrue(v > -GraphBuilder.MAX_WEIGHTED_VALENCE)
+        assertEquals(-GraphBuilder.MAX_WEIGHTED_VALENCE, v, 0.01f)
     }
 
     @Test
@@ -148,11 +162,11 @@ class GraphBuilderTest {
         val entries =
             listOf(
                 entry(1, "2026-02-01T08:00", 60, people = 2, feelings = listOf(a to 2, 3L to 0, 4L to 0, 5L to 0, 6L to 0)),
-                entry(2, "2026-02-01T09:00", 60, people = 4, feelings = listOf(a to -2)),
+                entry(2, "2026-02-01T09:00", 60, people = 4, feelings = listOf(a to -2, 3L to -2)),
             )
         val point = GraphBuilder.build(entries, year, monday).points.single()
-        // entry 1: 2 / (1 + 1/2 + 1/4 + 1/8 + 1/16) = 32/31; mean with entry 2 (-2)
-        assertEquals((32f / 31f - 2f) / 2f, point.valence, 1e-6f)
+        // entry 1: 2 (neutral extras add nothing); entry 2: -2 - 2 * 0.5 = -3; mean of both
+        assertEquals(-0.5f, point.valence, 1e-6f)
         assertEquals(3f, point.people, 0f)
         assertEquals(a, point.mainFeelingId)
         assertEquals(3, point.otherFeelingIds.size)

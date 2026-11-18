@@ -34,21 +34,24 @@ object GraphBuilder {
     private const val MAX_OTHERS = 3
     private const val MINUTES_PER_DAY = 1440f
     private const val MAX_WEEKLY_DAYS = 2557 // seven years
+    private const val MAX_FEELING_VALENCE = 2
+
+    /** Bound of [weightedValence]: 2 * (1 + 1/2 + 1/4 + ...), never quite reached. */
+    const val MAX_WEIGHTED_VALENCE = 2f * MAX_FEELING_VALENCE
 
     /**
-     * Height of one entry: the main (first) feeling counts fully, each further feeling half as much
-     * as the one before (weights 1, 1/2, 1/4, ...).
+     * Height of one entry: weighted sum of its valences. The main (first) feeling counts fully, each
+     * further feeling half as much as the one before (weights 1, 1/2, 1/4, ...), so further feelings
+     * of the same sign push the entry further out. Stays within ±[MAX_WEIGHTED_VALENCE].
      */
     fun weightedValence(valences: List<Int>): Float {
         var weight = 1.0
         var sum = 0.0
-        var weights = 0.0
         for (valence in valences) {
             sum += valence * weight
-            weights += weight
             weight /= 2
         }
-        return (sum / weights).toFloat()
+        return sum.toFloat()
     }
 
     fun build(

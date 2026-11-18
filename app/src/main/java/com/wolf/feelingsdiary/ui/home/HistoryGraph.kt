@@ -31,6 +31,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wolf.feelingsdiary.R
+import com.wolf.feelingsdiary.domain.GraphBuilder.MAX_WEIGHTED_VALENCE
 import com.wolf.feelingsdiary.domain.GraphData
 import com.wolf.feelingsdiary.domain.GraphPoint
 
@@ -160,7 +161,7 @@ private fun DrawScope.drawAxisLabels(
 ) {
     val gap = LABEL_GAP.toPx()
 
-    listOf(2f, 0f, -2f).zip(valenceTexts).forEach { (v, s) ->
+    listOf(MAX_WEIGHTED_VALENCE, 0f, -MAX_WEIGHTED_VALENCE).zip(valenceTexts).forEach { (v, s) ->
         val t = measurer.measure(s, style, maxLines = 1)
         drawText(t, topLeft = Offset((plot.left - gap - t.size.width).coerceAtLeast(0f), valenceToY(v, plot) - t.size.height / 2f))
     }
