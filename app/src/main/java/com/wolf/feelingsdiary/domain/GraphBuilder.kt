@@ -7,7 +7,8 @@ import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
-enum class Aggregation { NONE, DAILY, WEEKLY, MONTHLY }
+/** How points are formed: per entry, or as the mean of all entries in a half day, day, week or month. */
+enum class Aggregation { NONE, HALF_DAY, DAILY, WEEKLY, MONTHLY }
 
 /** [x] is the horizontal position within the period (0..1); [entryId] is set only without aggregation. */
 data class GraphPoint(
@@ -33,7 +34,8 @@ object GraphBuilder {
     private val PEOPLE_SCALES = listOf(5, 10, 20, 50, 100, 200, 500, 1000)
     private const val MAX_OTHERS = 3
     private const val MINUTES_PER_DAY = 1440f
-    private const val MAX_WEEKLY_DAYS = 2557 // seven years
+    private const val MINUTES_PER_HALF_DAY = 720f
+    private const val NOON = 12
     private const val MAX_FEELING_VALENCE = 2
 
     /** Bound of [weightedValence]: 2 * (1 + 1/2 + 1/4 + ...), never quite reached. */
@@ -71,9 +73,11 @@ object GraphBuilder {
                 unaggregatedPoints(inPeriod, period, dayStartMinute)
             } else {
                 inPeriod
-                    .groupBy { (_, local) -> bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) }
-                    .map { (bucket, members) ->
-                        aggregate(bucket, members.map { it.first }, aggregation, period)
+                    .groupBy { (_, local) ->
+                        val half = if (aggregation == Aggregation.HALF_DAY && local.hour >= NOON) 1 else 0
+                        bucketStart(local.toLocalDate(), aggregation, firstDayOfWeek) to half
+                    }.map { (bucket, members) ->
+                        aggregate(bucket.first, bucket.second, members.map { it.first }, aggregation, period)
                     }.sortedBy { it.x }
             }
         val maxPeople = inPeriod.maxOfOrNull { it.first.people } ?: 0
@@ -147,21 +151,31 @@ object GraphBuilder {
         offsetMinutes: Int,
     ): Long = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) / 60 - offsetMinutes
 
+    /** Day: single entries; week: half-day means; month: daily means; year: weekly means. Ranges by length alike. */
     private fun aggregationFor(period: GraphPeriod): Aggregation =
         when (period.kind) {
-            PeriodKind.DAY, PeriodKind.WEEK, PeriodKind.MONTH -> {
+            PeriodKind.DAY -> {
                 Aggregation.NONE
             }
 
-            PeriodKind.YEAR -> {
+            PeriodKind.WEEK -> {
+                Aggregation.HALF_DAY
+            }
+
+            PeriodKind.MONTH -> {
                 Aggregation.DAILY
+            }
+
+            PeriodKind.YEAR -> {
+                Aggregation.WEEKLY
             }
 
             PeriodKind.RANGE -> {
                 when {
-                    period.days <= 31 -> Aggregation.NONE
-                    period.days <= 366 -> Aggregation.DAILY
-                    period.days <= MAX_WEEKLY_DAYS -> Aggregation.WEEKLY
+                    period.days <= 1 -> Aggregation.NONE
+                    period.days <= 7 -> Aggregation.HALF_DAY
+                    period.days <= 31 -> Aggregation.DAILY
+                    period.days <= 366 -> Aggregation.WEEKLY
                     else -> Aggregation.MONTHLY
                 }
             }
@@ -178,8 +192,10 @@ object GraphBuilder {
             else -> date
         }
 
+    /** [half] is 0 (before noon) or 1 (from noon) for [Aggregation.HALF_DAY], otherwise 0. */
     private fun aggregate(
         bucket: LocalDate,
+        half: Int,
         members: List<Entry>,
         aggregation: Aggregation,
         period: GraphPeriod,
@@ -207,8 +223,15 @@ object GraphBuilder {
             }
         val from = maxOf(bucket, period.start)
         val to = minOf(bucketEnd, period.endInclusive)
-        val startMinute = ChronoUnit.DAYS.between(period.start, from) * MINUTES_PER_DAY
-        val endMinute = (ChronoUnit.DAYS.between(period.start, to) + 1) * MINUTES_PER_DAY
+        val startMinute: Float
+        val endMinute: Float
+        if (aggregation == Aggregation.HALF_DAY) {
+            startMinute = ChronoUnit.DAYS.between(period.start, bucket) * MINUTES_PER_DAY + half * MINUTES_PER_HALF_DAY
+            endMinute = startMinute + MINUTES_PER_HALF_DAY
+        } else {
+            startMinute = ChronoUnit.DAYS.between(period.start, from) * MINUTES_PER_DAY
+            endMinute = (ChronoUnit.DAYS.between(period.start, to) + 1) * MINUTES_PER_DAY
+        }
         return GraphPoint(
             x = ((startMinute + endMinute) / 2f) / (period.days * MINUTES_PER_DAY),
             valence = members.map { weightedValence(it.valences) }.average().toFloat(),

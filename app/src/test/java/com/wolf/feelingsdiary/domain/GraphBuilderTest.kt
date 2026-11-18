@@ -32,10 +32,11 @@ class GraphBuilderTest {
     ) = "${date}T${hour.toString().padStart(2, '0')}:00"
 
     private val week = GraphPeriod.containing(PeriodKind.WEEK, LocalDate.of(2026, 11, 3), monday)
+    private val dayNov3 = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 11, 3), monday)
 
     @Test
     fun entryHeightWeightsLaterFeelingsLess() {
-        val data = GraphBuilder.build(listOf(entry(1, "2026-11-03T08:00", 60, feelings = listOf(a to 2, b to -1))), week, monday)
+        val data = GraphBuilder.build(listOf(entry(1, "2026-11-03T08:00", 60, feelings = listOf(a to 2, b to -1))), dayNov3, monday)
         val point = data.points.single()
         // 2 * 1 + -1 * 0.5
         assertEquals(1.5f, point.valence, 1e-6f)
@@ -46,9 +47,39 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun xIsPositionInPeriod() {
-        val data = GraphBuilder.build(listOf(entry(1, "2026-11-04T12:00", 60)), week, monday)
-        assertEquals((2 * 1440 + 720) / (7 * 1440f), data.points.single().x, 0f)
+    fun weekAggregatesHalfDays() {
+        val entries =
+            listOf(
+                entry(1, "2026-11-04T08:00", 60, people = 2, feelings = listOf(a to 2)),
+                entry(2, "2026-11-04T11:59", 60, people = 4, feelings = listOf(a to -1)),
+                entry(3, "2026-11-04T12:00", 60, feelings = listOf(b to -2)),
+            )
+        val data = GraphBuilder.build(entries, week, monday)
+        assertEquals(Aggregation.HALF_DAY, data.aggregation)
+        assertEquals(2, data.points.size)
+        val (morning, afternoon) = data.points
+        assertEquals((2 * 1440 + 360) / (7 * 1440f), morning.x, 1e-6f)
+        assertEquals(0.5f, morning.valence, 1e-6f)
+        assertEquals(3f, morning.people, 0f)
+        assertNull(morning.entryId)
+        assertEquals(LocalDate.of(2026, 11, 4), morning.bucketStart)
+        assertEquals((2 * 1440 + 1080) / (7 * 1440f), afternoon.x, 1e-6f)
+        assertEquals(-2f, afternoon.valence, 0f)
+        assertEquals(b, afternoon.mainFeelingId)
+    }
+
+    @Test
+    fun monthAggregatesDaily() {
+        val month = GraphPeriod.containing(PeriodKind.MONTH, LocalDate.of(2026, 11, 1), monday)
+        val entries =
+            listOf(
+                entry(1, "2026-11-04T08:00", 60, feelings = listOf(a to 2)),
+                entry(2, "2026-11-04T20:00", 60, feelings = listOf(a to -1)),
+            )
+        val data = GraphBuilder.build(entries, month, monday)
+        assertEquals(Aggregation.DAILY, data.aggregation)
+        assertEquals(0.5f, data.points.single().valence, 1e-6f)
+        assertEquals((3 * 1440 + 720) / (30 * 1440f), data.points.single().x, 1e-6f)
     }
 
     @Test
@@ -71,7 +102,7 @@ class GraphBuilderTest {
         val data =
             GraphBuilder.build(
                 listOf(entry(1, "2026-11-03T08:00", 60), entry(2, "2026-11-03T08:00", 60)),
-                week,
+                dayNov3,
                 monday,
             )
         assertEquals(2, data.points.size)
@@ -79,8 +110,8 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun dstWeekIsMonotonic() {
-        val period = GraphPeriod.containing(PeriodKind.WEEK, LocalDate.of(2026, 10, 25), monday)
+    fun dstDayIsMonotonic() {
+        val period = GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 10, 25), monday)
         val entries = (0..23).map { hour -> entry(hour + 1L, at(LocalDate.of(2026, 10, 25), hour), if (hour < 3) 120 else 60) }
         val xs = GraphBuilder.build(entries, period, monday).points.map { it.x }
         assertEquals(24, xs.size)
@@ -88,7 +119,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun yearAggregatesDaily() {
+    fun yearAggregatesWeekly() {
         val year = GraphPeriod.containing(PeriodKind.YEAR, LocalDate.of(2026, 6, 1), monday)
         var id = 0L
         val entries =
@@ -97,11 +128,13 @@ class GraphBuilderTest {
                 (0 until 4).map { slot -> entry(++id, at(date, 6 + slot * 4), 60) }
             }
         val data = GraphBuilder.build(entries, year, monday)
-        assertEquals(Aggregation.DAILY, data.aggregation)
-        assertEquals(365, data.points.size)
-        val point = data.points.single { it.bucketStart == LocalDate.of(2026, 3, 1) }
+        assertEquals(Aggregation.WEEKLY, data.aggregation)
+        // 2025-12-29 to 2026-12-28: 53 weeks touch the year
+        assertEquals(53, data.points.size)
+        val point = data.points.single { it.bucketStart == LocalDate.of(2026, 3, 2) }
         assertNull(point.entryId)
-        assertEquals((59 * 1440 + 720) / (365 * 1440f), point.x, 1e-6f)
+        // Mon 2 Mar (day 60) to Sun 8 Mar (day 66)
+        assertEquals((60 + 67) / 2f / 365f, point.x, 1e-6f)
     }
 
     @Test
@@ -173,8 +206,8 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun longRangeAggregatesWeekly() {
-        val range = GraphPeriod.range(LocalDate.of(2026, 1, 1), LocalDate.of(2027, 6, 30))
+    fun yearLongRangeAggregatesWeekly() {
+        val range = GraphPeriod.range(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
         val data = GraphBuilder.build(listOf(entry(1, "2026-01-02T08:00", 60), entry(2, "2026-01-04T08:00", 60)), range, monday)
         assertEquals(Aggregation.WEEKLY, data.aggregation)
         assertEquals(1, data.points.size)
@@ -203,20 +236,10 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun rangeOfExactlySevenYearsStaysWeekly() {
-        val start = LocalDate.of(2020, 1, 1)
-        val range = GraphPeriod.range(start, start.plusDays(2556))
-        assertEquals(2557, range.days)
-        assertEquals(Aggregation.WEEKLY, GraphBuilder.build(emptyList(), range, monday).aggregation)
-        val longer = GraphPeriod.range(start, start.plusDays(2557))
-        assertEquals(Aggregation.MONTHLY, GraphBuilder.build(emptyList(), longer, monday).aggregation)
-    }
-
-    @Test
     fun singleEntriesAreOrderedByRealTime() {
         // Entry 1 is earlier in UTC (06:00Z) but later on the wall clock (23:00 at +17h) than entry 2 (07:00Z, 08:00 at +1h); real time wins.
         val entries = listOf(entry(1, "2026-11-03T23:00", 17 * 60), entry(2, "2026-11-03T08:00", 60))
-        val points = GraphBuilder.build(entries, week, monday).points
+        val points = GraphBuilder.build(entries, dayNov3, monday).points
         assertEquals(listOf(1L, 2L), points.map { it.entryId })
         assertTrue(points[0].x < points[1].x)
     }
@@ -226,10 +249,14 @@ class GraphBuilderTest {
         val start = LocalDate.of(2026, 1, 1)
 
         fun agg(days: Long) = GraphBuilder.build(emptyList(), GraphPeriod.range(start, start.plusDays(days - 1)), monday).aggregation
-        assertEquals(Aggregation.NONE, agg(31))
-        assertEquals(Aggregation.DAILY, agg(32))
-        assertEquals(Aggregation.DAILY, agg(366))
-        assertEquals(Aggregation.WEEKLY, agg(367))
+        assertEquals(Aggregation.NONE, agg(1))
+        assertEquals(Aggregation.HALF_DAY, agg(2))
+        assertEquals(Aggregation.HALF_DAY, agg(7))
+        assertEquals(Aggregation.DAILY, agg(8))
+        assertEquals(Aggregation.DAILY, agg(31))
+        assertEquals(Aggregation.WEEKLY, agg(32))
+        assertEquals(Aggregation.WEEKLY, agg(366))
+        assertEquals(Aggregation.MONTHLY, agg(367))
     }
 
     @Test
@@ -275,7 +302,7 @@ class GraphBuilderTest {
         val first = entry(1, "2026-11-04T18:00", 60)
         val second = entry(2, "2026-11-04T14:00", -300)
         assertEquals(120, second.time.epochMinute - first.time.epochMinute)
-        val points = xs(listOf(second, first), week)
+        val points = xs(listOf(second, first), GraphPeriod.containing(PeriodKind.DAY, LocalDate.of(2026, 11, 4), monday))
         assertEquals(listOf(1L, 2L), points.map { it.entryId })
         assertTrue(points[1].x > points[0].x)
         assertTrue(points.all { it.x in 0f..1f })
@@ -283,11 +310,11 @@ class GraphBuilderTest {
 
     @Test
     fun sameOffsetPositionsUnchanged() {
-        val entries = listOf("2026-11-03T00:00", "2026-11-05T13:37", "2026-11-08T23:59").mapIndexed { i, t -> entry(i + 1L, t, 60) }
-        val points = xs(entries, week)
+        val entries = listOf("2026-11-03T00:00", "2026-11-03T13:37", "2026-11-03T23:59").mapIndexed { i, t -> entry(i + 1L, t, 60) }
+        val points = xs(entries, dayNov3)
         val expected =
             entries.map {
-                ChronoUnit.MINUTES.between(week.start.atStartOfDay(), it.time.localDateTime()) / (7 * 1440f)
+                ChronoUnit.MINUTES.between(dayNov3.start.atStartOfDay(), it.time.localDateTime()) / 1440f
             }
         assertEquals(expected, points.map { it.x })
     }

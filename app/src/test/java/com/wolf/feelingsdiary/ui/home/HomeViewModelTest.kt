@@ -155,11 +155,25 @@ class HomeViewModelTest {
         runTest {
             val vm = vm()
             observe(vm)
-            vm.selectKind(PeriodKind.YEAR)
-            vm.openBucket(point(null, LocalDate.of(2026, 3, 4)))
+            vm.selectKind(PeriodKind.MONTH)
+            assertEquals(Aggregation.DAILY, vm.state.value.graph.aggregation)
+            vm.openBucket(point(null, LocalDate.of(2026, 11, 4)))
             val p = vm.state.value.period
             assertEquals(PeriodKind.DAY, p.kind)
-            assertEquals(LocalDate.of(2026, 3, 4), p.start)
+            assertEquals(LocalDate.of(2026, 11, 4), p.start)
+        }
+
+    @Test
+    fun openBucketOfHalfDayPointShowsDay() =
+        runTest {
+            val vm = vm()
+            observe(vm)
+            vm.selectKind(PeriodKind.WEEK)
+            assertEquals(Aggregation.HALF_DAY, vm.state.value.graph.aggregation)
+            vm.openBucket(point(null, LocalDate.of(2026, 11, 4)))
+            val p = vm.state.value.period
+            assertEquals(PeriodKind.DAY, p.kind)
+            assertEquals(LocalDate.of(2026, 11, 4), p.start)
         }
 
     @Test
@@ -167,7 +181,7 @@ class HomeViewModelTest {
         runTest {
             val vm = vm()
             observe(vm)
-            vm.selectRange(LocalDate.of(2024, 1, 1), LocalDate.of(2026, 1, 1))
+            vm.selectKind(PeriodKind.YEAR)
             assertEquals(Aggregation.WEEKLY, vm.state.value.graph.aggregation)
             vm.openBucket(point(null, LocalDate.of(2025, 3, 3)))
             assertEquals(GraphPeriod(PeriodKind.WEEK, LocalDate.of(2025, 3, 3), LocalDate.of(2025, 3, 9)), vm.state.value.period)

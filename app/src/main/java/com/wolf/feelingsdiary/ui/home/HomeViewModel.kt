@@ -138,13 +138,26 @@ class HomeViewModel
 
         fun shift(steps: Int) = setPeriod(period.value.shift(steps, firstDayOfWeek()))
 
-        /** Jumps from an aggregated point to the day (daily), week (weekly) or month (monthly buckets) it stands for. */
+        /** Jumps from an aggregated point to the day (half-day, daily), week (weekly) or month (monthly buckets) it stands for. */
         fun openBucket(point: GraphPoint) {
             when (state.value.graph.aggregation) {
-                Aggregation.DAILY -> setPeriod(GraphPeriod.containing(PeriodKind.DAY, point.bucketStart, firstDayOfWeek()))
-                Aggregation.WEEKLY -> setPeriod(GraphPeriod.containing(PeriodKind.WEEK, point.bucketStart, firstDayOfWeek()))
-                Aggregation.MONTHLY -> setPeriod(GraphPeriod.containing(PeriodKind.MONTH, point.bucketStart, firstDayOfWeek()))
-                Aggregation.NONE -> Unit
+                Aggregation.HALF_DAY, Aggregation.DAILY -> {
+                    setPeriod(
+                        GraphPeriod.containing(PeriodKind.DAY, point.bucketStart, firstDayOfWeek()),
+                    )
+                }
+
+                Aggregation.WEEKLY -> {
+                    setPeriod(GraphPeriod.containing(PeriodKind.WEEK, point.bucketStart, firstDayOfWeek()))
+                }
+
+                Aggregation.MONTHLY -> {
+                    setPeriod(GraphPeriod.containing(PeriodKind.MONTH, point.bucketStart, firstDayOfWeek()))
+                }
+
+                Aggregation.NONE -> {
+                    Unit
+                }
             }
         }
 

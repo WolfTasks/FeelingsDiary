@@ -33,6 +33,7 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 - Personenzahl = Anzahl der ANDEREN Menschen, 0 = allein, Eingabe 0–999.
 - Valenz −2…+2, als Momentaufnahme je Gefühl pro Eintrag gespeichert.
 - Hauptgefühl = zuerst gewähltes Gefühl (Position 0). Punkthöhe im Graphen = gewichtete Valenz-Summe (1, ½, ¼ … nach Position), Achse ±4 (`MAX_WEIGHTED_VALENCE`).
+- Graph-Mittelung (`GraphBuilder.aggregationFor`): Tag = Einzeleinträge, Woche = 12-h-Mittel (0–12, 12–24 Uhr), Monat = Tagesmittel, Jahr = Wochenmittel; Zeiträume nach Länge (≤1 / ≤7 / ≤31 / ≤366 Tage, darüber Monatsmittel).
 - Neue Grundgefühle nur hinten an `BaseFeelings.all` anhängen und per Room-Migration (`Migrations`) für Bestandsinstallationen nachziehen.
 - Grundliste-Reihenfolge: Basisgefühle nach id, danach eigene alphabetisch nach Label.
 
