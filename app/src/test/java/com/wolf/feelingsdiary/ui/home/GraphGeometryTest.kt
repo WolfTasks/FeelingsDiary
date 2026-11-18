@@ -11,9 +11,10 @@ class GraphGeometryTest {
 
     @Test
     fun valenceMapsTopMiddleBottom() {
-        assertEquals(0f, valenceToY(2f, rect), 0.001f)
+        assertEquals(0f, valenceToY(4f, rect), 0.001f)
+        assertEquals(50f, valenceToY(2f, rect), 0.001f)
         assertEquals(100f, valenceToY(0f, rect), 0.001f)
-        assertEquals(200f, valenceToY(-2f, rect), 0.001f)
+        assertEquals(200f, valenceToY(-4f, rect), 0.001f)
     }
 
     @Test
