@@ -161,9 +161,9 @@ private fun DrawScope.drawAxisLabels(
 ) {
     val gap = LABEL_GAP.toPx()
 
-    listOf(MAX_WEIGHTED_VALENCE, 0f, -MAX_WEIGHTED_VALENCE).zip(valenceTexts).forEach { (v, s) ->
-        val t = measurer.measure(s, style, maxLines = 1)
-        drawText(t, topLeft = Offset((plot.left - gap - t.size.width).coerceAtLeast(0f), valenceToY(v, plot) - t.size.height / 2f))
+    listOf(MAX_WEIGHTED_VALENCE, 0f, -MAX_WEIGHTED_VALENCE).zip(valenceTexts).forEach { (valence, label) ->
+        val t = measurer.measure(label, style, maxLines = 1)
+        drawText(t, topLeft = Offset((plot.left - gap - t.size.width).coerceAtLeast(0f), valenceToY(valence, plot) - t.size.height / 2f))
     }
     listOf(0 to plot.bottom, peopleMax to plot.top).forEach { (n, y) ->
         val t = measurer.measure(n.toString(), style, maxLines = 1)

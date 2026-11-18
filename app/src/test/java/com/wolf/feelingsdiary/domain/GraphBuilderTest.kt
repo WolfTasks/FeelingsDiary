@@ -151,9 +151,9 @@ class GraphBuilderTest {
 
     @Test
     fun weightedValenceStaysWithinAxis() {
-        val v = GraphBuilder.weightedValence(List(10) { -2 })
-        assertTrue(v > -GraphBuilder.MAX_WEIGHTED_VALENCE)
-        assertEquals(-GraphBuilder.MAX_WEIGHTED_VALENCE, v, 0.01f)
+        val valence = GraphBuilder.weightedValence(List(10) { -2 })
+        assertTrue(valence > -GraphBuilder.MAX_WEIGHTED_VALENCE)
+        assertEquals(-GraphBuilder.MAX_WEIGHTED_VALENCE, valence, 0.01f)
     }
 
     @Test
