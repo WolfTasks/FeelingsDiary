@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasText
@@ -48,6 +49,7 @@ class HomeScreenTest {
     private val shifts = mutableListOf<Int>()
     private val deletes = mutableListOf<Long>()
     private var settingsTaps = 0
+    private val exports = mutableListOf<Pair<Boolean, Boolean>>()
     private val actions =
         HomeActions(
             onAdd = { adds++ },
@@ -59,6 +61,7 @@ class HomeScreenTest {
             onEdit = {},
             onDelete = { deletes += it },
             onSettings = { settingsTaps++ },
+            onExport = { csv, graph -> exports += csv to graph },
         )
     private val week = GraphPeriod(PeriodKind.WEEK, LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 8))
     private val happy = 0xFFFFC107.toInt()
@@ -166,6 +169,30 @@ class HomeScreenTest {
         requests.trySend(Unit)
         rule.waitForIdle()
         assertEquals(1, shown.size)
+    }
+
+    @Test
+    fun shareDisabledWithoutEntries() {
+        show(state(emptyList()))
+        rule.onNodeWithContentDescription("Share").assertIsNotEnabled()
+    }
+
+    @Test
+    fun exportDialogPassesChoice() {
+        show(state(twoRows))
+        rule.onNodeWithContentDescription("Share").performClick()
+        rule.onNodeWithText("Graph (image)").performClick()
+        rule.onNodeWithText("Share").performClick()
+        assertEquals(listOf(true to false), exports)
+    }
+
+    @Test
+    fun exportDialogNeedsOneChoice() {
+        show(state(twoRows))
+        rule.onNodeWithContentDescription("Share").performClick()
+        rule.onNodeWithText("Graph (image)").performClick()
+        rule.onNodeWithText("Table (CSV)").performClick()
+        rule.onNodeWithText("Share").assertIsNotEnabled()
     }
 
     @Test

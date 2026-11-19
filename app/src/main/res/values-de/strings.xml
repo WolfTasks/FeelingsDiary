@@ -164,4 +164,12 @@
     <string name="export_csv_feelings">Gefühle</string>
     <string name="export_csv_mood">Stimmung</string>
     <string name="export_csv_people">Personen</string>
+    <string name="export_open_cd">Teilen</string>
+    <string name="export_title">Exportieren</string>
+    <string name="export_option_csv">Tabelle (CSV)</string>
+    <string name="export_option_graph">Graph (Bild)</string>
+    <string name="export_share">Teilen</string>
+    <string name="export_cancel">Abbrechen</string>
+    <string name="export_chooser">Export teilen</string>
+    <string name="export_failed">Export fehlgeschlagen</string>
 </resources>

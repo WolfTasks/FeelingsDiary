@@ -12,6 +12,8 @@ import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
+import com.wolf.feelingsdiary.export.DiaryExporter
+import com.wolf.feelingsdiary.export.ExportResult
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import com.wolf.feelingsdiary.ui.LocaleSource
 import io.mockk.coEvery
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -35,6 +38,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -53,6 +57,7 @@ class HomeViewModelTest {
     private val entries = MutableStateFlow<List<Entry>>(emptyList())
     private val appSettings = MutableStateFlow(AppSettings())
     private val settingsRepo = mockk<SettingsRepository> { every { settings } returns appSettings }
+    private val exporter = mockk<DiaryExporter>()
     private lateinit var oldLocale: Locale
 
     @Before
@@ -72,7 +77,8 @@ class HomeViewModelTest {
         Locale.setDefault(oldLocale)
     }
 
-    private fun vm(saved: SavedStateHandle = SavedStateHandle()) = HomeViewModel(repo, labeler, localeSource, saved, clock, settingsRepo)
+    private fun vm(saved: SavedStateHandle = SavedStateHandle()) =
+        HomeViewModel(repo, labeler, localeSource, saved, clock, settingsRepo, exporter)
 
     private fun TestScope.observe(vm: HomeViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
@@ -285,7 +291,7 @@ class HomeViewModelTest {
     fun labelsFollowLocaleChange() =
         runTest {
             val localized = FeelingLabeler { if (localeSource.locale.value.language == "de") "Glücklich" else "Happy" }
-            val vm = HomeViewModel(repo, localized, localeSource, SavedStateHandle(), clock, settingsRepo)
+            val vm = HomeViewModel(repo, localized, localeSource, SavedStateHandle(), clock, settingsRepo, exporter)
             observe(vm)
             val minute = (Instant.parse("2026-11-04T12:00:00Z").epochSecond / 60).toInt()
             entries.value = listOf(Entry(5, EntryTime(minute, 60), 2, listOf(1), listOf(2)))
@@ -304,5 +310,24 @@ class HomeViewModelTest {
                     .feelings,
             )
             assertEquals(listOf("Glücklich" to 0x111111), vm.state.value.legend)
+        }
+
+    @Test
+    fun exportEmitsShare() =
+        runTest {
+            val result = ExportResult(emptyList(), "subject", "text/csv")
+            val vm = vm()
+            coEvery { exporter.export(vm.state.value.period, any(), true, false) } returns result
+            vm.export(csv = true, graph = false)
+            assertEquals(ExportEvent.Share(result), vm.exportEvents.first())
+        }
+
+    @Test
+    fun exportFailureEmitsFailed() =
+        runTest {
+            coEvery { exporter.export(any(), any(), any(), any()) } throws IOException("disk full")
+            val vm = vm()
+            vm.export(csv = true, graph = true)
+            assertEquals(ExportEvent.Failed, vm.exportEvents.first())
         }
 }

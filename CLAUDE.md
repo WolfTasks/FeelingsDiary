@@ -8,7 +8,8 @@ Android (Kotlin, Compose, Room, Hilt), Single-Module `:app`, Paket `com.wolf.fee
 - `data` – `DiaryRepository`; `data/settings` – DataStore-Einstellungen (`SettingsRepository`)
 - `reminder` – AlarmManager-Planung (`ReminderScheduler`), Receiver (Erinnerung, Boot), Benachrichtigung (`ReminderNotifier`)
 - `backup` – `DiaryBackupAgent` (gesteuerte Android-Sicherung)
-- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`, `GraphPeriod`, `GraphBuilder`, `Settings`, `ReminderPlanner`
+- `export` – `DiaryExporter` (CSV/PNG nach `cache/export/`, FileProvider-URIs), `GraphImageRenderer` (Graph als helles PNG); CSV-Logik in `domain/CsvExporter`
+- `domain` – reine Logik: `Entry`, `EntryTime`, `Feeling`, `FeelingSuggester`, `GraphPeriod`, `GraphBuilder`, `Settings`, `ReminderPlanner`, `CsvExporter`
 - `di` – Hilt-Module, `SystemZoneClock` (Systemzone bei jedem Aufruf)
 - `ui/entry`, `ui/home`, `ui/navigation`, `ui/theme`, `ui/settings`, `ui/feelings` (Gefühle verwalten), `ui/onboarding` – Compose-Screens, ViewModels, Nav, Theme; `ui/home` = Verlauf (Graph, Zeitraum, Liste, Details)
 - Tests: `app/src/test/...` (JUnit4, MockK, Robolectric, Compose UI-Test)
@@ -27,7 +28,7 @@ export JAVA_HOME="C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot"
 
 ## Regeln
 
-- Berechtigungen genau `POST_NOTIFICATIONS` + `RECEIVE_BOOT_COMPLETED`, keine `INTERNET`; keine exakten Alarme (`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`). Sicherung nur über `DiaryBackupAgent` (`fullBackupOnly`), der nur bei Einstellung „Android-Sicherung“ = an (Standard aus) und nur bei Ende-zu-Ende-verschlüsseltem Transport (Cloud nur E2E) oder Gerätewechsel (D2D) an Auto Backup übergibt; Regeln (`backup_rules.xml`, `data_extraction_rules.xml`) enthalten nur Datenbank und `datastore/settings.preferences_pb`. Wird von `ManifestPolicyTest` geprüft.
+- Berechtigungen genau `POST_NOTIFICATIONS` + `RECEIVE_BOOT_COMPLETED`, keine `INTERNET`; einziger Provider = FileProvider für `cache/export/` (nicht exportiert); keine exakten Alarme (`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`). Sicherung nur über `DiaryBackupAgent` (`fullBackupOnly`), der nur bei Einstellung „Android-Sicherung“ = an (Standard aus) und nur bei Ende-zu-Ende-verschlüsseltem Transport (Cloud nur E2E) oder Gerätewechsel (D2D) an Auto Backup übergibt; Regeln (`backup_rules.xml`, `data_extraction_rules.xml`) enthalten nur Datenbank und `datastore/settings.preferences_pb`. Wird von `ManifestPolicyTest` geprüft.
 - Erinnerungen nur ungenau (`setAndAllowWhileIdle`); Slot-Erinnerungen nie in der Nachtruhe, Tagesbeginn-Erinnerung ausgenommen und immer lautlos; Graph-x nach echter Zeit (`epochMinute`), nicht nach Ortszeit.
 - Jeder UI-Text als String-Ressource: `values/strings.xml` (EN, Default) und `values-de/strings.xml`; `StringsParityTest` erzwingt Parität. Keine hartkodierten UI-Texte.
 - Personenzahl = Anzahl der ANDEREN Menschen, 0 = allein, Eingabe 0–999.

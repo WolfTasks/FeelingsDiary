@@ -95,6 +95,7 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 - **Graphen als PNG** für den gewählten Zeitraum.
 - Version 1 = CSV + PNG. Der **PDF-Bericht** kommt später (siehe 9).
 - Speichern über den Android-Dateidialog (Storage Access Framework) oder „Teilen“; der Nutzer bestimmt den Ort.
+- (Phase 4, 2026-11-19: umgesetzt als Teilen des im Verlauf eingestellten Zeitraums; CSV enthält statt des Valenz-Durchschnitts die gewichtete Summe („Stimmung“), siehe Phase-4-Design.)
 
 ### 5.9 Technik (Claude-Entscheidung)
 - Kotlin, Jetpack Compose (Material 3), Room, Hilt, WorkManager/AlarmManager für Erinnerungen, DataStore für Einstellungen – gleicher Unterbau wie MusicPlayer, damit Werkzeuge (ktlint, Lint, Robolectric-Tests, CI, Nightly-Security-Scan, Dependabot, Ruleset) übernommen werden können.
@@ -136,5 +137,5 @@ Die Benachrichtigung ist eine **Erinnerung zur Eingabe**, kein Selbstzweck. Die 
 
 - Phase 1 (Grundlage, Datenschicht, Eingabe): ✅ (PR #1)
 - Phase 2 (Verlauf, Graph, Details, Bearbeiten/Löschen): ✅ (PR #5)
-- Phase 3 (Erinnerungen, Einstellungen, Onboarding): 🔄 Branch `feat/phase3-reminders-settings`, siehe Statustabelle im Plan `docs/superpowers/plans/2026-11-08-feelings-diary-phase3-reminders-settings.md`
-- Phase 4 (Export): ⏳
+- Phase 3 (Erinnerungen, Einstellungen, Onboarding): ✅
+- Phase 4 (Export): ✅ Teilen-Knopf im Verlauf, CSV und/oder Graph-PNG, siehe `docs/superpowers/specs/2026-11-19-phase4-export-design.md`
