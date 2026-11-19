@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Export files only: written just before sharing and cleared on the next export and at app start. -->
+<paths>
+    <cache-path name="export" path="export/" />
+</paths>

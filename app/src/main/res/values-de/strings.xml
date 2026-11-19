@@ -155,4 +155,13 @@
     <string name="onboarding_allow">Erinnerungen erlauben</string>
     <string name="onboarding_start">Los geht\'s</string>
     <string name="onboarding_settings_hint">Zeitfenster und Nachtruhe kannst du in den Einstellungen anpassen.</string>
+    <string name="export_file_prefix">gefuehle</string>
+    <string name="export_subject">Gefühls-Tagebuch %1$s</string>
+    <string name="export_csv_date">Datum</string>
+    <string name="export_csv_time">Uhrzeit</string>
+    <string name="export_csv_zone">Zeitzone</string>
+    <string name="export_csv_main">Hauptgefühl</string>
+    <string name="export_csv_feelings">Gefühle</string>
+    <string name="export_csv_mood">Stimmung</string>
+    <string name="export_csv_people">Personen</string>
 </resources>
