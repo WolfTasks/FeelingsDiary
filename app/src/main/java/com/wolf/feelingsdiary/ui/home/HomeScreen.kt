@@ -1,5 +1,8 @@
 package com.wolf.feelingsdiary.ui.home
 
+import android.content.ClipData
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,6 +54,7 @@ import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
+import com.wolf.feelingsdiary.export.ExportResult
 import com.wolf.feelingsdiary.ui.entry.QuickEntryRoute
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -64,6 +70,7 @@ data class HomeActions(
     val onEdit: (Long) -> Unit,
     val onDelete: (Long) -> Unit,
     val onSettings: () -> Unit,
+    val onExport: (csv: Boolean, graph: Boolean) -> Unit = { _, _ -> },
 )
 
 @Composable
@@ -86,7 +93,9 @@ fun HomeRoute(
             onEdit = onEdit,
             onDelete = vm::delete,
             onSettings = onSettings,
+            onExport = vm::export,
         )
+    ShareExports(vm.exportEvents)
     HomeScreen(state, actions, sheetRequests) { key, onDone -> QuickEntryRoute(key, onDone) }
 }
 
@@ -102,6 +111,7 @@ fun HomeScreen(
     // Each opening gets its own key and with it a fresh entry ViewModel.
     var quickOpenings by rememberSaveable { mutableIntStateOf(0) }
     var quickOpen by rememberSaveable { mutableStateOf(false) }
+    var exportOpen by rememberSaveable { mutableStateOf(false) }
 
     fun openQuick() {
         // A request while the sheet is open keeps the running entry.
@@ -141,6 +151,9 @@ fun HomeScreen(
                             style = MaterialTheme.typography.headlineSmall,
                             modifier = Modifier.weight(1f).padding(vertical = 16.dp),
                         )
+                        IconButton(onClick = { exportOpen = true }, enabled = state.rows.isNotEmpty()) {
+                            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.export_open_cd))
+                        }
                         IconButton(onClick = actions.onSettings) {
                             Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings_open_cd))
                         }
@@ -179,6 +192,12 @@ fun HomeScreen(
         }
     }
     if (quickOpen) quickSheet("quick-$quickOpenings") { quickOpen = false }
+    if (exportOpen) {
+        ExportDialog(formatPeriod(state.period, locale), onDismiss = { exportOpen = false }) { csv, graph ->
+            exportOpen = false
+            actions.onExport(csv, graph)
+        }
+    }
     if (openRow != null) {
         EntryDetailSheet(
             row = openRow,
@@ -245,4 +264,39 @@ internal fun PeopleText(people: Int) {
             pluralStringResource(R.plurals.home_people, people, people)
         }
     Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+/** Opens the share sheet for each finished export; failures and missing share targets show a toast. */
+@Composable
+private fun ShareExports(events: Flow<ExportEvent>) {
+    val context = LocalContext.current
+    val chooserTitle = stringResource(R.string.export_chooser)
+    val failed = stringResource(R.string.export_failed)
+    LaunchedEffect(events) {
+        events.collect { event ->
+            val shared =
+                event is ExportEvent.Share &&
+                    runCatching { context.startActivity(shareIntent(event.result, chooserTitle)) }.isSuccess
+            if (!shared) Toast.makeText(context, failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+private fun shareIntent(
+    result: ExportResult,
+    chooserTitle: String,
+): Intent {
+    val uris = ArrayList(result.uris)
+    val send =
+        if (uris.size == 1) {
+            Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.single())
+        } else {
+            Intent(Intent.ACTION_SEND_MULTIPLE).putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        }
+    send.type = result.mimeType
+    send.putExtra(Intent.EXTRA_SUBJECT, result.subject)
+    // ClipData carries the read grant to the chosen app (and lets the chooser preview the files).
+    send.clipData = ClipData.newRawUri(result.subject, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+    send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    return Intent.createChooser(send, chooserTitle)
 }

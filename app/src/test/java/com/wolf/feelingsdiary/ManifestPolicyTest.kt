@@ -81,6 +81,20 @@ class ManifestPolicyTest {
     }
 
     @Test
+    fun exportProviderIsPrivateAndCacheOnly() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val providers = Regex("<provider\\b[^>]*>", RegexOption.DOT_MATCHES_ALL).findAll(manifest).map { it.value }.toList()
+        assertEquals(1, providers.size)
+        val provider = providers.single()
+        assertTrue(provider, provider.contains("""android:name="androidx.core.content.FileProvider""""))
+        assertTrue(provider, provider.contains("""android:exported="false""""))
+        assertTrue(provider, provider.contains("""android:grantUriPermissions="true""""))
+        val paths = File("src/main/res/xml/file_paths.xml").readText()
+        val elements = Regex("""<([a-z-]+-path)\b[^>]*/>""").findAll(paths).map { it.value }.toList()
+        assertEquals(listOf("""<cache-path name="export" path="export/" />"""), elements)
+    }
+
+    @Test
     fun cloudBackupRequiresEncryption() {
         val extraction = File("src/main/res/xml/data_extraction_rules.xml").readText()
         val cloud = requireNotNull(Regex("<cloud-backup[^>]*>").find(extraction)) { "cloud-backup missing" }.value

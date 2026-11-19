@@ -13,10 +13,17 @@ import com.wolf.feelingsdiary.domain.GraphPeriod
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
+import com.wolf.feelingsdiary.domain.formatUtcOffset
+import com.wolf.feelingsdiary.export.DiaryExporter
+import com.wolf.feelingsdiary.export.ExportResult
 import com.wolf.feelingsdiary.ui.FeelingLabeler
 import com.wolf.feelingsdiary.ui.LocaleSource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -62,6 +70,14 @@ private const val KEY_END = "end"
 private const val STOP_TIMEOUT_MS = 5_000L
 private const val DEFAULT_PEOPLE_SCALE = 5
 
+sealed interface ExportEvent {
+    data class Share(
+        val result: ExportResult,
+    ) : ExportEvent
+
+    data object Failed : ExportEvent
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel
@@ -73,7 +89,16 @@ class HomeViewModel
         private val savedState: SavedStateHandle,
         private val clock: Clock,
         settings: SettingsRepository,
+        private val exporter: DiaryExporter,
     ) : ViewModel() {
+        private val exportChannel = Channel<ExportEvent>(Channel.BUFFERED)
+
+        /** One event per [export] call, consumed once by the screen. */
+        val exportEvents: Flow<ExportEvent> = exportChannel.receiveAsFlow()
+
+        // A second export would clear the cache under the first one's share sheet, so taps during a run are ignored.
+        private var exportJob: Job? = null
+
         private val inputMode = settings.settings.map { it.input }.distinctUntilChanged()
 
         private val period =
@@ -159,6 +184,27 @@ class HomeViewModel
                     Unit
                 }
             }
+        }
+
+        fun export(
+            csv: Boolean,
+            graph: Boolean,
+        ) {
+            if (exportJob?.isActive == true) return
+            val p = period.value
+            exportJob =
+                viewModelScope.launch {
+                    val event =
+                        try {
+                            ExportEvent.Share(exporter.export(p, firstDayOfWeek(), csv, graph))
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // Disk full, missing feeling data, ...: the screen reports it instead of crashing.
+                            ExportEvent.Failed
+                        }
+                    exportChannel.send(event)
+                }
         }
 
         fun delete(id: Long) {

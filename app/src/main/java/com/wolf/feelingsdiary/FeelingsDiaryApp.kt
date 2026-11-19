@@ -4,6 +4,7 @@ import android.app.Application
 import com.wolf.feelingsdiary.data.settings.SettingsRepository
 import com.wolf.feelingsdiary.di.ApplicationScope
 import com.wolf.feelingsdiary.domain.AppSettings
+import com.wolf.feelingsdiary.export.DiaryExporter
 import com.wolf.feelingsdiary.reminder.ReminderScheduler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -19,11 +20,15 @@ class FeelingsDiaryApp : Application() {
 
     @Inject lateinit var scheduler: ReminderScheduler
 
+    @Inject lateinit var exporter: DiaryExporter
+
     @Inject @ApplicationScope
     lateinit var scope: CoroutineScope
 
     override fun onCreate() {
         super.onCreate()
+        // Shared export files are only needed until the target app has read them.
+        scope.launch { exporter.clearCache() }
         // The first value covers app start, every later one a change of the reminder settings.
         scope.launch {
             settings.settings

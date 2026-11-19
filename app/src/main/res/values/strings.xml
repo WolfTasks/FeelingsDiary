@@ -155,4 +155,21 @@
     <string name="onboarding_allow">Allow reminders</string>
     <string name="onboarding_start">Let\'s start</string>
     <string name="onboarding_settings_hint">You can adjust time windows and quiet hours in settings.</string>
+    <string name="export_file_prefix">feelings</string>
+    <string name="export_subject">Feelings diary %1$s</string>
+    <string name="export_csv_date">Date</string>
+    <string name="export_csv_time">Time</string>
+    <string name="export_csv_zone">Time zone</string>
+    <string name="export_csv_main">Main feeling</string>
+    <string name="export_csv_feelings">Feelings</string>
+    <string name="export_csv_mood">Mood</string>
+    <string name="export_csv_people">People</string>
+    <string name="export_open_cd">Share</string>
+    <string name="export_title">Export</string>
+    <string name="export_option_csv">Table (CSV)</string>
+    <string name="export_option_graph">Graph (image)</string>
+    <string name="export_share">Share</string>
+    <string name="export_cancel">Cancel</string>
+    <string name="export_chooser">Share export</string>
+    <string name="export_failed">Export failed</string>
 </resources>
