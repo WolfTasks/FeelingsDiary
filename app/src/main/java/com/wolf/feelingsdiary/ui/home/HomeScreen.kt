@@ -37,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,15 +50,20 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.wolf.feelingsdiary.R
 import com.wolf.feelingsdiary.domain.GraphPoint
 import com.wolf.feelingsdiary.domain.InputMode
 import com.wolf.feelingsdiary.domain.PeriodKind
 import com.wolf.feelingsdiary.export.ExportResult
 import com.wolf.feelingsdiary.ui.entry.QuickEntryRoute
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 data class HomeActions(
@@ -272,12 +278,26 @@ private fun ShareExports(events: Flow<ExportEvent>) {
     val context = LocalContext.current
     val chooserTitle = stringResource(R.string.export_chooser)
     val failed = stringResource(R.string.export_failed)
-    LaunchedEffect(events) {
-        events.collect { event ->
-            val shared =
-                event is ExportEvent.Share &&
-                    runCatching { context.startActivity(shareIntent(event.result, chooserTitle)) }.isSuccess
-            if (!shared) Toast.makeText(context, failed, Toast.LENGTH_SHORT).show()
+    ShareExports(events) { event ->
+        val shared =
+            event is ExportEvent.Share &&
+                runCatching { context.startActivity(shareIntent(event.result, chooserTitle)) }.isSuccess
+        if (!shared) Toast.makeText(context, failed, Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+internal fun ShareExports(
+    events: Flow<ExportEvent>,
+    onEvent: (ExportEvent) -> Unit,
+) {
+    // Only while started: a share sheet must not open over another app, and Android may block background starts.
+    // The buffered channel keeps the event until the screen is visible again.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(events, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            withContext(Dispatchers.Main.immediate) { events.collect { currentOnEvent(it) } }
         }
     }
 }

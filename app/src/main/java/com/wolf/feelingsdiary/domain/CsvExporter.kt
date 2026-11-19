@@ -25,7 +25,9 @@ object CsvExporter {
     private const val LINE_END = "\r\n"
     private val DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
     private val TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
-    private val FORMULA_START = setOf('=', '+', '-', '@')
+
+    // OWASP CSV injection list; tab and CR because some importers trim them and then evaluate the rest.
+    private val FORMULA_START = setOf('=', '+', '-', '@', '\t', '\r')
 
     /** [feelingLabel] returns null for unknown ids, which are left out. */
     fun build(

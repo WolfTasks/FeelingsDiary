@@ -86,4 +86,13 @@ class CsvExporterTest {
         val row = lines(CsvExporter.build(listOf(e), mapOf(1L to "happy", 2L to "calm")::get, headers, us))[1]
         assertTrue(row, row.contains(",UTC-9:30,happy,\"happy (+1), calm (+1)\",1.50,0"))
     }
+
+    @Test
+    fun escapesTabAndCarriageReturnStart() {
+        val e = entry(1000, ids = listOf(1L, 2L), valences = listOf(1, 1))
+        val row = lines(CsvExporter.build(listOf(e), mapOf(1L to "\t=1", 2L to "ok")::get, headers, de))[1]
+        assertEquals("'\t=1", row.split(";")[3])
+        val cr = CsvExporter.build(listOf(e), mapOf(1L to "\r=1", 2L to "ok")::get, headers, de)
+        assertTrue(cr, cr.contains(";\"'\r=1\";"))
+    }
 }

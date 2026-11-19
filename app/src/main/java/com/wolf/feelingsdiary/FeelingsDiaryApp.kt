@@ -27,8 +27,8 @@ class FeelingsDiaryApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Shared export files are only needed until the target app has read them.
-        scope.launch { exporter.clearCache() }
+        // Shared export files are only needed until the target app has read them; recent ones may still be read.
+        scope.launch { exporter.clearStale() }
         // The first value covers app start, every later one a change of the reminder settings.
         scope.launch {
             settings.settings

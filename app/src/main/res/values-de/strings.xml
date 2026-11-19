@@ -172,4 +172,5 @@
     <string name="export_cancel">Abbrechen</string>
     <string name="export_chooser">Export teilen</string>
     <string name="export_failed">Export fehlgeschlagen</string>
+    <string name="export_legend_more">+%1$d weitere</string>
 </resources>

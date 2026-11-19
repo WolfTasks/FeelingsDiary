@@ -17,6 +17,8 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,8 @@ data class GraphImage(
     val valenceTexts: List<String>,
     val legend: List<Pair<String, Color>>,
     val peopleLabel: String,
+    /** Legend entry standing in for the feelings that no longer fit, e.g. "+3 more". */
+    val moreLabel: (Int) -> String,
 )
 
 /** Renders the history graph with title and legend into a bitmap, always in the light theme (mail and print). */
@@ -57,6 +61,7 @@ object GraphImageRenderer {
     private const val TITLE_SP = 20f
     private const val LEGEND_SP = 12f
     private const val PEOPLE_ALPHA = 0.4f
+    private const val MAX_LEGEND_ROWS = 3
 
     fun render(
         context: Context,
@@ -80,19 +85,49 @@ object GraphImageRenderer {
         val gap = SECTION_GAP.toPx()
         val contentWidth = size.width - 2 * pad
 
-        val title = measurer.measure(image.title, TextStyle(color = LightColors.onSurface, fontSize = TITLE_SP.sp), maxLines = 1)
+        val textWidth = Constraints(maxWidth = contentWidth.toInt())
+
+        fun line(
+            text: String,
+            style: TextStyle,
+            maxWidth: Constraints = textWidth,
+        ) = measurer.measure(text, style, TextOverflow.Ellipsis, softWrap = false, maxLines = 1, constraints = maxWidth)
+
+        val title = line(image.title, TextStyle(color = LightColors.onSurface, fontSize = TITLE_SP.sp))
         drawText(title, topLeft = Offset(pad, pad))
 
-        val legendItems = image.legend + (image.peopleLabel to LightColors.primary.copy(alpha = PEOPLE_ALPHA))
         val legendStyle = TextStyle(color = LightColors.onSurface, fontSize = LEGEND_SP.sp)
-        val legendTexts = legendItems.map { (label, _) -> measurer.measure(label, legendStyle, maxLines = 1) }
+        val itemWidth = Constraints(maxWidth = (contentWidth - DOT.toPx() - DOT_GAP.toPx()).toInt())
+        val feelingTexts = image.legend.map { (label, _) -> line(label, legendStyle, itemWidth) }
+        val peopleItem = line(image.peopleLabel, legendStyle, itemWidth) to LightColors.primary.copy(alpha = PEOPLE_ALPHA)
+
+        // Keep the graph readable: at most MAX_LEGEND_ROWS rows, the rest folds into "+N more".
+        fun items(shown: Int): List<Pair<TextLayoutResult, Color>> {
+            val more = image.legend.size - shown
+            val moreItem =
+                if (more >
+                    0
+                ) {
+                    listOf(line(image.moreLabel(more), legendStyle, itemWidth) to LightColors.onSurfaceVariant)
+                } else {
+                    emptyList()
+                }
+            return feelingTexts.take(shown).zip(image.legend.take(shown).map { it.second }) + moreItem + peopleItem
+        }
+        var legendItems = items(image.legend.size)
+        var shown = image.legend.size
+        while (shown > 0 && legendRows(legendItems.map { it.first }, contentWidth).size > MAX_LEGEND_ROWS) {
+            shown--
+            legendItems = items(shown)
+        }
+        val legendTexts = legendItems.map { it.first }
         val legendRows = legendRows(legendTexts, contentWidth)
         val rowHeight = maxOf(legendTexts.maxOf { it.size.height }.toFloat(), DOT.toPx())
         val legendTop = size.height - pad - legendRows.size * rowHeight - (legendRows.size - 1) * ROW_GAP.toPx()
         drawLegend(legendRows, legendItems.map { it.second }, legendTexts, Offset(pad, legendTop), rowHeight)
 
         val labelStyle = TextStyle(color = LightColors.onSurfaceVariant, fontSize = GRAPH_LABEL_FONT_SP.sp)
-        val people = measurer.measure(image.peopleLabel, labelStyle, maxLines = 1)
+        val people = line(image.peopleLabel, labelStyle)
         val areaTop = pad + title.size.height + gap
         drawText(people, topLeft = Offset(size.width - pad - people.size.width, areaTop))
         val graphTop = areaTop + people.size.height + LABEL_GAP.toPx()
