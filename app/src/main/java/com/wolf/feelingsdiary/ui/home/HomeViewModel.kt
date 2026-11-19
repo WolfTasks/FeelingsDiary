@@ -21,6 +21,7 @@ import com.wolf.feelingsdiary.ui.LocaleSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,6 +95,9 @@ class HomeViewModel
 
         /** One event per [export] call, consumed once by the screen. */
         val exportEvents: Flow<ExportEvent> = exportChannel.receiveAsFlow()
+
+        // A second export would clear the cache under the first one's share sheet, so taps during a run are ignored.
+        private var exportJob: Job? = null
 
         private val inputMode = settings.settings.map { it.input }.distinctUntilChanged()
 
@@ -186,19 +190,21 @@ class HomeViewModel
             csv: Boolean,
             graph: Boolean,
         ) {
+            if (exportJob?.isActive == true) return
             val p = period.value
-            viewModelScope.launch {
-                val event =
-                    try {
-                        ExportEvent.Share(exporter.export(p, firstDayOfWeek(), csv, graph))
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        // Disk full, missing feeling data, ...: the screen reports it instead of crashing.
-                        ExportEvent.Failed
-                    }
-                exportChannel.send(event)
-            }
+            exportJob =
+                viewModelScope.launch {
+                    val event =
+                        try {
+                            ExportEvent.Share(exporter.export(p, firstDayOfWeek(), csv, graph))
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            // Disk full, missing feeling data, ...: the screen reports it instead of crashing.
+                            ExportEvent.Failed
+                        }
+                    exportChannel.send(event)
+                }
         }
 
         fun delete(id: Long) {

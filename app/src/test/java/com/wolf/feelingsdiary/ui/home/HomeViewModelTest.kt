@@ -21,6 +21,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -329,5 +330,17 @@ class HomeViewModelTest {
             val vm = vm()
             vm.export(csv = true, graph = true)
             assertEquals(ExportEvent.Failed, vm.exportEvents.first())
+        }
+
+    @Test
+    fun secondExportWhileRunningIsIgnored() =
+        runTest {
+            val gate = CompletableDeferred<ExportResult>()
+            coEvery { exporter.export(any(), any(), any(), any()) } coAnswers { gate.await() }
+            val vm = vm()
+            vm.export(csv = true, graph = true)
+            vm.export(csv = true, graph = true)
+            gate.complete(ExportResult(emptyList(), "s", "*/*"))
+            coVerify(exactly = 1) { exporter.export(any(), any(), any(), any()) }
         }
 }
