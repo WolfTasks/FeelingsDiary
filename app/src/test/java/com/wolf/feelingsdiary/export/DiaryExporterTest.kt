@@ -109,4 +109,16 @@ class DiaryExporterTest {
             val uri = exporter.export(november, DayOfWeek.MONDAY, csv = true, graph = false).uris.single()
             assertEquals("${ctx.packageName}.export", uri.authority)
         }
+
+    @Test
+    fun clearStaleKeepsRecentFiles() {
+        dir.mkdirs()
+        val now = 10_000_000_000L
+        val old = File(dir, "old.csv").apply { writeText("x") }
+        val recent = File(dir, "recent.csv").apply { writeText("x") }
+        old.setLastModified(now - DiaryExporter.STALE_AFTER_MILLIS - 1)
+        recent.setLastModified(now - DiaryExporter.STALE_AFTER_MILLIS + 60_000)
+        exporter.clearStale(now)
+        assertEquals(listOf("recent.csv"), names())
+    }
 }

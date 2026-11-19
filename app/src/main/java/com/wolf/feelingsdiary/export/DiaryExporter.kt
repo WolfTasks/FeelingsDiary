@@ -101,6 +101,7 @@ class DiaryExporter
                             valenceTexts = VALENCE_TEXTS.map(res::getString),
                             legend = FeelingSuggester.baseListOrder(used, labeler::label).map { labeler.label(it) to Color(it.colorArgb) },
                             peopleLabel = res.getString(R.string.history_people_axis),
+                            moreLabel = { n -> res.getString(R.string.export_legend_more, n) },
                         )
                     val bitmap = GraphImageRenderer.render(context, image)
                     files +=
@@ -129,10 +130,23 @@ class DiaryExporter
             dir.deleteRecursively()
         }
 
-        private companion object {
-            const val EXPORT_DIR = "export"
-            const val PNG_QUALITY = 100
-            val CSV_HEADERS =
+        /**
+         * App start: removes only exports older than [STALE_AFTER_MILLIS]. A share target that reads its file late
+         * (e.g. a mail app sending later) may restart the process via the FileProvider, so fresh files must survive.
+         */
+        fun clearStale(nowMillis: Long = System.currentTimeMillis()) {
+            dir
+                .listFiles()
+                .orEmpty()
+                .filter { nowMillis - it.lastModified() > STALE_AFTER_MILLIS }
+                .forEach { it.delete() }
+        }
+
+        companion object {
+            const val STALE_AFTER_MILLIS = 60 * 60 * 1000L
+            private const val EXPORT_DIR = "export"
+            private const val PNG_QUALITY = 100
+            private val CSV_HEADERS =
                 listOf(
                     R.string.export_csv_date,
                     R.string.export_csv_time,
@@ -142,6 +156,6 @@ class DiaryExporter
                     R.string.export_csv_mood,
                     R.string.export_csv_people,
                 )
-            val VALENCE_TEXTS = listOf(R.string.valence_good, R.string.valence_neutral, R.string.valence_bad)
+            private val VALENCE_TEXTS = listOf(R.string.valence_good, R.string.valence_neutral, R.string.valence_bad)
         }
     }
