@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -79,7 +80,13 @@ fun FeelingEditDialog(
 ) {
     var name by rememberSaveable { mutableStateOf(initial?.name ?: initialName) }
     var color by rememberSaveable { mutableIntStateOf(initial?.colorArgb ?: CustomFeelingColors.first()) }
-    var valence by rememberSaveable { mutableIntStateOf(initial?.valence ?: 0) }
+    val valenceState =
+        rememberSliderState(
+            value = (initial?.valence ?: 0).toFloat(),
+            steps = VALENCE_MAX - VALENCE_MIN - 1,
+            trackRange = VALENCE_MIN.toFloat()..VALENCE_MAX.toFloat(),
+        )
+    val valence = valenceState.value.roundToInt()
     // Hidden once the name changes, shown again with the next confirm.
     var showError by rememberSaveable { mutableStateOf(true) }
     val palette =
@@ -135,10 +142,8 @@ fun FeelingEditDialog(
                 Text(stringResource(R.string.new_feeling_valence), style = MaterialTheme.typography.labelLarge)
                 val valenceCd = stringResource(R.string.new_feeling_valence_cd, valence)
                 Slider(
-                    value = valence.toFloat(),
-                    onValueChange = { valence = it.roundToInt() },
-                    valueRange = VALENCE_MIN.toFloat()..VALENCE_MAX.toFloat(),
-                    steps = VALENCE_MAX - VALENCE_MIN - 1,
+                    state = valenceState,
+                    onValueChange = { valenceState.value = it },
                     modifier = Modifier.semantics { contentDescription = valenceCd },
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

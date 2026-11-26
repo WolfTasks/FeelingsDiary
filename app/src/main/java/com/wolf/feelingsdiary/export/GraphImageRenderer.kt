@@ -17,6 +17,7 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
@@ -68,7 +69,12 @@ object GraphImageRenderer {
         image: GraphImage,
     ): Bitmap {
         val density = Density(DENSITY)
-        val measurer = TextMeasurer(createFontFamilyResolver(context), density, LayoutDirection.Ltr)
+        val locales =
+            LocaleList(
+                context.resources.configuration.locales
+                    .toLanguageTags(),
+            )
+        val measurer = TextMeasurer(createFontFamilyResolver(context), locales, density, LayoutDirection.Ltr)
         val bitmap = ImageBitmap(WIDTH, HEIGHT)
         CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(bitmap), Size(WIDTH.toFloat(), HEIGHT.toFloat())) {
             drawRect(LightColors.surface)
