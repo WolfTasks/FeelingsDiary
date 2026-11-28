@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload SARIF
         if: always() && hashFiles('trivy-app.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066   # v4.39.3
+        uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934   # v4.39.5
         with:
           sarif_file: trivy-app.sarif
           category: trivy-nightly-app
@@ -140,7 +140,7 @@ jobs:
 
       - name: Upload SARIF
         if: always() && hashFiles('trivy-tooling.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066   # v4.39.3
+        uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934   # v4.39.5
         with:
           sarif_file: trivy-tooling.sarif
           category: trivy-nightly-build-tooling
